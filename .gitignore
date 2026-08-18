@@ -1,0 +1,13 @@
+# Backend build output and local verification artifacts
+erp_curtiembre_backend/**/bin/
+erp_curtiembre_backend/**/obj/
+erp_curtiembre_backend/artifacts/
+erp_curtiembre_backend/*.log
+erp_curtiembre_backend/.vs/
+
+# Flutter / Dart generated files and IDE metadata
+erp_curtiembre_fronted/.dart_tool/
+erp_curtiembre_fronted/build/
+erp_curtiembre_fronted/.flutter-plugins-dependencies
+erp_curtiembre_fronted/.idea/
+erp_curtiembre_fronted/*.iml

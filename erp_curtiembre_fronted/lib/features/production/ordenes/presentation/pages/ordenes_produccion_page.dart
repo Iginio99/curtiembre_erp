@@ -1,0 +1,2164 @@
+import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
+import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
+import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/consumo_planificado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/consumo_real_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/control_calidad_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/desviacion_consumo_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/merma_proceso_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/finalizar_orden_dialog.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/orden_simple_action_dialog.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/orden_upsert_dialog.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/registrar_calidad_final_dialog.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/registrar_merma_dialog.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/solicitar_consumo_dialog.dart';
+import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
+import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
+import 'package:intl/intl.dart';
+import 'package:talker_flutter/talker_flutter.dart';
+
+class OrdenesProduccionPage extends StatefulWidget {
+  const OrdenesProduccionPage({super.key});
+
+  @override
+  State<OrdenesProduccionPage> createState() => _OrdenesProduccionPageState();
+}
+
+class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
+  final _searchController = TextEditingController();
+  final _estadoController = TextEditingController();
+  final Talker _talker = getIt<Talker>();
+
+  @override
+  void initState() {
+    super.initState();
+    _talker.ui('Se abrio la pantalla de ordenes de produccion.');
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _estadoController.dispose();
+    super.dispose();
+  }
+
+  void _applyFilters() {
+    FocusScope.of(context).unfocus();
+    _talker.ui(
+      'Se aplicaron filtros en ordenes con texto=${_describeText(_searchController.text)}, estado=${_describeState(_estadoController.text)}.',
+    );
+    context.read<OrdenesProduccionCubit>().load(
+      searchTerm: _searchController.text.trim(),
+      estado: _estadoController.text.trim().isEmpty
+          ? null
+          : _estadoController.text.trim(),
+    );
+  }
+
+  Future<void> _openCreateDialog(OrdenesProduccionState state) async {
+    _talker.ui('Se abrio el dialogo para crear una orden de produccion.');
+    final payload = await showDialog<OrdenUpsertFormData>(
+      context: context,
+      builder: (_) => OrdenUpsertDialog(
+        title: 'Nueva orden de produccion',
+        submitLabel: 'Crear orden',
+        isSubmitting: state.isSubmittingAction,
+        clienteOptions: state.clienteOptions,
+        loteOptions: state.loteOptions,
+      ),
+    );
+
+    if (payload == null || !mounted) {
+      _talker.ui(
+        'Se cerro el dialogo de creacion de orden sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui(
+      'Se confirmo la creacion de orden para loteId=${payload.loteId}, clienteId=${payload.clienteId}.',
+    );
+
+    final result = await context.read<OrdenesProduccionCubit>().createOrden(
+      loteId: payload.loteId,
+      clienteId: payload.clienteId,
+      cantidadPieles: payload.cantidadPieles,
+      fechaInicioPlanificada: payload.fechaInicioPlanificada,
+      fechaFinEstimada: payload.fechaFinEstimada,
+      observacion: payload.observacion,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showActionResult(result);
+  }
+
+  Future<void> _startSelectedOrden() async {
+    _talker.ui('Se abrio el dialogo para iniciar la orden seleccionada.');
+    final payload = await showDialog<OrdenSimpleActionFormData>(
+      context: context,
+      builder: (_) => const OrdenSimpleActionDialog(
+        title: 'Iniciar orden',
+        submitLabel: 'Iniciar',
+        labelText: 'Observacion inicial',
+        hintText: 'Detalle breve del arranque de la orden',
+        requireStagePlanning: true,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    if (payload == null) {
+      _talker.ui(
+        'Se cerro el inicio de orden sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui('Se confirmo el inicio de la orden seleccionada.');
+
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .startSelectedOrden(
+          pesoBaseKg: payload.pesoBaseKg!,
+          fechaFinEstimada: payload.fechaFinEstimada!,
+          observacion: payload.observacion,
+        );
+    if (!mounted) {
+      return;
+    }
+    _showActionResult(result);
+  }
+
+  Future<void> _cancelSelectedOrden() async {
+    _talker.ui(
+      'Se abrio el dialogo para anular la orden seleccionada.',
+      logLevel: LogLevel.warning,
+    );
+    final payload = await showDialog<OrdenSimpleActionFormData>(
+      context: context,
+      builder: (_) => const OrdenSimpleActionDialog(
+        title: 'Anular orden',
+        submitLabel: 'Anular orden',
+        labelText: 'Motivo de anulacion',
+        hintText: 'Explica por que la orden ya no debe continuar',
+        requireValue: true,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    if (payload == null || (payload.motivo?.trim().isEmpty ?? true)) {
+      _talker.ui(
+        'Se cerro la anulacion de orden sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui(
+      'Se confirmo la anulacion de la orden seleccionada con motivo=${_describeText(payload.motivo)}.',
+      logLevel: LogLevel.warning,
+    );
+
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .cancelSelectedOrden(motivo: payload.motivo!);
+    if (!mounted) {
+      return;
+    }
+    _showActionResult(result);
+  }
+
+  Future<void> _startProceso(OrdenProcesoRecord proceso) async {
+    _talker.ui('Se abrio el dialogo para iniciar el proceso ${proceso.id}.');
+    final payload = await showDialog<OrdenSimpleActionFormData>(
+      context: context,
+      builder: (_) => OrdenSimpleActionDialog(
+        title: 'Iniciar ${proceso.procesoNombre}',
+        submitLabel: 'Iniciar proceso',
+        labelText: 'Observacion de inicio',
+        hintText: 'Detalle breve del arranque del proceso',
+        requireStagePlanning: proceso.estado == 'PENDIENTE',
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    if (payload == null) {
+      _talker.ui(
+        'Se cerro el inicio del proceso ${proceso.id} sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui('Se confirmo el inicio del proceso ${proceso.id}.');
+
+    final result = await context.read<OrdenesProduccionCubit>().startProceso(
+      procesoId: proceso.id,
+      pesoBaseKg: payload.pesoBaseKg ?? 0,
+      fechaFinEstimada: payload.fechaFinEstimada ?? DateTime.now(),
+      observacion: payload.observacion,
+    );
+    if (!mounted) {
+      return;
+    }
+    _showActionResult(result);
+  }
+
+  Future<void> _finishProceso(OrdenProcesoRecord proceso) async {
+    _talker.ui('Se abrio el dialogo para finalizar el proceso ${proceso.id}.');
+    final payload = await showDialog<OrdenSimpleActionFormData>(
+      context: context,
+      builder: (_) => OrdenSimpleActionDialog(
+        title: 'Finalizar ${proceso.procesoNombre}',
+        submitLabel: 'Finalizar proceso',
+        labelText: 'Observacion de cierre',
+        hintText: 'Resultado o detalle del cierre del proceso',
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    if (payload == null) {
+      _talker.ui(
+        'Se cerro la finalizacion del proceso ${proceso.id} sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui('Se confirmo la finalizacion del proceso ${proceso.id}.');
+
+    final result = await context.read<OrdenesProduccionCubit>().finishProceso(
+      procesoId: proceso.id,
+      observacion: payload.observacion,
+    );
+    if (!mounted) {
+      return;
+    }
+    _showActionResult(result);
+  }
+
+  Future<void> _editProcesoObservacion(OrdenProcesoRecord proceso) async {
+    _talker.ui(
+      'Se abrio el dialogo para editar la observacion del proceso ${proceso.id}.',
+    );
+    final payload = await showDialog<OrdenSimpleActionFormData>(
+      context: context,
+      builder: (_) => OrdenSimpleActionDialog(
+        title: 'Observacion de ${proceso.procesoNombre}',
+        submitLabel: 'Guardar observacion',
+        labelText: 'Observacion',
+        hintText: 'Actualiza el comentario operativo del proceso',
+        initialValue: proceso.observacion,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    if (payload == null) {
+      _talker.ui(
+        'Se cerro la edicion del proceso ${proceso.id} sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui(
+      'Se confirmo la actualizacion de observacion del proceso ${proceso.id}.',
+    );
+
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .updateProcesoObservacion(
+          procesoId: proceso.id,
+          observacion: payload.observacion,
+        );
+    if (!mounted) {
+      return;
+    }
+    _showActionResult(result);
+  }
+
+  Future<void> _generarConsumoPlanificado() async {
+    _talker.ui(
+      'Se solicito calcular el consumo planificado de la orden seleccionada.',
+    );
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .generarConsumoPlanificado();
+    if (!mounted) {
+      return;
+    }
+    _showActionResult(result);
+  }
+
+  Future<void> _solicitarConsumo(
+    OrdenProcesoRecord proceso,
+    OrdenesProduccionState state,
+  ) async {
+    _talker.ui(
+      'Se abrio el dialogo para solicitar insumos del proceso ${proceso.id}.',
+    );
+    final payload = await showDialog<SolicitarConsumoDialogResult>(
+      context: context,
+      builder: (_) => SolicitarConsumoDialog(
+        proceso: proceso,
+        insumos: state.insumoOptions,
+        isSubmitting: state.isSubmittingAction,
+      ),
+    );
+
+    if (!mounted || payload == null) {
+      _talker.ui(
+        'Se cerro la solicitud de insumos del proceso ${proceso.id} sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui(
+      'Se confirmo la solicitud de insumos del proceso ${proceso.id} con ${payload.detalles.length} detalles.',
+    );
+
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .solicitarConsumo(
+          ordenProcesoId: payload.ordenProcesoId,
+          motivo: payload.motivo,
+          observacion: payload.observacion,
+          detalles: payload.detalles,
+        );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showActionResult(result);
+  }
+
+  Future<void> _registrarMerma(
+    OrdenProcesoRecord proceso,
+    OrdenesProduccionState state,
+  ) async {
+    _talker.ui(
+      'Se abrio el dialogo para registrar merma del proceso ${proceso.id}.',
+    );
+    final payload = await showDialog<RegistrarMermaDialogResult>(
+      context: context,
+      builder: (_) => RegistrarMermaDialog(
+        proceso: proceso,
+        isSubmitting: state.isSubmittingAction,
+      ),
+    );
+
+    if (!mounted || payload == null) {
+      _talker.ui(
+        'Se cerro el registro de merma del proceso ${proceso.id} sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui('Se confirmo el registro de merma del proceso ${proceso.id}.');
+
+    final result = await context.read<OrdenesProduccionCubit>().registerMerma(
+      procesoId: payload.procesoId,
+      input: payload.input,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showActionResult(result);
+  }
+
+  Future<void> _registrarCalidadFinal(OrdenesProduccionState state) async {
+    _talker.ui('Se abrio el dialogo para registrar calidad final.');
+    final payload = await showDialog<RegistrarCalidadFinalDialogResult>(
+      context: context,
+      builder: (_) =>
+          RegistrarCalidadFinalDialog(isSubmitting: state.isSubmittingAction),
+    );
+
+    if (!mounted || payload == null) {
+      _talker.ui(
+        'Se cerro el registro de calidad final sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui(
+      'Se confirmo el registro de calidad final con resultado=${payload.input.resultado}.',
+    );
+
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .registerCalidadFinal(input: payload.input);
+
+    if (!mounted) {
+      return;
+    }
+
+    _showActionResult(result);
+  }
+
+  Future<void> _finalizarOrden(OrdenesProduccionState state) async {
+    _talker.ui(
+      'Se abrio el dialogo para finalizar la orden seleccionada.',
+      logLevel: LogLevel.warning,
+    );
+    final payload = await showDialog<FinalizarOrdenDialogResult>(
+      context: context,
+      builder: (_) => FinalizarOrdenDialog(
+        isSubmitting: state.isSubmittingAction,
+        procesosFinalizados: state.selectedOrden?.procesosFinalizados ?? 0,
+        procesosTotales: state.selectedOrden?.procesosTotales ?? 0,
+        tieneProductoTerminado: state.productoTerminado != null,
+      ),
+    );
+
+    if (!mounted || payload == null) {
+      _talker.ui(
+        'Se cerro la finalizacion de orden sin confirmar.',
+        logLevel: LogLevel.debug,
+      );
+      return;
+    }
+    _talker.ui(
+      'Se confirmo la finalizacion de la orden con cantidadLados=${payload.input.cantidadLados}.',
+      logLevel: LogLevel.warning,
+    );
+
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .finalizeSelectedOrden(input: payload.input);
+
+    if (!mounted) {
+      return;
+    }
+
+    _showActionResult(result);
+  }
+
+  void _showActionResult(OrdenesActionResult result) {
+    _talker.ui(
+      result.success
+          ? 'Accion en ordenes de produccion completada correctamente.'
+          : 'La accion en ordenes de produccion fallo: ${result.message}',
+      logLevel: result.success ? LogLevel.debug : LogLevel.error,
+    );
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: result.success ? null : const Color(0xFF8A2F22),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.select((AuthCubit cubit) => cubit.state.session);
+    final isSigningOut = context.select(
+      (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
+    );
+    final permissionCodes = context.select(
+      (SecurityAccessCubit cubit) =>
+          cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
+    );
+
+    if (session == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return AppShell(
+      title: 'Órdenes de producción',
+      currentPath: '/produccion/ordenes',
+      breadcrumbs: const ['Inicio', 'Producción', 'Órdenes'],
+      userName: session.nombreCompleto,
+      roleName: session.rolNombre,
+      accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
+      onSignOut: isSigningOut
+          ? () {}
+          : () => context.read<AuthCubit>().signOut(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1520),
+                child: BlocBuilder<OrdenesProduccionCubit, OrdenesProduccionState>(
+                  builder: (context, state) {
+                    final isWide = constraints.maxWidth >= 1040;
+                    final compactHeight = constraints.maxHeight < 900;
+
+                    if (_searchController.text != state.searchTerm) {
+                      _searchController.value = TextEditingValue(
+                        text: state.searchTerm,
+                        selection: TextSelection.collapsed(
+                          offset: state.searchTerm.length,
+                        ),
+                      );
+                    }
+
+                    if (_estadoController.text != (state.estadoFilter ?? '')) {
+                      _estadoController.value = TextEditingValue(
+                        text: state.estadoFilter ?? '',
+                        selection: TextSelection.collapsed(
+                          offset: (state.estadoFilter ?? '').length,
+                        ),
+                      );
+                    }
+
+                    final listPanel = _OrdenesListPanel(
+                      state: state,
+                      onRetry: () {
+                        _talker.ui(
+                          'Se solicito reintentar la carga del listado de ordenes.',
+                        );
+                        context.read<OrdenesProduccionCubit>().initialize();
+                      },
+                      onSelectOrden: (ordenId) {
+                        _talker.ui(
+                          'Se selecciono la orden $ordenId desde el listado.',
+                          logLevel: LogLevel.debug,
+                        );
+                        context.read<OrdenesProduccionCubit>().selectOrden(
+                          ordenId,
+                        );
+                      },
+                    );
+
+                    final detailPanel = _OrdenDetailPanel(
+                      state: state,
+                      onRetry: () {
+                        _talker.ui(
+                          'Se solicito reintentar el detalle de la orden seleccionada.',
+                        );
+                        context.read<OrdenesProduccionCubit>().retryDetail();
+                      },
+                      onStartOrden: state.selectedOrden?.canStart == true
+                          ? _startSelectedOrden
+                          : null,
+                      onCancelOrden: state.selectedOrden?.canCancel == true
+                          ? _cancelSelectedOrden
+                          : null,
+                      onStartProceso: _startProceso,
+                      onFinishProceso: _finishProceso,
+                      onEditObservacion: _editProcesoObservacion,
+                      onGeneratePlannedConsumption: _generarConsumoPlanificado,
+                      onRequestConsumption: (proceso) =>
+                          _solicitarConsumo(proceso, state),
+                      onRegisterMerma: (proceso) =>
+                          _registrarMerma(proceso, state),
+                      onRegisterCalidadFinal: () =>
+                          _registrarCalidadFinal(state),
+                      onFinalizeOrden: () => _finalizarOrden(state),
+                    );
+
+                    final headerAndFilters = <Widget>[
+                      Text(
+                        'Planifica, inicia y controla la secuencia de procesos de cada orden de producción.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _OrdenesFiltersCard(
+                        searchController: _searchController,
+                        estadoController: _estadoController,
+                        state: state,
+                        onApply: _applyFilters,
+                        onCreate: () => _openCreateDialog(state),
+                        onClienteChanged: (value) {
+                          _talker.ui(
+                            'Se cambio el filtro de cliente en ordenes a ${value ?? 'ninguno'}.',
+                            logLevel: LogLevel.debug,
+                          );
+                          context.read<OrdenesProduccionCubit>().load(
+                            clienteId: value,
+                            resetCliente: value == null,
+                          );
+                        },
+                        onLoteChanged: (value) {
+                          _talker.ui(
+                            'Se cambio el filtro de lote en ordenes a ${value ?? 'ninguno'}.',
+                            logLevel: LogLevel.debug,
+                          );
+                          context.read<OrdenesProduccionCubit>().load(
+                            loteId: value,
+                            resetLote: value == null,
+                          );
+                        },
+                      ),
+                      const Gap(AppSpacing.xl),
+                    ];
+
+                    if (compactHeight) {
+                      if (isWide) {
+                        return SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ...headerAndFilters,
+                              SizedBox(
+                                height: 700,
+                                child: Row(
+                                  children: [
+                                    Expanded(flex: 9, child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(flex: 10, child: detailPanel),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...headerAndFilters,
+                            SizedBox(height: 520, child: listPanel),
+                            const Gap(AppSpacing.xl),
+                            SizedBox(height: 760, child: detailPanel),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...headerAndFilters,
+                        Expanded(
+                          child: isWide
+                              ? Row(
+                                  children: [
+                                    Expanded(flex: 9, child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(flex: 10, child: detailPanel),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    Expanded(child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(child: detailPanel),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _describeText(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return 'vacio';
+    }
+
+    return '${normalized.length} caracteres';
+  }
+
+  String _describeState(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return 'vacio';
+    }
+
+    return normalized;
+  }
+}
+
+class _OrdenesFiltersCard extends StatelessWidget {
+  const _OrdenesFiltersCard({
+    required this.searchController,
+    required this.estadoController,
+    required this.state,
+    required this.onApply,
+    required this.onCreate,
+    required this.onClienteChanged,
+    required this.onLoteChanged,
+  });
+
+  final TextEditingController searchController;
+  final TextEditingController estadoController;
+  final OrdenesProduccionState state;
+  final VoidCallback onApply;
+  final VoidCallback onCreate;
+  final ValueChanged<int?> onClienteChanged;
+  final ValueChanged<int?> onLoteChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Busqueda operativa', style: theme.textTheme.titleLarge),
+          const Gap(AppSpacing.sm),
+          Text(
+            'Filtra por codigo, cliente, lote o estado para centrarte en las ordenes que hoy necesitan accion.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.lg,
+            children: [
+              SizedBox(
+                width: 300,
+                child: TextField(
+                  controller: searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => onApply(),
+                  decoration: const InputDecoration(
+                    labelText: 'Buscar orden',
+                    hintText: 'Ej. OP-0001 o cliente',
+                    prefixIcon: Icon(Icons.search_rounded),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 320,
+                child: DropdownButtonFormField<int?>(
+                  initialValue: state.selectedClienteId,
+                  decoration: const InputDecoration(labelText: 'Cliente'),
+                  items: [
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('Todos los clientes'),
+                    ),
+                    ...state.clienteOptions.map(
+                      (option) => DropdownMenuItem<int?>(
+                        value: option.id,
+                        child: Text(option.label),
+                      ),
+                    ),
+                  ],
+                  onChanged: onClienteChanged,
+                ),
+              ),
+              SizedBox(
+                width: 360,
+                child: DropdownButtonFormField<int?>(
+                  initialValue: state.selectedLoteId,
+                  decoration: const InputDecoration(labelText: 'Lote'),
+                  items: [
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('Todos los lotes'),
+                    ),
+                    ...state.loteOptions.map(
+                      (option) => DropdownMenuItem<int?>(
+                        value: option.id,
+                        child: Text(option.label),
+                      ),
+                    ),
+                  ],
+                  onChanged: onLoteChanged,
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: TextField(
+                  controller: estadoController,
+                  onSubmitted: (_) => onApply(),
+                  decoration: const InputDecoration(
+                    labelText: 'Estado',
+                    hintText: 'Ej. EN_PROCESO',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
+            children: [
+              AppButton.primary(
+                label: 'Aplicar filtros',
+                icon: Icons.search_rounded,
+                isLoading: state.status == OrdenesProduccionStatus.loading,
+                onPressed: onApply,
+                expand: false,
+              ),
+              AppButton.secondary(
+                label: 'Nueva orden',
+                icon: Icons.playlist_add_outlined,
+                isLoading: state.isSubmittingAction,
+                onPressed: onCreate,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdenesListPanel extends StatelessWidget {
+  const _OrdenesListPanel({
+    required this.state,
+    required this.onRetry,
+    required this.onSelectOrden,
+  });
+
+  final OrdenesProduccionState state;
+  final VoidCallback onRetry;
+  final ValueChanged<int> onSelectOrden;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AppSurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Listado de ordenes', style: theme.textTheme.titleLarge),
+          const Gap(AppSpacing.xs),
+          Text(
+            '${state.items.length} resultado(s) para la vista actual.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.lg),
+          Expanded(
+            child: switch (state.status) {
+              OrdenesProduccionStatus.loading => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              OrdenesProduccionStatus.error => _CenteredMessage(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppMessageCard.error(
+                      title: 'No pudimos cargar las ordenes',
+                      message:
+                          state.errorMessage ??
+                          'Intenta nuevamente para revisar la operacion del modulo.',
+                    ),
+                    const Gap(AppSpacing.lg),
+                    AppButton.secondary(
+                      label: 'Reintentar',
+                      icon: Icons.refresh_rounded,
+                      onPressed: onRetry,
+                    ),
+                  ],
+                ),
+              ),
+              OrdenesProduccionStatus.success =>
+                state.items.isEmpty
+                    ? const _CenteredMessage(
+                        child: AppMessageCard.info(
+                          title: 'Sin resultados',
+                          message:
+                              'No encontramos ordenes con los filtros actuales.',
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: state.items.length,
+                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final item = state.items[index];
+                          return _OrdenListTileCard(
+                            item: item,
+                            isSelected: item.id == state.selectedOrdenId,
+                            onTap: () => onSelectOrden(item.id),
+                          );
+                        },
+                      ),
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdenDetailPanel extends StatelessWidget {
+  const _OrdenDetailPanel({
+    required this.state,
+    required this.onRetry,
+    required this.onStartOrden,
+    required this.onCancelOrden,
+    required this.onStartProceso,
+    required this.onFinishProceso,
+    required this.onEditObservacion,
+    required this.onGeneratePlannedConsumption,
+    required this.onRequestConsumption,
+    required this.onRegisterMerma,
+    required this.onRegisterCalidadFinal,
+    required this.onFinalizeOrden,
+  });
+
+  final OrdenesProduccionState state;
+  final VoidCallback onRetry;
+  final VoidCallback? onStartOrden;
+  final VoidCallback? onCancelOrden;
+  final ValueChanged<OrdenProcesoRecord> onStartProceso;
+  final ValueChanged<OrdenProcesoRecord> onFinishProceso;
+  final ValueChanged<OrdenProcesoRecord> onEditObservacion;
+  final VoidCallback onGeneratePlannedConsumption;
+  final ValueChanged<OrdenProcesoRecord> onRequestConsumption;
+  final ValueChanged<OrdenProcesoRecord> onRegisterMerma;
+  final VoidCallback onRegisterCalidadFinal;
+  final VoidCallback onFinalizeOrden;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final orden = state.selectedOrden;
+
+    return AppSurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Detalle de la orden', style: theme.textTheme.titleLarge),
+          const Gap(AppSpacing.xs),
+          Text(
+            'Revisa el resumen de la orden y navega la secuencia de procesos sin perder el contexto operativo.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.lg),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (state.isDetailLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state.detailErrorMessage != null) {
+                  return _CenteredMessage(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppMessageCard.error(
+                          title: 'No pudimos cargar el detalle',
+                          message: state.detailErrorMessage!,
+                        ),
+                        const Gap(AppSpacing.lg),
+                        AppButton.secondary(
+                          label: 'Reintentar detalle',
+                          icon: Icons.refresh_rounded,
+                          onPressed: onRetry,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (orden == null) {
+                  return const _CenteredMessage(
+                    child: AppMessageCard.info(
+                      title: 'Selecciona una orden',
+                      message:
+                          'Escoge un registro del listado para revisar su secuencia de procesos.',
+                    ),
+                  );
+                }
+
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: AppSpacing.md,
+                        runSpacing: AppSpacing.md,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            orden.codigo,
+                            style: theme.textTheme.headlineSmall,
+                          ),
+                          _StatusBadge(
+                            label: orden.estado,
+                            background: theme.colorScheme.primaryContainer,
+                            foreground: theme.colorScheme.onPrimaryContainer,
+                          ),
+                          _StatusBadge(
+                            label:
+                                '${orden.procesosFinalizados}/${orden.procesosTotales} procesos',
+                            background:
+                                theme.colorScheme.surfaceContainerHighest,
+                            foreground: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                      const Gap(AppSpacing.xs),
+                      Text(
+                        '${orden.clienteRazonSocial} · ${orden.loteCodigo}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const Gap(AppSpacing.lg),
+                      LinearProgressIndicator(value: orden.progresoProcesos),
+                      const Gap(AppSpacing.lg),
+                      Wrap(
+                        spacing: AppSpacing.md,
+                        runSpacing: AppSpacing.md,
+                        children: [
+                          AppButton.secondary(
+                            label: 'Iniciar orden',
+                            icon: Icons.play_circle_outline,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onStartOrden,
+                          ),
+                          AppButton.secondary(
+                            label: 'Anular orden',
+                            icon: Icons.cancel_outlined,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onCancelOrden,
+                          ),
+                          AppButton.secondary(
+                            label: 'Calcular planificado',
+                            icon: Icons.auto_graph_outlined,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onGeneratePlannedConsumption,
+                          ),
+                          AppButton.secondary(
+                            label: 'Registrar calidad',
+                            icon: Icons.verified_outlined,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onRegisterCalidadFinal,
+                          ),
+                          AppButton.secondary(
+                            label: 'Finalizar orden',
+                            icon: Icons.task_alt_outlined,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onFinalizeOrden,
+                          ),
+                        ],
+                      ),
+                      const Gap(AppSpacing.xl),
+                      Wrap(
+                        spacing: AppSpacing.lg,
+                        runSpacing: AppSpacing.lg,
+                        children: [
+                          _DetailCard(
+                            title: 'Resumen',
+                            lines: [
+                              'Lote: ${orden.loteCodigo}',
+                              'Cliente: ${orden.clienteRazonSocial}',
+                              'Cantidad pieles: ${_formatDecimal(orden.cantidadPieles)}',
+                              'Responsable: ${orden.responsableNombre ?? 'Sin asignar'}',
+                            ],
+                          ),
+                          _DetailCard(
+                            title: 'Fechas',
+                            lines: [
+                              'Inicio planificado: ${_formatOptionalDate(orden.fechaInicioPlanificada)}',
+                              'Inicio real: ${_formatOptionalDate(orden.fechaInicioReal)}',
+                              'Fin estimada: ${_formatDate(orden.fechaFinEstimada)}',
+                              'Fin real: ${_formatOptionalDate(orden.fechaFinReal)}',
+                            ],
+                          ),
+                          _DetailCard(
+                            title: 'Control',
+                            lines: [
+                              'Estado: ${orden.estado}',
+                              'Procesos totales: ${orden.procesosTotales}',
+                              'Procesos finalizados: ${orden.procesosFinalizados}',
+                              'Creado: ${_formatDateTime(orden.creadoEn)}',
+                            ],
+                          ),
+                        ],
+                      ),
+                      if ((orden.observacion ?? '').trim().isNotEmpty) ...[
+                        const Gap(AppSpacing.xl),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLowest,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Observacion de la orden',
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              const Gap(AppSpacing.md),
+                              Text(
+                                orden.observacion!,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if ((orden.motivoAnulacion ?? '').trim().isNotEmpty) ...[
+                        const Gap(AppSpacing.lg),
+                        AppMessageCard.warning(
+                          title: 'Motivo de anulacion',
+                          message: orden.motivoAnulacion!,
+                        ),
+                      ],
+                      const Gap(AppSpacing.xl),
+                      Text(
+                        'Secuencia de procesos',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const Gap(AppSpacing.md),
+                      ...state.selectedProcesos.map(
+                        (proceso) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: _ProcesoCard(
+                            proceso: proceso,
+                            isSubmitting: state.isSubmittingAction,
+                            onStart: proceso.canStart
+                                ? () => onStartProceso(proceso)
+                                : null,
+                            onFinish: proceso.canFinish
+                                ? () => onFinishProceso(proceso)
+                                : null,
+                            onEditObservation: () => onEditObservacion(proceso),
+                            onRequestConsumption: proceso.estado == 'PENDIENTE'
+                                ? null
+                                : () => onRequestConsumption(proceso),
+                            onRegisterMerma: proceso.estado == 'PENDIENTE'
+                                ? null
+                                : () => onRegisterMerma(proceso),
+                          ),
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ConsumptionSection(
+                        title: 'Mermas registradas',
+                        helperText:
+                            'Muestra las perdidas reportadas por proceso dentro de la orden actual.',
+                        isEmpty: state.mermas.isEmpty,
+                        emptyMessage:
+                            'Todavia no hay mermas registradas en esta orden.',
+                        child: Column(
+                          children: state.mermas
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.md,
+                                  ),
+                                  child: _MermaCard(item: item),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ConsumptionSection(
+                        title: 'Calidad final',
+                        helperText:
+                            'Resume la evaluacion final antes de generar producto terminado y cerrar la orden.',
+                        isEmpty: state.controlCalidad == null,
+                        emptyMessage:
+                            'Todavia no se ha registrado calidad final para esta orden.',
+                        child: state.controlCalidad == null
+                            ? const SizedBox.shrink()
+                            : _CalidadFinalCard(item: state.controlCalidad!),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ConsumptionSection(
+                        title: 'Producto terminado',
+                        helperText:
+                            'Muestra el resultado final generado al cerrar correctamente la orden.',
+                        isEmpty: state.productoTerminado == null,
+                        emptyMessage:
+                            'Todavia no existe producto terminado generado para esta orden.',
+                        child: state.productoTerminado == null
+                            ? const SizedBox.shrink()
+                            : _ProductoTerminadoCard(
+                                item: state.productoTerminado!,
+                              ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ConsumptionSection(
+                        title: 'Consumo planificado',
+                        helperText:
+                            'Se genera desde la formula vigente y queda como base comparativa de la orden.',
+                        isEmpty: state.consumoPlanificado.isEmpty,
+                        emptyMessage:
+                            'Todavia no hay consumo planificado calculado para esta orden.',
+                        child: Column(
+                          children: state.consumoPlanificado
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.md,
+                                  ),
+                                  child: _PlanificadoCard(item: item),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ConsumptionSection(
+                        title: 'Consumo real',
+                        helperText:
+                            'Aqui aparecen los descuentos reales hechos sobre inventario para esta orden.',
+                        isEmpty: state.consumoReal.isEmpty,
+                        emptyMessage:
+                            'Todavia no hay consumo real registrado para esta orden.',
+                        child: Column(
+                          children: state.consumoReal
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.md,
+                                  ),
+                                  child: _ConsumoRealCard(item: item),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ConsumptionSection(
+                        title: 'Desviaciones',
+                        helperText:
+                            'Se registran cuando el consumo real supera lo planificado o usa un insumo no previsto.',
+                        isEmpty: state.desviaciones.isEmpty,
+                        emptyMessage:
+                            'Todavia no se detectaron desviaciones de consumo en esta orden.',
+                        child: Column(
+                          children: state.desviaciones
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.md,
+                                  ),
+                                  child: _DesviacionCard(item: item),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdenListTileCard extends StatelessWidget {
+  const _OrdenListTileCard({
+    required this.item,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final OrdenProduccionRecord item;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.68)
+                : theme.colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? theme.colorScheme.primary.withValues(alpha: 0.42)
+                  : theme.colorScheme.outlineVariant,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(item.codigo, style: theme.textTheme.titleMedium),
+                  _MiniPill(
+                    label: item.estado,
+                    background: theme.colorScheme.primaryContainer,
+                    foreground: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ],
+              ),
+              const Gap(AppSpacing.sm),
+              Text(
+                '${item.clienteRazonSocial} · ${item.loteCodigo}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const Gap(AppSpacing.md),
+              Text(
+                '${item.procesosFinalizados}/${item.procesosTotales} procesos · fin ${_formatDate(item.fechaFinEstimada)}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProcesoCard extends StatelessWidget {
+  const _ProcesoCard({
+    required this.proceso,
+    required this.isSubmitting,
+    required this.onStart,
+    required this.onFinish,
+    required this.onEditObservation,
+    required this.onRequestConsumption,
+    required this.onRegisterMerma,
+  });
+
+  final OrdenProcesoRecord proceso;
+  final bool isSubmitting;
+  final VoidCallback? onStart;
+  final VoidCallback? onFinish;
+  final VoidCallback onEditObservation;
+  final VoidCallback? onRequestConsumption;
+  final VoidCallback? onRegisterMerma;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                '${proceso.secuencia}. ${proceso.procesoNombre}',
+                style: theme.textTheme.titleMedium,
+              ),
+              _MiniPill(
+                label: proceso.estado,
+                background: theme.colorScheme.surfaceContainerHighest,
+                foreground: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.sm),
+          Text(
+            proceso.procesoCodigo,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Responsable',
+                value: proceso.responsableNombre ?? 'Sin asignar',
+              ),
+              _InlineInfo(
+                label: 'Peso base',
+                value: proceso.pesoBaseKg == null
+                    ? 'Pendiente'
+                    : '${_formatDecimal(proceso.pesoBaseKg!)} kg',
+              ),
+              _InlineInfo(
+                label: 'Termino estimado',
+                value: _formatOptionalDate(proceso.fechaFinEstimada),
+              ),
+              _InlineInfo(
+                label: 'Inicio',
+                value: _formatOptionalDateTime(proceso.fechaInicio),
+              ),
+              _InlineInfo(
+                label: 'Fin',
+                value: _formatOptionalDateTime(proceso.fechaFin),
+              ),
+              _InlineInfo(
+                label: 'Dias reales',
+                value: proceso.diasReales?.toString() ?? 'Sin dato',
+              ),
+            ],
+          ),
+          if ((proceso.observacion ?? '').trim().isNotEmpty) ...[
+            const Gap(AppSpacing.md),
+            Text(
+              proceso.observacion!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const Gap(AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
+            children: [
+              AppButton.secondary(
+                label: 'Iniciar',
+                icon: Icons.play_circle_outline,
+                isLoading: isSubmitting,
+                onPressed: onStart,
+              ),
+              AppButton.secondary(
+                label: 'Finalizar',
+                icon: Icons.task_alt_outlined,
+                isLoading: isSubmitting,
+                onPressed: onFinish,
+              ),
+              AppButton.secondary(
+                label: 'Observacion',
+                icon: Icons.edit_note_outlined,
+                isLoading: isSubmitting,
+                onPressed: onEditObservation,
+              ),
+              AppButton.secondary(
+                label: 'Solicitar insumos',
+                icon: Icons.inventory_2_outlined,
+                isLoading: isSubmitting,
+                onPressed: onRequestConsumption,
+              ),
+              AppButton.secondary(
+                label: 'Registrar merma',
+                icon: Icons.content_cut_outlined,
+                isLoading: isSubmitting,
+                onPressed: onRegisterMerma,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConsumptionSection extends StatelessWidget {
+  const _ConsumptionSection({
+    required this.title,
+    required this.helperText,
+    required this.isEmpty,
+    required this.emptyMessage,
+    required this.child,
+  });
+
+  final String title;
+  final String helperText;
+  final bool isEmpty;
+  final String emptyMessage;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: theme.textTheme.titleLarge),
+        const Gap(AppSpacing.xs),
+        Text(
+          helperText,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Gap(AppSpacing.md),
+        if (isEmpty)
+          AppMessageCard.info(title: 'Sin registros', message: emptyMessage)
+        else
+          child,
+      ],
+    );
+  }
+}
+
+class _PlanificadoCard extends StatelessWidget {
+  const _PlanificadoCard({required this.item});
+
+  final ConsumoPlanificadoRecord item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(
+                '${item.procesoNombre} · ${item.insumoCodigo}',
+                style: theme.textTheme.titleMedium,
+              ),
+              _MiniPill(
+                label: '${item.porcentaje.toStringAsFixed(2)}%',
+                background: theme.colorScheme.primaryContainer,
+                foreground: theme.colorScheme.onPrimaryContainer,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.sm),
+          Text(
+            item.insumoNombre,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Cantidad planificada',
+                value: _formatDecimal(item.cantidadPlanificada),
+              ),
+              _InlineInfo(
+                label: 'Formula version',
+                value: item.formulaVersionId.toString(),
+              ),
+              _InlineInfo(
+                label: 'Registrado',
+                value: _formatDateTime(item.creadoEn),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConsumoRealCard extends StatelessWidget {
+  const _ConsumoRealCard({required this.item});
+
+  final ConsumoRealRecord item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(
+                '${item.procesoNombre} · ${item.insumoCodigo}',
+                style: theme.textTheme.titleMedium,
+              ),
+              _MiniPill(
+                label: item.esExtra ? 'EXTRA' : 'PLANIFICADO',
+                background: item.esExtra
+                    ? theme.colorScheme.errorContainer
+                    : theme.colorScheme.primaryContainer,
+                foreground: item.esExtra
+                    ? theme.colorScheme.onErrorContainer
+                    : theme.colorScheme.onPrimaryContainer,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.sm),
+          Text(
+            item.insumoNombre,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Cantidad consumida',
+                value: _formatDecimal(item.cantidadConsumida),
+              ),
+              _InlineInfo(
+                label: 'Costo unitario',
+                value: _formatCurrency(item.costoUnitario),
+              ),
+              _InlineInfo(
+                label: 'Costo total',
+                value: _formatCurrency(item.costoTotal),
+              ),
+              _InlineInfo(
+                label: 'Registrado',
+                value: _formatDateTime(item.creadoEn),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesviacionCard extends StatelessWidget {
+  const _DesviacionCard({required this.item});
+
+  final DesviacionConsumoRecord item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(
+                '${item.procesoNombre} · ${item.insumoCodigo}',
+                style: theme.textTheme.titleMedium,
+              ),
+              _MiniPill(
+                label: _formatSignedDecimal(item.cantidadDesviacion),
+                background: theme.colorScheme.error,
+                foreground: theme.colorScheme.onError,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.sm),
+          Text(
+            item.insumoNombre,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Planificado',
+                value: _formatDecimal(item.cantidadPlanificada),
+              ),
+              _InlineInfo(
+                label: 'Real',
+                value: _formatDecimal(item.cantidadReal),
+              ),
+              _InlineInfo(
+                label: 'Desviacion',
+                value: _formatSignedDecimal(item.cantidadDesviacion),
+              ),
+              _InlineInfo(
+                label: 'Registrado',
+                value: _formatDateTime(item.registradoEn),
+              ),
+            ],
+          ),
+          if ((item.motivo ?? '').trim().isNotEmpty) ...[
+            const Gap(AppSpacing.md),
+            Text(
+              item.motivo!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MermaCard extends StatelessWidget {
+  const _MermaCard({required this.item});
+
+  final MermaProcesoRecord item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(
+                '${item.procesoNombre} · ${item.procesoCodigo}',
+                style: theme.textTheme.titleMedium,
+              ),
+              _MiniPill(
+                label: '${_formatDecimal(item.cantidadPerdida)} perdidas',
+                background: theme.colorScheme.errorContainer,
+                foreground: theme.colorScheme.onErrorContainer,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(label: 'Motivo', value: item.motivo ?? 'Sin motivo'),
+              _InlineInfo(
+                label: 'Responsable',
+                value: item.registradoPorNombre ?? 'Sin dato',
+              ),
+              _InlineInfo(
+                label: 'Registrado',
+                value: _formatDateTime(item.registradoEn),
+              ),
+            ],
+          ),
+          if ((item.observacion ?? '').trim().isNotEmpty) ...[
+            const Gap(AppSpacing.md),
+            Text(
+              item.observacion!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CalidadFinalCard extends StatelessWidget {
+  const _CalidadFinalCard({required this.item});
+
+  final ControlCalidadRecord item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(
+                '${item.calidadNombre} · ${item.calidadCodigo}',
+                style: theme.textTheme.titleMedium,
+              ),
+              _MiniPill(
+                label: item.resultado,
+                background: item.resultado == 'APROBADO'
+                    ? theme.colorScheme.primaryContainer
+                    : theme.colorScheme.errorContainer,
+                foreground: item.resultado == 'APROBADO'
+                    ? theme.colorScheme.onPrimaryContainer
+                    : theme.colorScheme.onErrorContainer,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Evaluado por',
+                value: item.evaluadoPorNombre ?? 'Sin dato',
+              ),
+              _InlineInfo(
+                label: 'Fecha',
+                value: _formatDateTime(item.evaluadoEn),
+              ),
+              _InlineInfo(
+                label: 'Producto terminado',
+                value:
+                    item.productoTerminadoId?.toString() ?? 'Aun no generado',
+              ),
+            ],
+          ),
+          if ((item.observacion ?? '').trim().isNotEmpty) ...[
+            const Gap(AppSpacing.md),
+            Text(
+              item.observacion!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductoTerminadoCard extends StatelessWidget {
+  const _ProductoTerminadoCard({required this.item});
+
+  final ProductoTerminadoRecord item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(item.codigo, style: theme.textTheme.titleMedium),
+              _MiniPill(
+                label: item.estado,
+                background: theme.colorScheme.primaryContainer,
+                foreground: theme.colorScheme.onPrimaryContainer,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.sm),
+          Text(
+            '${item.calidadNombre} · ${item.calidadCodigo}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(label: 'Orden', value: item.ordenCodigo),
+              _InlineInfo(
+                label: 'Lados registrados',
+                value: _formatDecimal(item.cantidadLadosCalculada),
+              ),
+              _InlineInfo(label: 'Unidad', value: 'Lado'),
+              _InlineInfo(
+                label: 'Fecha ingreso',
+                value: _formatDateTime(item.fechaIngreso),
+              ),
+            ],
+          ),
+          if ((item.observacion ?? '').trim().isNotEmpty) ...[
+            const Gap(AppSpacing.md),
+            Text(
+              item.observacion!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineInfo extends StatelessWidget {
+  const _InlineInfo({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: 170,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.xs),
+          Text(value, style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailCard extends StatelessWidget {
+  const _DetailCard({required this.title, required this.lines});
+
+  final String title;
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 270,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: theme.textTheme.titleMedium),
+          const Gap(AppSpacing.md),
+          for (final line in lines) ...[
+            Text(line, style: theme.textTheme.bodyMedium),
+            const Gap(AppSpacing.sm),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(color: foreground),
+      ),
+    );
+  }
+}
+
+class _MiniPill extends StatelessWidget {
+  const _MiniPill({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: foreground),
+      ),
+    );
+  }
+}
+
+class _CenteredMessage extends StatelessWidget {
+  const _CenteredMessage({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: child,
+      ),
+    );
+  }
+}
+
+String _formatDecimal(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toStringAsFixed(0);
+  }
+  return value.toStringAsFixed(2);
+}
+
+String _formatSignedDecimal(double value) {
+  final prefix = value > 0 ? '+' : '';
+  return '$prefix${_formatDecimal(value)}';
+}
+
+String _formatCurrency(double value) {
+  return 'S/ ${value.toStringAsFixed(2)}';
+}
+
+String _formatDate(DateTime value) {
+  return DateFormat('dd/MM/yyyy').format(value.toLocal());
+}
+
+String _formatDateTime(DateTime value) {
+  return DateFormat('dd/MM/yyyy hh:mm a').format(value.toLocal());
+}
+
+String _formatOptionalDate(DateTime? value) {
+  if (value == null) {
+    return 'Sin fecha';
+  }
+  return _formatDate(value);
+}
+
+String _formatOptionalDateTime(DateTime? value) {
+  if (value == null) {
+    return 'Sin registro';
+  }
+  return _formatDateTime(value);
+}

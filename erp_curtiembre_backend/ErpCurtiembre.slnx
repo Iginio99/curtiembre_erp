@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ErpCurtiembre.Api/ErpCurtiembre.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Integration/">
+    <Project Path="tests/Integration/ErpCurtiembre.Api.IntegrationTests/ErpCurtiembre.Api.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
