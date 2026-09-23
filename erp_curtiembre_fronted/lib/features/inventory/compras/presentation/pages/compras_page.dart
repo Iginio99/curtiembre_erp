@@ -310,7 +310,7 @@ class _ComprasPageState extends State<ComprasPage> {
                                   )
                                 : listPanel,
                           ),
-                          if (!isMobile) ...[
+                          if (!isWide && !isMobile) ...[
                             const Gap(AppSpacing.xl),
                             SizedBox(height: 560, child: detailPanel),
                           ],
@@ -508,13 +508,14 @@ class _ComprasFilterControls {
     width: 280,
     child: DropdownButtonFormField<int?>(
       initialValue: state.proveedorIdFilter,
+      isExpanded: true,
       decoration: const InputDecoration(labelText: 'Proveedor'),
       items: [
         const DropdownMenuItem<int?>(value: null, child: Text('Todos')),
         ...state.proveedores.map(
           (item) => DropdownMenuItem<int?>(
             value: item.id,
-            child: Text(item.displayName),
+            child: Text(item.displayName, overflow: TextOverflow.ellipsis),
           ),
         ),
       ],
@@ -526,6 +527,7 @@ class _ComprasFilterControls {
     width: 220,
     child: DropdownButtonFormField<String?>(
       initialValue: state.estadoFilter,
+      isExpanded: true,
       decoration: const InputDecoration(labelText: 'Estado'),
       items: const [
         DropdownMenuItem<String?>(value: null, child: Text('Todos')),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
@@ -31,6 +33,7 @@ class InsumosPage extends StatefulWidget {
 class _InsumosPageState extends State<InsumosPage> {
   final _searchController = TextEditingController();
   final Talker _talker = getIt<Talker>();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -40,18 +43,25 @@ class _InsumosPageState extends State<InsumosPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _applySearch() {
-    FocusScope.of(context).unfocus();
-    _talker.ui(
-      'Se aplico la busqueda de insumos con texto=${_describeText(_searchController.text)}.',
-    );
-    context.read<InsumosCubit>().load(
-      searchTerm: _searchController.text.trim(),
-    );
+  void _searchAsYouType(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+
+      final searchTerm = value.trim();
+      if (searchTerm == context.read<InsumosCubit>().state.searchTerm) return;
+
+      _talker.ui(
+        'Se filtro la lista de insumos con texto=${_describeText(searchTerm)}.',
+        logLevel: LogLevel.debug,
+      );
+      context.read<InsumosCubit>().load(searchTerm: searchTerm);
+    });
   }
 
   void _selectInsumo(int insumoId, {required bool openMobileDetail}) {
@@ -282,7 +292,7 @@ class _InsumosPageState extends State<InsumosPage> {
                       isCompact: isMobile,
                       isLoading: state.status == InsumosStatus.loading,
                       isSubmittingAction: state.isSubmittingAction,
-                      onSearch: _applySearch,
+                      onSearchChanged: _searchAsYouType,
                       onCreateInsumo: () => _openCreateDialog(state),
                       onActivityFilterChanged: (filter) => context
                           .read<InsumosCubit>()
@@ -315,7 +325,7 @@ class _InsumosPageState extends State<InsumosPage> {
                                   )
                                 : listPanel,
                           ),
-                          if (!isMobile) ...[
+                          if (!isWide && !isMobile) ...[
                             const Gap(AppSpacing.xl),
                             SizedBox(height: 560, child: detailPanel),
                           ],
@@ -375,7 +385,7 @@ class _InsumosFiltersCard extends StatelessWidget {
     required this.isCompact,
     required this.isLoading,
     required this.isSubmittingAction,
-    required this.onSearch,
+    required this.onSearchChanged,
     required this.onCreateInsumo,
     required this.onActivityFilterChanged,
     required this.onStockBajoChanged,
@@ -387,7 +397,7 @@ class _InsumosFiltersCard extends StatelessWidget {
   final bool isCompact;
   final bool isLoading;
   final bool isSubmittingAction;
-  final VoidCallback onSearch;
+  final ValueChanged<String> onSearchChanged;
   final VoidCallback onCreateInsumo;
   final ValueChanged<InsumoActivityFilter> onActivityFilterChanged;
   final ValueChanged<bool> onStockBajoChanged;
@@ -411,7 +421,7 @@ class _InsumosFiltersCard extends StatelessWidget {
                   child: _InsumosSearchField(
                     controller: controller,
                     isLoading: isLoading,
-                    onSearch: onSearch,
+                    onChanged: onSearchChanged,
                   ),
                 ),
                 const Gap(AppSpacing.sm),
@@ -434,7 +444,7 @@ class _InsumosFiltersCard extends StatelessWidget {
                 final search = _InsumosSearchField(
                   controller: controller,
                   isLoading: isLoading,
-                  onSearch: onSearch,
+                  onChanged: onSearchChanged,
                 );
                 final action = FilledButton.icon(
                   onPressed: state.unitOptions.isEmpty ? null : onCreateInsumo,
@@ -600,18 +610,17 @@ class _InsumosSearchField extends StatelessWidget {
   const _InsumosSearchField({
     required this.controller,
     required this.isLoading,
-    required this.onSearch,
+    required this.onChanged,
   });
 
   final TextEditingController controller;
   final bool isLoading;
-  final VoidCallback onSearch;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) => TextField(
     controller: controller,
-    textInputAction: TextInputAction.search,
-    onSubmitted: (_) => onSearch(),
+    onChanged: onChanged,
     decoration: InputDecoration(
       isDense: true,
       hintText: 'Buscar por código o nombre...',
@@ -625,10 +634,15 @@ class _InsumosSearchField extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
+          : controller.text.isEmpty
+          ? null
           : IconButton(
-              tooltip: 'Aplicar búsqueda',
-              onPressed: onSearch,
-              icon: const Icon(Icons.arrow_forward_rounded),
+              tooltip: 'Limpiar búsqueda',
+              onPressed: () {
+                controller.clear();
+                onChanged('');
+              },
+              icon: const Icon(Icons.close_rounded),
             ),
     ),
   );
@@ -707,27 +721,144 @@ class _InsumosListPanel extends StatelessWidget {
                               'No encontramos insumos con los filtros actuales.',
                         ),
                       )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md,
-                          AppSpacing.xs,
-                          AppSpacing.md,
-                          AppSpacing.md,
-                        ),
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _InsumoListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedInsumoId,
-                            onTap: () => onSelectInsumo(item.id),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth < 680) {
+                            return ListView.separated(
+                              itemCount: state.items.length,
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.md,
+                                AppSpacing.xs,
+                                AppSpacing.md,
+                                AppSpacing.md,
+                              ),
+                              separatorBuilder: (_, _) =>
+                                  const Gap(AppSpacing.sm),
+                              itemBuilder: (context, index) {
+                                final item = state.items[index];
+                                return _InsumoListTileCard(
+                                  item: item,
+                                  isSelected: item.id == state.selectedInsumoId,
+                                  onTap: () => onSelectInsumo(item.id),
+                                );
+                              },
+                            );
+                          }
+
+                          return _InsumosDataTable(
+                            items: state.items,
+                            selectedInsumoId: state.selectedInsumoId,
+                            onSelectInsumo: onSelectInsumo,
                           );
                         },
                       ),
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _InsumosDataTable extends StatelessWidget {
+  const _InsumosDataTable({
+    required this.items,
+    required this.selectedInsumoId,
+    required this.onSelectInsumo,
+  });
+
+  final List<InsumoRecord> items;
+  final int? selectedInsumoId;
+  final ValueChanged<int> onSelectInsumo;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scrollbar(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.xs,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            showCheckboxColumn: false,
+            headingRowColor: WidgetStatePropertyAll(
+              theme.colorScheme.surfaceContainerHighest,
+            ),
+            dataRowMinHeight: 56,
+            dataRowMaxHeight: 64,
+            columns: const [
+              DataColumn(label: Text('Código')),
+              DataColumn(label: Text('Nombre')),
+              DataColumn(label: Text('Tipo')),
+              DataColumn(label: Text('Unidad')),
+              DataColumn(label: Text('Stock'), numeric: true),
+              DataColumn(label: Text('Estado')),
+            ],
+            rows: items.map((item) {
+              final isSelected = item.id == selectedInsumoId;
+              return DataRow(
+                selected: isSelected,
+                onSelectChanged: (_) => onSelectInsumo(item.id),
+                cells: [
+                  DataCell(
+                    Text(
+                      item.codigo,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 220),
+                      child: Text(
+                        item.nombre,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  DataCell(Text(_tipoBienLabel(item.tipoBien))),
+                  DataCell(Text(item.unidadMedidaCodigo)),
+                  DataCell(
+                    Text(
+                      item.stockActual.toStringAsFixed(2),
+                      style: TextStyle(
+                        color: item.stockBajo
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurface,
+                        fontWeight: item.stockBajo
+                            ? FontWeight.w800
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    _StatusBadge(
+                      label: item.activo ? 'Activo' : 'Inactivo',
+                      icon: item.activo
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.block_outlined,
+                      background: item.activo
+                          ? theme.colorScheme.primaryContainer
+                          : theme.colorScheme.surfaceContainerHighest,
+                      foreground: item.activo
+                          ? theme.colorScheme.onPrimaryContainer
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }

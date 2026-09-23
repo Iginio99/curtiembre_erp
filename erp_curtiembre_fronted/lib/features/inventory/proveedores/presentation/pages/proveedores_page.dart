@@ -275,7 +275,7 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
                                   )
                                 : listPanel,
                           ),
-                          if (!isMobile) ...[
+                          if (!isWide && !isMobile) ...[
                             const Gap(AppSpacing.xl),
                             SizedBox(height: 560, child: detailPanel),
                           ],

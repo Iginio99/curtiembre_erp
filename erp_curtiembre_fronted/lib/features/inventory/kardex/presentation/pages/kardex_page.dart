@@ -266,6 +266,7 @@ class _KardexFiltersCard extends StatelessWidget {
                 width: 280,
                 child: DropdownButtonFormField<int?>(
                   initialValue: state.selectedInsumoId,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Insumo'),
                   items: [
                     const DropdownMenuItem<int?>(
@@ -275,7 +276,10 @@ class _KardexFiltersCard extends StatelessWidget {
                     ...state.insumos.map(
                       (item) => DropdownMenuItem<int?>(
                         value: item.id,
-                        child: Text(item.displayName),
+                        child: Text(
+                          item.displayName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -286,6 +290,7 @@ class _KardexFiltersCard extends StatelessWidget {
                 width: 220,
                 child: DropdownButtonFormField<String?>(
                   initialValue: state.tipoMovimientoFilter,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de movimiento',
                   ),
@@ -310,6 +315,7 @@ class _KardexFiltersCard extends StatelessWidget {
                 width: 220,
                 child: DropdownButtonFormField<String?>(
                   initialValue: state.documentoTipoFilter,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Documento tipo',
                   ),
