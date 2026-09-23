@@ -11,7 +11,6 @@ public sealed class CierreProduccionService(
     IOrdenProduccionRepository ordenProduccionRepository,
     ICierreProduccionRepository cierreProduccionRepository,
     ICalidadProductoLookupRepository calidadProductoLookupRepository,
-    IUsuarioLookupRepository usuarioLookupRepository,
     IDocumentSequenceService documentSequenceService,
     IDateTimeProvider dateTimeProvider)
 {
