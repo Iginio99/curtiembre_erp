@@ -343,70 +343,6 @@ class _ClientesPageState extends State<ClientesPage> {
   }
 }
 
-class _ClientesHeader extends StatelessWidget {
-  const _ClientesHeader({
-    required this.totalItems,
-    required this.sessionUserName,
-  });
-
-  final int totalItems;
-  final String? sessionUserName;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Wrap(
-        spacing: AppSpacing.xl,
-        runSpacing: AppSpacing.lg,
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Administra la base comercial que alimenta lotes y ordenes de produccion.',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    height: 1.12,
-                  ),
-                ),
-                const Gap(AppSpacing.sm),
-                Text(
-                  'Aqui conviene mantener limpia la identidad del cliente, su contacto y su vigencia operativa antes de asociarlo a nuevos lotes.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.88),
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              _SummaryBadge(label: 'Clientes visibles', value: '$totalItems'),
-              if (sessionUserName != null)
-                _SummaryBadge(label: 'Sesion actual', value: sessionUserName!),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ClientesFiltersCard extends StatelessWidget {
   const _ClientesFiltersCard({
     required this.controller,
@@ -620,15 +556,6 @@ class _ClienteDetailPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Detalle del cliente', style: theme.textTheme.titleLarge),
-            const Gap(AppSpacing.xs),
-            Text(
-              'Revisa identidad comercial, datos de contacto y vigencia para nuevos lotes y ordenes.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Gap(AppSpacing.lg),
             Expanded(
               child: Builder(
                 builder: (context) {
@@ -670,89 +597,112 @@ class _ClienteDetailPanel extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Wrap(
-                          spacing: AppSpacing.md,
-                          runSpacing: AppSpacing.md,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                        Row(
                           children: [
-                            Text(
-                              cliente.razonSocial,
-                              style: theme.textTheme.headlineSmall,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    spacing: AppSpacing.sm,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        cliente.razonSocial,
+                                        style: theme.textTheme.titleLarge,
+                                      ),
+                                      _StatusBadge(
+                                        label: cliente.activo
+                                            ? 'Activo'
+                                            : 'Inactivo',
+                                        icon: cliente.activo
+                                            ? Icons.verified_outlined
+                                            : Icons.block_outlined,
+                                        background: cliente.activo
+                                            ? theme.colorScheme.primaryContainer
+                                            : theme
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                        foreground: cliente.activo
+                                            ? theme
+                                                  .colorScheme
+                                                  .onPrimaryContainer
+                                            : theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                      ),
+                                    ],
+                                  ),
+                                  const Gap(AppSpacing.xs),
+                                  Text(
+                                    cliente.rucDocumento,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            _StatusBadge(
-                              label: cliente.activo ? 'Activo' : 'Inactivo',
-                              icon: cliente.activo
-                                  ? Icons.verified_outlined
-                                  : Icons.block_outlined,
-                              background: cliente.activo
-                                  ? theme.colorScheme.primaryContainer
-                                  : theme.colorScheme.surfaceContainerHighest,
-                              foreground: cliente.activo
-                                  ? theme.colorScheme.onPrimaryContainer
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ],
-                        ),
-                        const Gap(AppSpacing.xs),
-                        Text(
-                          cliente.rucDocumento,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const Gap(AppSpacing.lg),
-                        Wrap(
-                          spacing: AppSpacing.md,
-                          runSpacing: AppSpacing.md,
-                          children: [
                             AppButton.secondary(
-                              label: 'Editar cliente',
+                              label: 'Editar',
                               icon: Icons.edit_outlined,
                               isLoading: state.isSubmittingAction,
                               onPressed: onEdit,
                             ),
-                            AppButton.secondary(
-                              label: cliente.activo
-                                  ? 'Inactivar cliente'
-                                  : 'Activar cliente',
-                              icon: cliente.activo
-                                  ? Icons.block_outlined
-                                  : Icons.check_circle_outline,
-                              isLoading: state.isSubmittingAction,
-                              onPressed: onToggleState,
-                            ),
                           ],
                         ),
-                        const Gap(AppSpacing.xl),
-                        Wrap(
-                          spacing: AppSpacing.lg,
-                          runSpacing: AppSpacing.lg,
-                          children: [
-                            _DetailCard(
-                              title: 'Identidad',
-                              lines: [
-                                'ID: ${cliente.id}',
-                                'Documento: ${cliente.rucDocumento}',
-                                'Razon social: ${cliente.razonSocial}',
-                              ],
-                            ),
-                            _DetailCard(
-                              title: 'Contacto',
-                              lines: [
-                                'Persona: ${cliente.contacto ?? 'Sin contacto'}',
-                                'Celular: ${cliente.celular ?? 'Sin celular'}',
-                                'Correo: ${cliente.correo ?? 'Sin correo'}',
-                              ],
-                            ),
-                            _DetailCard(
-                              title: 'Ubicacion y trazabilidad',
-                              lines: [
-                                'Direccion: ${cliente.direccion ?? 'Sin direccion'}',
-                                'Creado: ${_formatDateTime(cliente.creadoEn)}',
-                                'Actualizado: ${_formatOptionalDate(cliente.actualizadoEn)}',
-                              ],
-                            ),
-                          ],
+                        const Gap(AppSpacing.lg),
+                        const Divider(),
+                        const Gap(AppSpacing.md),
+                        Text(
+                          'Informacion comercial',
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        const Gap(AppSpacing.md),
+                        _ClienteDetailRow(label: 'ID', value: '${cliente.id}'),
+                        _ClienteDetailRow(
+                          label: 'Contacto',
+                          value: cliente.contacto ?? 'Sin contacto',
+                        ),
+                        _ClienteDetailRow(
+                          label: 'Celular',
+                          value: cliente.celular ?? 'Sin celular',
+                        ),
+                        _ClienteDetailRow(
+                          label: 'Correo',
+                          value: cliente.correo ?? 'Sin correo',
+                        ),
+                        _ClienteDetailRow(
+                          label: 'Direccion',
+                          value: cliente.direccion ?? 'Sin direccion',
+                        ),
+                        const Gap(AppSpacing.md),
+                        const Divider(),
+                        const Gap(AppSpacing.md),
+                        Text('Trazabilidad', style: theme.textTheme.titleSmall),
+                        const Gap(AppSpacing.md),
+                        _ClienteDetailRow(
+                          label: 'Creado',
+                          value: _formatDateTime(cliente.creadoEn),
+                        ),
+                        _ClienteDetailRow(
+                          label: 'Actualizado',
+                          value: _formatOptionalDate(cliente.actualizadoEn),
+                        ),
+                        const Gap(AppSpacing.md),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: AppButton.secondary(
+                            label: cliente.activo
+                                ? 'Inactivar cliente'
+                                : 'Activar cliente',
+                            icon: cliente.activo
+                                ? Icons.block_outlined
+                                : Icons.check_circle_outline,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onToggleState,
+                          ),
                         ),
                       ],
                     ),
@@ -788,7 +738,7 @@ class _ClienteListTileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primaryContainer.withValues(alpha: 0.68)
@@ -827,7 +777,7 @@ class _ClienteListTileCard extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const Gap(AppSpacing.md),
+              const Gap(AppSpacing.sm),
               Text(
                 item.contacto ??
                     item.correo ??
@@ -846,33 +796,30 @@ class _ClienteListTileCard extends StatelessWidget {
   }
 }
 
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.lines});
+class _ClienteDetailRow extends StatelessWidget {
+  const _ClienteDetailRow({required this.label, required this.value});
 
-  final String title;
-  final List<String> lines;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      width: 260,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
         children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const Gap(AppSpacing.md),
-          for (final line in lines) ...[
-            Text(line, style: theme.textTheme.bodyMedium),
-            const Gap(AppSpacing.sm),
-          ],
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );
@@ -947,42 +894,6 @@ class _MiniPill extends StatelessWidget {
         style: Theme.of(
           context,
         ).textTheme.labelMedium?.copyWith(color: foreground),
-      ),
-    );
-  }
-}
-
-class _SummaryBadge extends StatelessWidget {
-  const _SummaryBadge({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.82),
-            ),
-          ),
-          const Gap(AppSpacing.xs),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
-          ),
-        ],
       ),
     );
   }

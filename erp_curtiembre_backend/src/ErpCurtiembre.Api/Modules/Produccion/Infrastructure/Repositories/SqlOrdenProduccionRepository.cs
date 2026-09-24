@@ -437,7 +437,7 @@ public sealed class SqlOrdenProduccionRepository(
         var hasActiveOrders = await dbContext.OrdenesProduccion.AnyAsync(
             x => x.LoteId == loteId &&
                  (!excludeOrderId.HasValue || x.Id != excludeOrderId.Value) &&
-                 (x.Estado == "BORRADOR" || x.Estado == "ESPERANDO_MATERIALES" || x.Estado == "LISTA_PARA_INICIAR" || x.Estado == "EN_PROCESO"),
+                 (x.Estado == "PROGRAMADA" || x.Estado == "ESPERANDO_MATERIALES" || x.Estado == "LISTA_PARA_INICIAR" || x.Estado == "EN_PROCESO"),
             cancellationToken);
 
         return hasActiveOrders ? "EN_PRODUCCION" : "DISPONIBLE";

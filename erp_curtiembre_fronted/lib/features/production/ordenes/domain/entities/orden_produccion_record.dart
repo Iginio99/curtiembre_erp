@@ -57,8 +57,9 @@ class OrdenProduccionRecord extends Equatable {
     return procesosFinalizados / procesosTotales;
   }
 
-  bool get canStart => estado == 'BORRADOR';
-  bool get canCancel => estado == 'BORRADOR' || estado == 'LISTA_PARA_INICIAR';
+  bool get canStart => estado == 'PROGRAMADA';
+  bool get canCancel =>
+      estado == 'PROGRAMADA' || estado == 'LISTA_PARA_INICIAR';
 
   @override
   List<Object?> get props => [

@@ -192,7 +192,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.CalidadProductoId).HasColumnName("calidad_producto_id");
             entity.Property(x => x.FechaIngreso).HasColumnName("fecha_ingreso");
             entity.Property(x => x.CantidadPielesBuenas).HasColumnName("cantidad_pieles_buenas").HasPrecision(18, 4);
-            entity.Property(x => x.CantidadLados).HasColumnName("cantidad_lados").HasPrecision(18, 2);
+            entity.Property(x => x.CantidadLados).HasColumnName("cantidad_lados_calculada").HasPrecision(18, 4);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(30);
             entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
         });

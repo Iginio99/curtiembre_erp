@@ -1007,22 +1007,15 @@ class _InsumoDetailPanel extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Gap(AppSpacing.xl),
+                      const Gap(AppSpacing.lg),
                       Wrap(
                         spacing: AppSpacing.lg,
                         runSpacing: AppSpacing.lg,
                         children: [
                           _DetailCard(
-                            title: 'Identidad',
-                            lines: [
-                              'ID: ${insumo.id}',
-                              'Codigo: ${insumo.codigo}',
-                              'Tipo: ${_tipoBienLabel(insumo.tipoBien)}',
-                            ],
-                          ),
-                          _DetailCard(
                             title: 'Operacion',
                             lines: [
+                              'Tipo: ${_tipoBienLabel(insumo.tipoBien)}',
                               'Unidad: ${insumo.unidadMedidaCodigo} · ${insumo.unidadMedidaNombre}',
                               'Presentacion: ${insumo.presentacion ?? 'Sin presentacion'}',
                               'Requiere lote: ${insumo.requiereLote ? 'Si' : 'No'}',

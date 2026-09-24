@@ -325,15 +325,6 @@ class _UsersPageState extends State<UsersPage> {
     );
   }
 
-  String _describeSearchTerm(String value) {
-    final normalized = value.trim();
-    if (normalized.isEmpty) {
-      return 'vacio';
-    }
-
-    return '${normalized.length} caracteres';
-  }
-
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);

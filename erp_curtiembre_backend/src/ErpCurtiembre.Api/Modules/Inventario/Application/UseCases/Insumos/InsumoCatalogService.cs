@@ -39,8 +39,9 @@ public sealed class InsumoCatalogService(
         long? actorId,
         CancellationToken cancellationToken)
     {
+        var codigo = await insumoRepository.GenerateNextCodeAsync(cancellationToken);
         var errors = await ValidateRequestAsync(
-            request.Codigo,
+            codigo,
             request.Nombre,
             request.TipoBien,
             request.Presentacion,
@@ -57,7 +58,7 @@ public sealed class InsumoCatalogService(
         var id = await insumoRepository.CreateAsync(
             new Insumo
             {
-                Codigo = request.Codigo.Trim(),
+                Codigo = codigo,
                 Nombre = request.Nombre.Trim(),
                 TipoBien = request.TipoBien.Trim().ToUpperInvariant(),
                 Presentacion = NormalizeNullable(request.Presentacion),
@@ -88,7 +89,7 @@ public sealed class InsumoCatalogService(
         }
 
         var errors = await ValidateRequestAsync(
-            request.Codigo,
+            existing.Codigo,
             request.Nombre,
             request.TipoBien,
             request.Presentacion,
@@ -106,7 +107,7 @@ public sealed class InsumoCatalogService(
             new Insumo
             {
                 Id = id,
-                Codigo = request.Codigo.Trim(),
+                Codigo = existing.Codigo,
                 Nombre = request.Nombre.Trim(),
                 TipoBien = request.TipoBien.Trim().ToUpperInvariant(),
                 Presentacion = NormalizeNullable(request.Presentacion),

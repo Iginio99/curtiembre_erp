@@ -42,6 +42,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
   final _searchController = TextEditingController();
   final _estadoController = TextEditingController();
   final Talker _talker = getIt<Talker>();
+  bool _showOrderDetail = false;
 
   @override
   void initState() {
@@ -511,7 +512,6 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                 constraints: const BoxConstraints(maxWidth: 1520),
                 child: BlocBuilder<OrdenesProduccionCubit, OrdenesProduccionState>(
                   builder: (context, state) {
-                    final isWide = constraints.maxWidth >= 1040;
                     final compactHeight = constraints.maxHeight < 900;
 
                     if (_searchController.text != state.searchTerm) {
@@ -532,7 +532,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                       );
                     }
 
-                    final listPanel = _OrdenesListPanel(
+                    final ordersBoard = _OrdersPipelineBoard(
                       state: state,
                       onRetry: () {
                         _talker.ui(
@@ -548,6 +548,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                         context.read<OrdenesProduccionCubit>().selectOrden(
                           ordenId,
                         );
+                        setState(() => _showOrderDetail = true);
                       },
                     );
 
@@ -616,64 +617,35 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                       const Gap(AppSpacing.xl),
                     ];
 
-                    if (compactHeight) {
-                      if (isWide) {
-                        return SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ...headerAndFilters,
-                              SizedBox(
-                                height: 700,
-                                child: Row(
-                                  children: [
-                                    Expanded(flex: 9, child: listPanel),
-                                    const Gap(AppSpacing.xl),
-                                    Expanded(flex: 10, child: detailPanel),
-                                  ],
-                                ),
-                              ),
-                            ],
+                    if (_showOrderDetail) {
+                      final detailView = Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () =>
+                                setState(() => _showOrderDetail = false),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            label: const Text('Volver al pipeline de ordenes'),
                           ),
-                        );
-                      }
-
-                      return SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ...headerAndFilters,
-                            SizedBox(height: 520, child: listPanel),
-                            const Gap(AppSpacing.xl),
-                            SizedBox(height: 760, child: detailPanel),
-                          ],
-                        ),
+                          const Gap(AppSpacing.md),
+                          Expanded(child: detailPanel),
+                        ],
                       );
+
+                      if (!compactHeight) return detailView;
+                      return SizedBox(height: 1050, child: detailView);
                     }
 
-                    return Column(
+                    final boardView = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ...headerAndFilters,
-                        Expanded(
-                          child: isWide
-                              ? Row(
-                                  children: [
-                                    Expanded(flex: 9, child: listPanel),
-                                    const Gap(AppSpacing.xl),
-                                    Expanded(flex: 10, child: detailPanel),
-                                  ],
-                                )
-                              : Column(
-                                  children: [
-                                    Expanded(child: listPanel),
-                                    const Gap(AppSpacing.xl),
-                                    Expanded(child: detailPanel),
-                                  ],
-                                ),
-                        ),
+                        Expanded(child: ordersBoard),
                       ],
                     );
+
+                    if (!compactHeight) return boardView;
+                    return SizedBox(height: 760, child: boardView);
                   },
                 ),
               ),
@@ -760,6 +732,7 @@ class _OrdenesFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 320,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.selectedClienteId,
                   decoration: const InputDecoration(labelText: 'Cliente'),
                   items: [
@@ -770,7 +743,11 @@ class _OrdenesFiltersCard extends StatelessWidget {
                     ...state.clienteOptions.map(
                       (option) => DropdownMenuItem<int?>(
                         value: option.id,
-                        child: Text(option.label),
+                        child: Text(
+                          option.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -780,6 +757,7 @@ class _OrdenesFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 360,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.selectedLoteId,
                   decoration: const InputDecoration(labelText: 'Lote'),
                   items: [
@@ -790,7 +768,11 @@ class _OrdenesFiltersCard extends StatelessWidget {
                     ...state.loteOptions.map(
                       (option) => DropdownMenuItem<int?>(
                         value: option.id,
-                        child: Text(option.label),
+                        child: Text(
+                          option.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -1045,34 +1027,10 @@ class _OrdenDetailPanel extends StatelessWidget {
                         runSpacing: AppSpacing.md,
                         children: [
                           AppButton.secondary(
-                            label: 'Iniciar orden',
-                            icon: Icons.play_circle_outline,
-                            isLoading: state.isSubmittingAction,
-                            onPressed: onStartOrden,
-                          ),
-                          AppButton.secondary(
                             label: 'Anular orden',
                             icon: Icons.cancel_outlined,
                             isLoading: state.isSubmittingAction,
                             onPressed: onCancelOrden,
-                          ),
-                          AppButton.secondary(
-                            label: 'Calcular planificado',
-                            icon: Icons.auto_graph_outlined,
-                            isLoading: state.isSubmittingAction,
-                            onPressed: onGeneratePlannedConsumption,
-                          ),
-                          AppButton.secondary(
-                            label: 'Registrar calidad',
-                            icon: Icons.verified_outlined,
-                            isLoading: state.isSubmittingAction,
-                            onPressed: onRegisterCalidadFinal,
-                          ),
-                          AppButton.secondary(
-                            label: 'Finalizar orden',
-                            icon: Icons.task_alt_outlined,
-                            isLoading: state.isSubmittingAction,
-                            onPressed: onFinalizeOrden,
                           ),
                         ],
                       ),
@@ -1147,31 +1105,32 @@ class _OrdenDetailPanel extends StatelessWidget {
                       ],
                       const Gap(AppSpacing.xl),
                       Text(
-                        'Secuencia de procesos',
+                        'Pipeline de produccion',
                         style: theme.textTheme.titleLarge,
                       ),
-                      const Gap(AppSpacing.md),
-                      ...state.selectedProcesos.map(
-                        (proceso) => Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: _ProcesoCard(
-                            proceso: proceso,
-                            isSubmitting: state.isSubmittingAction,
-                            onStart: proceso.canStart
-                                ? () => onStartProceso(proceso)
-                                : null,
-                            onFinish: proceso.canFinish
-                                ? () => onFinishProceso(proceso)
-                                : null,
-                            onEditObservation: () => onEditObservacion(proceso),
-                            onRequestConsumption: proceso.estado == 'PENDIENTE'
-                                ? null
-                                : () => onRequestConsumption(proceso),
-                            onRegisterMerma: proceso.estado == 'PENDIENTE'
-                                ? null
-                                : () => onRegisterMerma(proceso),
-                          ),
+                      const Gap(AppSpacing.xs),
+                      Text(
+                        'Cada etapa se habilita al finalizar la anterior. Configura fechas, responsable e insumos sin perder la secuencia.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                      const Gap(AppSpacing.md),
+                      _ProcessPipeline(
+                        procesos: state.selectedProcesos,
+                        planificados: state.consumoPlanificado,
+                        consumos: state.consumoReal,
+                        isSubmitting: state.isSubmittingAction,
+                        onStart: onStartProceso,
+                        onFinish: onFinishProceso,
+                        onEditObservation: onEditObservacion,
+                        onRequestConsumption: onRequestConsumption,
+                        onRegisterMerma: onRegisterMerma,
+                        onStartOrder: onStartOrden,
+                        onCalculatePlanned: onGeneratePlannedConsumption,
+                        onRegisterQuality: onRegisterCalidadFinal,
+                        onFinalizeOrder: onFinalizeOrden,
+                        hasQuality: state.controlCalidad != null,
                       ),
                       const Gap(AppSpacing.xl),
                       _ConsumptionSection(
@@ -1295,6 +1254,148 @@ class _OrdenDetailPanel extends StatelessWidget {
   }
 }
 
+class _OrdersPipelineBoard extends StatelessWidget {
+  const _OrdersPipelineBoard({
+    required this.state,
+    required this.onRetry,
+    required this.onSelectOrden,
+  });
+
+  final OrdenesProduccionState state;
+  final VoidCallback onRetry;
+  final ValueChanged<int> onSelectOrden;
+
+  static const _stages = <({String title, Set<String> states})>[
+    (title: 'Programadas', states: {'PROGRAMADA'}),
+    (
+      title: 'Preparacion',
+      states: {'ESPERANDO_MATERIALES', 'LISTA_PARA_INICIAR'},
+    ),
+    (title: 'En proceso', states: {'EN_PROCESO'}),
+    (title: 'Finalizadas', states: {'FINALIZADA'}),
+    (title: 'Anuladas', states: {'ANULADA', 'CANCELADA'}),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.status == OrdenesProduccionStatus.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.status == OrdenesProduccionStatus.error) {
+      return _CenteredMessage(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppMessageCard.error(
+              title: 'No pudimos cargar las ordenes',
+              message: state.errorMessage ?? 'Intenta nuevamente.',
+            ),
+            const Gap(AppSpacing.md),
+            AppButton.secondary(
+              label: 'Reintentar',
+              icon: Icons.refresh_rounded,
+              onPressed: onRetry,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final stage in _stages) ...[
+            _OrderPipelineColumn(
+              title: stage.title,
+              items: state.items
+                  .where((item) => stage.states.contains(item.estado))
+                  .toList(growable: false),
+              onSelectOrden: onSelectOrden,
+            ),
+            const Gap(AppSpacing.md),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderPipelineColumn extends StatelessWidget {
+  const _OrderPipelineColumn({
+    required this.title,
+    required this.items,
+    required this.onSelectOrden,
+  });
+
+  final String title;
+  final List<OrdenProduccionRecord> items;
+  final ValueChanged<int> onSelectOrden;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 285,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const Gap(AppSpacing.sm),
+              Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
+              _MiniPill(
+                label: '${items.length}',
+                background: theme.colorScheme.surfaceContainerHighest,
+                foreground: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Expanded(
+            child: items.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin ordenes',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return _OrdenListTileCard(
+                        item: item,
+                        isSelected: false,
+                        onTap: () => onSelectOrden(item.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _OrdenListTileCard extends StatelessWidget {
   const _OrdenListTileCard({
     required this.item,
@@ -1375,6 +1476,9 @@ class _ProcesoCard extends StatelessWidget {
     required this.onEditObservation,
     required this.onRequestConsumption,
     required this.onRegisterMerma,
+    required this.isLocked,
+    required this.planificados,
+    required this.consumos,
   });
 
   final OrdenProcesoRecord proceso;
@@ -1384,6 +1488,9 @@ class _ProcesoCard extends StatelessWidget {
   final VoidCallback onEditObservation;
   final VoidCallback? onRequestConsumption;
   final VoidCallback? onRegisterMerma;
+  final bool isLocked;
+  final List<ConsumoPlanificadoRecord> planificados;
+  final List<ConsumoRealRecord> consumos;
 
   @override
   Widget build(BuildContext context) {
@@ -1391,11 +1498,18 @@ class _ProcesoCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: isLocked
+            ? theme.colorScheme.surfaceContainerLow
+            : theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(
+          color: proceso.estado == 'EN_PROCESO'
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outlineVariant,
+          width: proceso.estado == 'EN_PROCESO' ? 2 : 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1410,7 +1524,7 @@ class _ProcesoCard extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
-                label: proceso.estado,
+                label: isLocked ? 'BLOQUEADO' : proceso.estado,
                 background: theme.colorScheme.surfaceContainerHighest,
                 foreground: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1424,6 +1538,27 @@ class _ProcesoCard extends StatelessWidget {
             ),
           ),
           const Gap(AppSpacing.md),
+          if (isLocked) ...[
+            Row(
+              children: [
+                Icon(
+                  Icons.lock_outline_rounded,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const Gap(AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Finaliza la etapa anterior para continuar.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(AppSpacing.md),
+          ],
           Wrap(
             spacing: AppSpacing.lg,
             runSpacing: AppSpacing.md,
@@ -1465,6 +1600,28 @@ class _ProcesoCard extends StatelessWidget {
               ),
             ),
           ],
+          const Gap(AppSpacing.md),
+          Divider(color: theme.colorScheme.outlineVariant),
+          const Gap(AppSpacing.sm),
+          Text('Insumos', style: theme.textTheme.titleSmall),
+          const Gap(AppSpacing.xs),
+          Text(
+            planificados.isEmpty
+                ? 'Sin insumos planificados'
+                : planificados.map((item) => item.insumoNombre).join(' · '),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(AppSpacing.xs),
+          Text(
+            '${planificados.length} planificados · ${consumos.length} consumidos',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
           const Gap(AppSpacing.lg),
           Wrap(
             spacing: AppSpacing.md,
@@ -1504,6 +1661,168 @@ class _ProcesoCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProcessPipeline extends StatefulWidget {
+  const _ProcessPipeline({
+    required this.procesos,
+    required this.planificados,
+    required this.consumos,
+    required this.isSubmitting,
+    required this.onStart,
+    required this.onFinish,
+    required this.onEditObservation,
+    required this.onRequestConsumption,
+    required this.onRegisterMerma,
+    required this.onStartOrder,
+    required this.onCalculatePlanned,
+    required this.onRegisterQuality,
+    required this.onFinalizeOrder,
+    required this.hasQuality,
+  });
+
+  final List<OrdenProcesoRecord> procesos;
+  final List<ConsumoPlanificadoRecord> planificados;
+  final List<ConsumoRealRecord> consumos;
+  final bool isSubmitting;
+  final ValueChanged<OrdenProcesoRecord> onStart;
+  final ValueChanged<OrdenProcesoRecord> onFinish;
+  final ValueChanged<OrdenProcesoRecord> onEditObservation;
+  final ValueChanged<OrdenProcesoRecord> onRequestConsumption;
+  final ValueChanged<OrdenProcesoRecord> onRegisterMerma;
+  final VoidCallback? onStartOrder;
+  final VoidCallback onCalculatePlanned;
+  final VoidCallback onRegisterQuality;
+  final VoidCallback onFinalizeOrder;
+  final bool hasQuality;
+
+  @override
+  State<_ProcessPipeline> createState() => _ProcessPipelineState();
+}
+
+class _ProcessPipelineState extends State<_ProcessPipeline> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final ordered = [...widget.procesos]
+      ..sort((a, b) => a.secuencia.compareTo(b.secuencia));
+    if (ordered.isEmpty) {
+      return const AppMessageCard.info(
+        title: 'Sin procesos configurados',
+        message: 'La orden no tiene una secuencia productiva disponible.',
+      );
+    }
+    if (_selectedIndex >= ordered.length) _selectedIndex = 0;
+
+    final proceso = ordered[_selectedIndex];
+    final isLocked =
+        _selectedIndex > 0 &&
+        ordered[_selectedIndex - 1].estado != 'FINALIZADO';
+    final stagePlanificados = widget.planificados
+        .where((item) => item.ordenProcesoId == proceso.id)
+        .toList(growable: false);
+    final stageConsumos = widget.consumos
+        .where((item) => item.ordenProcesoId == proceso.id)
+        .toList(growable: false);
+    final isLastStage = _selectedIndex == ordered.length - 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SegmentedButton<int>(
+            segments: [
+              for (var index = 0; index < ordered.length; index++)
+                ButtonSegment<int>(
+                  value: index,
+                  enabled:
+                      index == 0 || ordered[index - 1].estado == 'FINALIZADO',
+                  icon: Icon(
+                    ordered[index].estado == 'FINALIZADO'
+                        ? Icons.check_circle_rounded
+                        : index > 0 && ordered[index - 1].estado != 'FINALIZADO'
+                        ? Icons.lock_outline_rounded
+                        : Icons.circle_outlined,
+                  ),
+                  label: Text('${index + 1}. ${ordered[index].procesoNombre}'),
+                ),
+            ],
+            selected: {_selectedIndex},
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) {
+              setState(() => _selectedIndex = selection.first);
+            },
+          ),
+        ),
+        const Gap(AppSpacing.lg),
+        if (_selectedIndex == 0) ...[
+          AppMessageCard.info(
+            title: 'La produccion comienza en Remojo',
+            message:
+                'Calcula los insumos planificados y registra esta etapa para iniciar formalmente la orden.',
+          ),
+          const Gap(AppSpacing.md),
+          AppButton.secondary(
+            label: 'Calcular insumos planificados',
+            icon: Icons.auto_graph_outlined,
+            isLoading: widget.isSubmitting,
+            onPressed: widget.onCalculatePlanned,
+          ),
+          const Gap(AppSpacing.md),
+        ],
+        _ProcesoCard(
+          proceso: proceso,
+          isLocked: isLocked,
+          planificados: stagePlanificados,
+          consumos: stageConsumos,
+          isSubmitting: widget.isSubmitting,
+          onStart: !isLocked && proceso.canStart
+              ? (_selectedIndex == 0 && widget.onStartOrder != null
+                    ? widget.onStartOrder
+                    : () => widget.onStart(proceso))
+              : null,
+          onFinish: !isLocked && proceso.canFinish
+              ? () => widget.onFinish(proceso)
+              : null,
+          onEditObservation: () => widget.onEditObservation(proceso),
+          onRequestConsumption: !isLocked && proceso.estado != 'PENDIENTE'
+              ? () => widget.onRequestConsumption(proceso)
+              : null,
+          onRegisterMerma: !isLocked && proceso.estado != 'PENDIENTE'
+              ? () => widget.onRegisterMerma(proceso)
+              : null,
+        ),
+        if (isLastStage) ...[
+          const Gap(AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
+            children: [
+              AppButton.secondary(
+                label: 'Registrar calidad final',
+                icon: Icons.verified_outlined,
+                isLoading: widget.isSubmitting,
+                onPressed: proceso.estado == 'FINALIZADO'
+                    ? widget.onRegisterQuality
+                    : null,
+              ),
+              AppButton.primary(
+                label: 'Generar producto terminado',
+                icon: Icons.inventory_2_outlined,
+                isLoading: widget.isSubmitting,
+                onPressed: proceso.estado == 'FINALIZADO' && widget.hasQuality
+                    ? widget.onFinalizeOrder
+                    : null,
+                expand: false,
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

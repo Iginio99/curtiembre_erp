@@ -137,7 +137,7 @@ public sealed class OrdenProduccionService(
                 FechaInicioPlanificada = request.FechaInicioPlanificada?.Date,
                 FechaFinEstimada = request.FechaFinEstimada.Date,
                 ResponsableUsuarioId = responsable?.Id,
-                Estado = "BORRADOR",
+                Estado = "PROGRAMADA",
                 Observacion = NormalizeNullable(request.Observacion),
                 CreadoPorUsuarioId = actorId
             },
@@ -162,11 +162,11 @@ public sealed class OrdenProduccionService(
             return UseCaseResult<OrdenProduccionDetailDto>.Fail(ProduccionErrorCodes.NotFound, "No se encontro la orden de produccion.");
         }
 
-        if (order.Estado != "BORRADOR")
+        if (order.Estado != "PROGRAMADA")
         {
             return UseCaseResult<OrdenProduccionDetailDto>.Fail(
                 ProduccionErrorCodes.Conflict,
-                "Solo se pueden preparar ordenes en estado BORRADOR.");
+                "Solo se pueden preparar ordenes en estado PROGRAMADA.");
         }
 
         if (request.ResponsableUsuarioId.HasValue &&
@@ -232,11 +232,11 @@ public sealed class OrdenProduccionService(
                 "La orden ya se encuentra cancelada.");
         }
 
-        if (order.Estado is not ("BORRADOR" or "LISTA_PARA_INICIAR"))
+        if (order.Estado is not ("PROGRAMADA" or "LISTA_PARA_INICIAR"))
         {
             return UseCaseResult<OrdenProduccionDetailDto>.Fail(
                 ProduccionErrorCodes.Conflict,
-                "Solo se pueden cancelar ordenes en estado BORRADOR o LISTA_PARA_INICIAR.");
+                "Solo se pueden cancelar ordenes en estado PROGRAMADA o LISTA_PARA_INICIAR.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Motivo))

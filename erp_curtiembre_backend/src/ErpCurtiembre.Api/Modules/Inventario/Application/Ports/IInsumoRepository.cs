@@ -5,6 +5,8 @@ namespace ErpCurtiembre.Modules.Inventario.Application.Ports;
 
 public interface IInsumoRepository
 {
+    Task<string> GenerateNextCodeAsync(CancellationToken cancellationToken);
+
     Task<bool> ExistsByCodigoAsync(string codigo, long? excludeId, CancellationToken cancellationToken);
 
     Task<Insumo?> FindByIdAsync(long id, CancellationToken cancellationToken);

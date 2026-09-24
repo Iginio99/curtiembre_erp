@@ -141,7 +141,7 @@ public sealed class SqlCierreProduccionRepository(
                 c.nombre AS CalidadNombre,
                 pt.fecha_ingreso AS FechaIngreso,
                 pt.cantidad_pieles_buenas AS CantidadPielesBuenas,
-                pt.cantidad_lados AS CantidadLadosCalculada,
+                pt.cantidad_lados_calculada AS CantidadLadosCalculada,
                 pt.estado AS Estado,
                 pt.observacion AS Observacion
             FROM produccion.producto_terminado pt
@@ -168,7 +168,7 @@ public sealed class SqlCierreProduccionRepository(
                 c.nombre AS CalidadNombre,
                 pt.fecha_ingreso AS FechaIngreso,
                 pt.cantidad_pieles_buenas AS CantidadPielesBuenas,
-                pt.cantidad_lados AS CantidadLadosCalculada,
+                pt.cantidad_lados_calculada AS CantidadLadosCalculada,
                 pt.estado AS Estado,
                 pt.observacion AS Observacion
             FROM produccion.producto_terminado pt

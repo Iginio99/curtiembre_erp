@@ -13,6 +13,18 @@ public sealed class SqlInsumoRepository(
     ISqlConnectionFactory connectionFactory,
     InventarioDbContext dbContext) : IInsumoRepository
 {
+    public async Task<string> GenerateNextCodeAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT ISNULL(MAX(TRY_CONVERT(int, SUBSTRING(codigo, 5, 20))), 0) + 1
+            FROM inventario.insumo
+            WHERE codigo LIKE 'INS-%';
+            """;
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var next = await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, cancellationToken: cancellationToken));
+        return $"INS-{next:D3}";
+    }
+
     public async Task<bool> ExistsByCodigoAsync(string codigo, long? excludeId, CancellationToken cancellationToken)
     {
         const string sql = """
@@ -34,7 +46,11 @@ public sealed class SqlInsumoRepository(
         const string sql = """
             SELECT TOP 1
                 i.id AS Id,
-                i.codigo AS Codigo,
+                CASE
+                    WHEN i.codigo LIKE 'INS-%' AND TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20)) IS NOT NULL
+                    THEN 'INS-' + RIGHT('000' + CONVERT(varchar(10), TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20))), 3)
+                    ELSE i.codigo
+                END AS Codigo,
                 i.nombre AS Nombre,
                 i.tipo_bien AS TipoBien,
                 i.presentacion AS Presentacion,
@@ -102,7 +118,6 @@ public sealed class SqlInsumoRepository(
             return;
         }
 
-        entity.Codigo = insumo.Codigo;
         entity.Nombre = insumo.Nombre;
         entity.TipoBien = insumo.TipoBien;
         entity.Presentacion = insumo.Presentacion;
@@ -139,7 +154,11 @@ public sealed class SqlInsumoRepository(
         const string sql = """
             SELECT
                 i.id AS Id,
-                i.codigo AS Codigo,
+                CASE
+                    WHEN i.codigo LIKE 'INS-%' AND TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20)) IS NOT NULL
+                    THEN 'INS-' + RIGHT('000' + CONVERT(varchar(10), TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20))), 3)
+                    ELSE i.codigo
+                END AS Codigo,
                 i.nombre AS Nombre,
                 i.tipo_bien AS TipoBien,
                 i.presentacion AS Presentacion,
@@ -172,7 +191,7 @@ public sealed class SqlInsumoRepository(
                     (@StockBajo = 1 AND ISNULL(s.cantidad_actual, 0) <= i.stock_minimo) OR
                     (@StockBajo = 0 AND ISNULL(s.cantidad_actual, 0) > i.stock_minimo)
                 )
-            ORDER BY i.nombre, i.codigo;
+            ORDER BY TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20)), i.codigo;
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
@@ -198,7 +217,11 @@ public sealed class SqlInsumoRepository(
         const string sql = """
             SELECT
                 i.id AS Id,
-                i.codigo AS Codigo,
+                CASE
+                    WHEN i.codigo LIKE 'INS-%' AND TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20)) IS NOT NULL
+                    THEN 'INS-' + RIGHT('000' + CONVERT(varchar(10), TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20))), 3)
+                    ELSE i.codigo
+                END AS Codigo,
                 i.nombre AS Nombre,
                 i.tipo_bien AS TipoBien,
                 i.presentacion AS Presentacion,
@@ -218,7 +241,7 @@ public sealed class SqlInsumoRepository(
             INNER JOIN configuracion.unidad_medida um ON um.id = i.unidad_medida_id
             LEFT JOIN inventario.stock_insumo s ON s.insumo_id = i.id
             WHERE i.activo = 1
-            ORDER BY i.nombre, i.codigo;
+            ORDER BY TRY_CONVERT(int, SUBSTRING(i.codigo, 5, 20)), i.codigo;
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);

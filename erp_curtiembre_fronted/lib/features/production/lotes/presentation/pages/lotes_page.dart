@@ -160,15 +160,6 @@ class _LotesPageState extends State<LotesPage> {
     );
   }
 
-  String _describeSearchTerm(String value) {
-    final normalized = value.trim();
-    if (normalized.isEmpty) {
-      return 'vacio';
-    }
-
-    return '${normalized.length} caracteres';
-  }
-
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
@@ -887,8 +878,4 @@ String _formatDecimal(double value) {
 
 String _formatDate(DateTime value) {
   return DateFormat('dd/MM/yyyy').format(value.toLocal());
-}
-
-String _formatDateTime(DateTime value) {
-  return DateFormat('dd/MM/yyyy hh:mm a').format(value.toLocal());
 }

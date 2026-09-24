@@ -3,6 +3,7 @@ import 'package:erp_curtiembre_fronted/features/inventory/insumos/domain/constan
 import 'package:erp_curtiembre_fronted/features/inventory/insumos/domain/entities/insumo_record.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/insumos/domain/entities/unidad_medida_option.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 
 class InsumoUpsertFormData {
@@ -59,15 +60,24 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
   void initState() {
     super.initState();
     final initialInsumo = widget.initialInsumo;
-    _codigoController = TextEditingController(text: initialInsumo?.codigo ?? '');
-    _nombreController = TextEditingController(text: initialInsumo?.nombre ?? '');
-    _presentacionController =
-        TextEditingController(text: initialInsumo?.presentacion ?? '');
-    _stockMinimoController = TextEditingController(
-      text: initialInsumo == null ? '' : initialInsumo.stockMinimo.toStringAsFixed(2),
+    _codigoController = TextEditingController(
+      text: initialInsumo?.codigo ?? '',
     );
-    _tipoBien = initialInsumo?.tipoBien ?? inventoryInsumoTipoBienOptions.first.value;
-    _unidadMedidaId = initialInsumo?.unidadMedidaId ??
+    _nombreController = TextEditingController(
+      text: initialInsumo?.nombre ?? '',
+    );
+    _presentacionController = TextEditingController(
+      text: initialInsumo?.presentacion ?? '',
+    );
+    _stockMinimoController = TextEditingController(
+      text: initialInsumo == null
+          ? ''
+          : initialInsumo.stockMinimo.toStringAsFixed(2),
+    );
+    _tipoBien =
+        initialInsumo?.tipoBien ?? inventoryInsumoTipoBienOptions.first.value;
+    _unidadMedidaId =
+        initialInsumo?.unidadMedidaId ??
         (widget.unitOptions.isNotEmpty ? widget.unitOptions.first.id : null);
     _requiereLote = initialInsumo?.requiereLote ?? false;
   }
@@ -86,7 +96,10 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
       return;
     }
 
-    final normalizedStock = _stockMinimoController.text.trim().replaceAll(',', '.');
+    final normalizedStock = _stockMinimoController.text.trim().replaceAll(
+      ',',
+      '.',
+    );
 
     Navigator.of(context).pop(
       InsumoUpsertFormData(
@@ -108,10 +121,37 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isEditing = widget.initialInsumo != null;
     return AlertDialog(
-      title: Text(widget.title),
+      title: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: theme.colorScheme.primaryContainer,
+            foregroundColor: theme.colorScheme.primary,
+            child: Icon(
+              isEditing ? Icons.edit_note_rounded : Icons.inventory_2_outlined,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.title),
+              Text(
+                isEditing
+                    ? 'Informacion operativa del insumo'
+                    : 'Nuevo registro de inventario',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       content: SizedBox(
-        width: 560,
+        width: 620,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -119,27 +159,56 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextFormField(
-                  controller: _codigoController,
-                  maxLength: 50,
-                  decoration: const InputDecoration(
-                    labelText: 'Codigo',
-                    hintText: 'Ej. INS-001',
+                if (widget.initialInsumo != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.45,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.tag_rounded,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const Gap(AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Codigo automatico',
+                                style: theme.textTheme.labelMedium,
+                              ),
+                              Text(
+                                _codigoController.text,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.lock_outline_rounded, size: 20),
+                      ],
+                    ),
                   ),
-                  validator: (value) {
-                    if ((value?.trim() ?? '').isEmpty) {
-                      return 'Ingresa el codigo del insumo.';
-                    }
-                    return null;
-                  },
-                ),
-                const Gap(AppSpacing.md),
+                  const Gap(AppSpacing.md),
+                ],
+                Text('Informacion general', style: theme.textTheme.titleSmall),
+                const Gap(AppSpacing.sm),
                 TextFormField(
                   controller: _nombreController,
                   maxLength: 150,
                   decoration: const InputDecoration(
                     labelText: 'Nombre',
                     hintText: 'Ej. Sulfuro de sodio',
+                    prefixIcon: Icon(Icons.label_outline_rounded),
                   ),
                   validator: (value) {
                     if ((value?.trim() ?? '').isEmpty) {
@@ -153,6 +222,7 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
                   initialValue: _tipoBien,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de bien',
+                    prefixIcon: Icon(Icons.category_outlined),
                   ),
                   items: inventoryInsumoTipoBienOptions
                       .map(
@@ -174,6 +244,7 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
                   initialValue: _unidadMedidaId,
                   decoration: const InputDecoration(
                     labelText: 'Unidad de medida',
+                    prefixIcon: Icon(Icons.straighten_rounded),
                   ),
                   items: widget.unitOptions
                       .map(
@@ -194,12 +265,25 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
                   },
                 ),
                 const Gap(AppSpacing.md),
+                Text(
+                  'Control de inventario',
+                  style: theme.textTheme.titleSmall,
+                ),
+                const Gap(AppSpacing.sm),
                 TextFormField(
                   controller: _stockMinimoController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d*[\.,]?\d{0,4}'),
+                    ),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'Stock minimo',
                     hintText: 'Ej. 10 o 10.50',
+                    prefixIcon: Icon(Icons.inventory_outlined),
                   ),
                   validator: (value) {
                     final normalized = value?.trim().replaceAll(',', '.') ?? '';
@@ -220,17 +304,25 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
                   decoration: const InputDecoration(
                     labelText: 'Presentacion',
                     hintText: 'Ej. Saco 25 kg',
+                    prefixIcon: Icon(Icons.widgets_outlined),
                   ),
                 ),
                 const Gap(AppSpacing.md),
-                SwitchListTile.adaptive(
-                  value: _requiereLote,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Requiere lote'),
-                  subtitle: const Text(
-                    'Activalo si el insumo debe trazarse por lote en movimientos.',
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
                   ),
-                  onChanged: (value) => setState(() => _requiereLote = value),
+                  child: SwitchListTile.adaptive(
+                    value: _requiereLote,
+                    secondary: const Icon(Icons.qr_code_2_rounded),
+                    title: const Text('Control por lote'),
+                    subtitle: const Text(
+                      'Activalo para trazabilidad individual.',
+                    ),
+                    onChanged: (value) => setState(() => _requiereLote = value),
+                  ),
                 ),
               ],
             ),
@@ -239,7 +331,9 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+          onPressed: widget.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
         FilledButton.icon(
