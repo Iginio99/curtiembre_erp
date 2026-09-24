@@ -2,16 +2,20 @@ import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_state.dart';
+import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
+import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -95,309 +99,298 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reportes de produccion'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.lg),
-            child: TextButton.icon(
-              onPressed: () {
-                _talker.ui(
-                  'Se regreso desde reportes de produccion al panel principal.',
-                );
-                context.go('/home');
-              },
-              icon: const Icon(Icons.dashboard_outlined),
-              label: const Text('Panel'),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1480),
-              child: BlocBuilder<ProduccionReportesCubit, ProduccionReportesState>(
-                builder: (context, state) {
-                  if (state.status == ProduccionReportesStatus.loading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+    final session = context.select((AuthCubit cubit) => cubit.state.session);
+    final isSigningOut = context.select(
+      (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
+    );
+    final permissionCodes = context.select(
+      (SecurityAccessCubit cubit) =>
+          cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
+    );
 
-                  if (state.status == ProduccionReportesStatus.error) {
-                    return _CenteredMessage(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppMessageCard.error(
-                            title: 'No pudimos preparar los reportes',
-                            message:
-                                state.baseErrorMessage ??
-                                'Intenta nuevamente para cargar la base de produccion.',
-                          ),
-                          const Gap(AppSpacing.lg),
-                          AppButton.secondary(
-                            label: 'Reintentar',
-                            icon: Icons.refresh_rounded,
-                            onPressed: () {
-                              _talker.ui(
-                                'Se solicito reintentar la carga base de reportes de produccion.',
-                              );
-                              context
-                                  .read<ProduccionReportesCubit>()
-                                  .initialize();
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+    if (session == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-                  final tabsView = TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _OrdenesActivasTab(
-                        state: state,
-                        onRefresh: () {
-                          _talker.ui(
-                            'Se solicito actualizar el reporte de ordenes activas.',
-                          );
-                          context
-                              .read<ProduccionReportesCubit>()
-                              .loadOrdenesActivas();
-                        },
-                      ),
-                      _OrdenesClienteTab(
-                        state: state,
-                        onApply:
-                            ({
-                              int? clienteId,
-                              String? estado,
-                              DateTime? fechaDesde,
-                              DateTime? fechaHasta,
-                            }) {
-                              _talker.ui(
-                                'Se aplicaron filtros en ordenes por cliente con clienteId=$clienteId, estado=${_describeState(estado)}, fechaDesde=${_describeDate(fechaDesde)}, fechaHasta=${_describeDate(fechaHasta)}.',
-                                logLevel: LogLevel.debug,
-                              );
-                              return context
-                                  .read<ProduccionReportesCubit>()
-                                  .loadOrdenesCliente(
-                                    clienteId: clienteId,
-                                    estado: estado,
-                                    fechaDesde: fechaDesde,
-                                    fechaHasta: fechaHasta,
-                                  );
-                            },
-                        onPickDate: _pickDate,
-                        onClear: () {
-                          _talker.ui(
-                            'Se limpiaron los filtros del reporte de ordenes por cliente.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context
-                              .read<ProduccionReportesCubit>()
-                              .loadOrdenesCliente(
-                                clienteId: null,
-                                estado: null,
-                                fechaDesde: null,
-                                fechaHasta: null,
-                              );
-                        },
-                      ),
-                      _ConsumoProcesoTab(
-                        state: state,
-                        processOptionsForOrder: context
-                            .read<ProduccionReportesCubit>()
-                            .processOptionsForOrder,
-                        onApply: ({int? ordenProduccionId, int? ordenProcesoId}) {
-                          _talker.ui(
-                            'Se aplicaron filtros en consumo por proceso con ordenProduccionId=$ordenProduccionId y ordenProcesoId=$ordenProcesoId.',
-                            logLevel: LogLevel.debug,
-                          );
-                          return context
-                              .read<ProduccionReportesCubit>()
-                              .loadConsumoProceso(
-                                ordenProduccionId: ordenProduccionId,
-                                ordenProcesoId: ordenProcesoId,
-                              );
-                        },
-                        onClear: () {
-                          _talker.ui(
-                            'Se limpiaron los filtros del reporte de consumo por proceso.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context
-                              .read<ProduccionReportesCubit>()
-                              .loadConsumoProceso(
-                                ordenProduccionId: null,
-                                ordenProcesoId: null,
-                              );
-                        },
-                      ),
-                      _MermaTab(
-                        state: state,
-                        processOptionsForOrder: context
-                            .read<ProduccionReportesCubit>()
-                            .processOptionsForOrder,
-                        onApply:
-                            ({
-                              int? ordenProduccionId,
-                              int? ordenProcesoId,
-                              DateTime? fechaDesde,
-                              DateTime? fechaHasta,
-                            }) {
-                              _talker.ui(
-                                'Se aplicaron filtros en merma con ordenProduccionId=$ordenProduccionId, ordenProcesoId=$ordenProcesoId, fechaDesde=${_describeDate(fechaDesde)}, fechaHasta=${_describeDate(fechaHasta)}.',
-                                logLevel: LogLevel.debug,
-                              );
-                              return context
-                                  .read<ProduccionReportesCubit>()
-                                  .loadMerma(
-                                    ordenProduccionId: ordenProduccionId,
-                                    ordenProcesoId: ordenProcesoId,
-                                    fechaDesde: fechaDesde,
-                                    fechaHasta: fechaHasta,
-                                  );
-                            },
-                        onPickDate: _pickDate,
-                        onClear: () {
-                          _talker.ui(
-                            'Se limpiaron los filtros del reporte de merma.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context.read<ProduccionReportesCubit>().loadMerma(
-                            ordenProduccionId: null,
-                            ordenProcesoId: null,
-                            fechaDesde: null,
-                            fechaHasta: null,
-                          );
-                        },
-                      ),
-                      _TiemposProcesoTab(
-                        state: state,
-                        processOptionsForOrder: context
-                            .read<ProduccionReportesCubit>()
-                            .processOptionsForOrder,
-                        onApply:
-                            ({
-                              int? ordenProduccionId,
-                              int? ordenProcesoId,
-                              String? estado,
-                            }) {
-                              _talker.ui(
-                                'Se aplicaron filtros en tiempos de proceso con ordenProduccionId=$ordenProduccionId, ordenProcesoId=$ordenProcesoId, estado=${_describeState(estado)}.',
-                                logLevel: LogLevel.debug,
-                              );
-                              return context
-                                  .read<ProduccionReportesCubit>()
-                                  .loadTiemposProceso(
-                                    ordenProduccionId: ordenProduccionId,
-                                    ordenProcesoId: ordenProcesoId,
-                                    estado: estado,
-                                  );
-                            },
-                        onClear: () {
-                          _talker.ui(
-                            'Se limpiaron los filtros del reporte de tiempos de proceso.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context
-                              .read<ProduccionReportesCubit>()
-                              .loadTiemposProceso(
-                                ordenProduccionId: null,
-                                ordenProcesoId: null,
-                                estado: null,
-                              );
-                        },
-                      ),
-                      _CostosOrdenTab(
-                        state: state,
-                        onApply: (ordenProduccionId) {
-                          return context
-                              .read<ProduccionReportesCubit>()
-                              .loadCostosOrden(
-                                ordenProduccionId: ordenProduccionId,
-                              );
-                        },
-                        onClear: () {
-                          return context
-                              .read<ProduccionReportesCubit>()
-                              .loadCostosOrden(ordenProduccionId: null);
-                        },
-                      ),
-                    ],
-                  );
+    return AppShell(
+      title: 'Reportes de produccion',
+      currentPath: '/produccion/reportes',
+      breadcrumbs: const ['Inicio', 'Produccion', 'Reportes'],
+      userName: session.nombreCompleto,
+      roleName: session.rolNombre,
+      accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
+      onSignOut: isSigningOut
+          ? () {}
+          : () => context.read<AuthCubit>().signOut(),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1480),
+            child: BlocBuilder<ProduccionReportesCubit, ProduccionReportesState>(
+              builder: (context, state) {
+                if (state.status == ProduccionReportesStatus.loading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                  final tabsHeader = Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabs: const [
-                        Tab(text: 'Ordenes activas'),
-                        Tab(text: 'Ordenes por cliente'),
-                        Tab(text: 'Consumo por proceso'),
-                        Tab(text: 'Merma'),
-                        Tab(text: 'Tiempos de proceso'),
-                        Tab(text: 'Costos reales'),
+                if (state.status == ProduccionReportesStatus.error) {
+                  return _CenteredMessage(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppMessageCard.error(
+                          title: 'No pudimos preparar los reportes',
+                          message:
+                              state.baseErrorMessage ??
+                              'Intenta nuevamente para cargar la base de produccion.',
+                        ),
+                        const Gap(AppSpacing.lg),
+                        AppButton.secondary(
+                          label: 'Reintentar',
+                          icon: Icons.refresh_rounded,
+                          onPressed: () {
+                            _talker.ui(
+                              'Se solicito reintentar la carga base de reportes de produccion.',
+                            );
+                            context
+                                .read<ProduccionReportesCubit>()
+                                .initialize();
+                          },
+                        ),
                       ],
                     ),
                   );
+                }
 
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final compactHeight = constraints.maxHeight < 920;
-
-                      if (compactHeight) {
-                        return SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _HeroCard(
-                                totalClientes: state.clienteOptions.length,
-                                totalOrdenes: state.ordenOptions.length,
-                              ),
-                              const Gap(AppSpacing.xl),
-                              tabsHeader,
-                              const Gap(AppSpacing.xl),
-                              SizedBox(
-                                height: constraints.maxHeight.clamp(
-                                  720.0,
-                                  980.0,
-                                ),
-                                child: tabsView,
-                              ),
-                            ],
-                          ),
+                final tabsView = TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _OrdenesActivasTab(
+                      state: state,
+                      onRefresh: () {
+                        _talker.ui(
+                          'Se solicito actualizar el reporte de ordenes activas.',
                         );
-                      }
+                        context
+                            .read<ProduccionReportesCubit>()
+                            .loadOrdenesActivas();
+                      },
+                    ),
+                    _OrdenesClienteTab(
+                      state: state,
+                      onApply:
+                          ({
+                            int? clienteId,
+                            String? estado,
+                            DateTime? fechaDesde,
+                            DateTime? fechaHasta,
+                          }) {
+                            _talker.ui(
+                              'Se aplicaron filtros en ordenes por cliente con clienteId=$clienteId, estado=${_describeState(estado)}, fechaDesde=${_describeDate(fechaDesde)}, fechaHasta=${_describeDate(fechaHasta)}.',
+                              logLevel: LogLevel.debug,
+                            );
+                            return context
+                                .read<ProduccionReportesCubit>()
+                                .loadOrdenesCliente(
+                                  clienteId: clienteId,
+                                  estado: estado,
+                                  fechaDesde: fechaDesde,
+                                  fechaHasta: fechaHasta,
+                                );
+                          },
+                      onPickDate: _pickDate,
+                      onClear: () {
+                        _talker.ui(
+                          'Se limpiaron los filtros del reporte de ordenes por cliente.',
+                          logLevel: LogLevel.debug,
+                        );
+                        context
+                            .read<ProduccionReportesCubit>()
+                            .loadOrdenesCliente(
+                              clienteId: null,
+                              estado: null,
+                              fechaDesde: null,
+                              fechaHasta: null,
+                            );
+                      },
+                    ),
+                    _ConsumoProcesoTab(
+                      state: state,
+                      processOptionsForOrder: context
+                          .read<ProduccionReportesCubit>()
+                          .processOptionsForOrder,
+                      onApply: ({int? ordenProduccionId, int? ordenProcesoId}) {
+                        _talker.ui(
+                          'Se aplicaron filtros en consumo por proceso con ordenProduccionId=$ordenProduccionId y ordenProcesoId=$ordenProcesoId.',
+                          logLevel: LogLevel.debug,
+                        );
+                        return context
+                            .read<ProduccionReportesCubit>()
+                            .loadConsumoProceso(
+                              ordenProduccionId: ordenProduccionId,
+                              ordenProcesoId: ordenProcesoId,
+                            );
+                      },
+                      onClear: () {
+                        _talker.ui(
+                          'Se limpiaron los filtros del reporte de consumo por proceso.',
+                          logLevel: LogLevel.debug,
+                        );
+                        context
+                            .read<ProduccionReportesCubit>()
+                            .loadConsumoProceso(
+                              ordenProduccionId: null,
+                              ordenProcesoId: null,
+                            );
+                      },
+                    ),
+                    _MermaTab(
+                      state: state,
+                      processOptionsForOrder: context
+                          .read<ProduccionReportesCubit>()
+                          .processOptionsForOrder,
+                      onApply:
+                          ({
+                            int? ordenProduccionId,
+                            int? ordenProcesoId,
+                            DateTime? fechaDesde,
+                            DateTime? fechaHasta,
+                          }) {
+                            _talker.ui(
+                              'Se aplicaron filtros en merma con ordenProduccionId=$ordenProduccionId, ordenProcesoId=$ordenProcesoId, fechaDesde=${_describeDate(fechaDesde)}, fechaHasta=${_describeDate(fechaHasta)}.',
+                              logLevel: LogLevel.debug,
+                            );
+                            return context
+                                .read<ProduccionReportesCubit>()
+                                .loadMerma(
+                                  ordenProduccionId: ordenProduccionId,
+                                  ordenProcesoId: ordenProcesoId,
+                                  fechaDesde: fechaDesde,
+                                  fechaHasta: fechaHasta,
+                                );
+                          },
+                      onPickDate: _pickDate,
+                      onClear: () {
+                        _talker.ui(
+                          'Se limpiaron los filtros del reporte de merma.',
+                          logLevel: LogLevel.debug,
+                        );
+                        context.read<ProduccionReportesCubit>().loadMerma(
+                          ordenProduccionId: null,
+                          ordenProcesoId: null,
+                          fechaDesde: null,
+                          fechaHasta: null,
+                        );
+                      },
+                    ),
+                    _TiemposProcesoTab(
+                      state: state,
+                      processOptionsForOrder: context
+                          .read<ProduccionReportesCubit>()
+                          .processOptionsForOrder,
+                      onApply:
+                          ({
+                            int? ordenProduccionId,
+                            int? ordenProcesoId,
+                            String? estado,
+                          }) {
+                            _talker.ui(
+                              'Se aplicaron filtros en tiempos de proceso con ordenProduccionId=$ordenProduccionId, ordenProcesoId=$ordenProcesoId, estado=${_describeState(estado)}.',
+                              logLevel: LogLevel.debug,
+                            );
+                            return context
+                                .read<ProduccionReportesCubit>()
+                                .loadTiemposProceso(
+                                  ordenProduccionId: ordenProduccionId,
+                                  ordenProcesoId: ordenProcesoId,
+                                  estado: estado,
+                                );
+                          },
+                      onClear: () {
+                        _talker.ui(
+                          'Se limpiaron los filtros del reporte de tiempos de proceso.',
+                          logLevel: LogLevel.debug,
+                        );
+                        context
+                            .read<ProduccionReportesCubit>()
+                            .loadTiemposProceso(
+                              ordenProduccionId: null,
+                              ordenProcesoId: null,
+                              estado: null,
+                            );
+                      },
+                    ),
+                    _CostosOrdenTab(
+                      state: state,
+                      onApply: (ordenProduccionId) {
+                        return context
+                            .read<ProduccionReportesCubit>()
+                            .loadCostosOrden(
+                              ordenProduccionId: ordenProduccionId,
+                            );
+                      },
+                      onClear: () {
+                        return context
+                            .read<ProduccionReportesCubit>()
+                            .loadCostosOrden(ordenProduccionId: null);
+                      },
+                    ),
+                  ],
+                );
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _HeroCard(
-                            totalClientes: state.clienteOptions.length,
-                            totalOrdenes: state.ordenOptions.length,
-                          ),
-                          const Gap(AppSpacing.xl),
-                          tabsHeader,
-                          const Gap(AppSpacing.xl),
-                          Expanded(child: tabsView),
-                        ],
+                final tabsHeader = Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabs: const [
+                      Tab(text: 'Ordenes activas'),
+                      Tab(text: 'Ordenes por cliente'),
+                      Tab(text: 'Consumo por proceso'),
+                      Tab(text: 'Merma'),
+                      Tab(text: 'Tiempos de proceso'),
+                      Tab(text: 'Costos reales'),
+                    ],
+                  ),
+                );
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compactHeight = constraints.maxHeight < 920;
+
+                    if (compactHeight) {
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            tabsHeader,
+                            const Gap(AppSpacing.lg),
+                            SizedBox(
+                              height: constraints.maxHeight.clamp(720.0, 980.0),
+                              child: tabsView,
+                            ),
+                          ],
+                        ),
                       );
-                    },
-                  );
-                },
-              ),
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        tabsHeader,
+                        const Gap(AppSpacing.lg),
+                        Expanded(child: tabsView),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
           ),
         ),
@@ -1224,7 +1217,7 @@ class _ReportTabScaffold extends StatelessWidget {
       return Column(
         children: [
           filterCard,
-          const Gap(AppSpacing.xl),
+          const Gap(AppSpacing.lg),
           Expanded(child: resultsCard),
         ],
       );
@@ -1233,7 +1226,7 @@ class _ReportTabScaffold extends StatelessWidget {
     return Column(
       children: [
         filterCard,
-        const Gap(AppSpacing.xl),
+        const Gap(AppSpacing.lg),
         Expanded(child: resultsCard),
       ],
     );
@@ -1257,10 +1250,10 @@ class _SurfaceCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -1362,11 +1355,11 @@ class _ResultsCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

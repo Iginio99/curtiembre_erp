@@ -89,7 +89,7 @@ public static class SeguridadEndpoints
             }
 
             return Results.Ok(await useCase.ExecuteAsync(
-                new UserFiltersDto(texto, rolId, areaId, activo ?? true, page ?? 1, pageSize ?? 20),
+                new UserFiltersDto(texto, rolId, areaId, activo, page ?? 1, pageSize ?? 20),
                 cancellationToken));
         });
 

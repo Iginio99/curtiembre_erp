@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
+import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_detail.dart';
 import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
 import 'package:erp_curtiembre_fronted/features/users/presentation/cubit/users_cubit.dart';
@@ -12,10 +16,11 @@ import 'package:erp_curtiembre_fronted/features/users/presentation/widgets/user_
 import 'package:erp_curtiembre_fronted/features/users/presentation/widgets/user_upsert_dialog.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
+import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -29,6 +34,7 @@ class UsersPage extends StatefulWidget {
 class _UsersPageState extends State<UsersPage> {
   final _searchController = TextEditingController();
   final Talker _talker = getIt<Talker>();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -38,16 +44,17 @@ class _UsersPageState extends State<UsersPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _applySearch() {
-    FocusScope.of(context).unfocus();
-    _talker.ui(
-      'Se aplico una busqueda en usuarios con texto=${_describeSearchTerm(_searchController.text)}.',
-    );
-    context.read<UsersCubit>().load(searchTerm: _searchController.text.trim());
+  void _searchAsYouType(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      context.read<UsersCubit>().load(searchTerm: value.trim());
+    });
   }
 
   Future<void> _openCreateUserDialog(UsersState state) async {
@@ -330,232 +337,174 @@ class _UsersPageState extends State<UsersPage> {
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
+    final isSigningOut = context.select(
+      (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
+    );
+    final permissionCodes = context.select(
+      (SecurityAccessCubit cubit) =>
+          cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
+    );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Usuarios'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.lg),
-            child: TextButton.icon(
-              onPressed: () {
-                _talker.ui('Se regreso desde usuarios al panel principal.');
-                context.go('/home');
-              },
-              icon: const Icon(Icons.dashboard_outlined),
-              label: const Text('Panel'),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1440),
-                  child: BlocBuilder<UsersCubit, UsersState>(
-                    builder: (context, state) {
-                      final isWide =
-                          MediaQuery.sizeOf(context).width >=
-                          AppBreakpoints.tablet;
-                      final compactHeight = constraints.maxHeight < 860;
+    if (session == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-                      if (_searchController.text != state.searchTerm) {
-                        _searchController.value = TextEditingValue(
-                          text: state.searchTerm,
-                          selection: TextSelection.collapsed(
-                            offset: state.searchTerm.length,
-                          ),
+    return AppShell(
+      title: 'Usuarios',
+      currentPath: '/seguridad/usuarios',
+      breadcrumbs: const ['Inicio', 'Seguridad', 'Usuarios'],
+      userName: session.nombreCompleto,
+      roleName: session.rolNombre,
+      accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
+      onSignOut: isSigningOut
+          ? () {}
+          : () => context.read<AuthCubit>().signOut(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1440),
+                child: BlocBuilder<UsersCubit, UsersState>(
+                  builder: (context, state) {
+                    final isWide =
+                        MediaQuery.sizeOf(context).width >=
+                        AppBreakpoints.tablet;
+                    final compactHeight = constraints.maxHeight < 860;
+
+                    if (_searchController.text != state.searchTerm) {
+                      _searchController.value = TextEditingValue(
+                        text: state.searchTerm,
+                        selection: TextSelection.collapsed(
+                          offset: state.searchTerm.length,
+                        ),
+                      );
+                    }
+
+                    final listPanel = _UsersListPanel(
+                      state: state,
+                      onRetry: () => context.read<UsersCubit>().initialize(),
+                      onSelectUser: (usuarioId) {
+                        _talker.ui(
+                          'Se selecciono el usuario $usuarioId desde el listado.',
+                          logLevel: LogLevel.debug,
                         );
-                      }
+                        context.read<UsersCubit>().selectUser(usuarioId);
+                      },
+                    );
 
-                      final listPanel = _UsersListPanel(
-                        state: state,
-                        onRetry: () => context.read<UsersCubit>().initialize(),
-                        onSelectUser: (usuarioId) {
+                    final detailPanel = _UserDetailPanel(
+                      state: state,
+                      onRetry: () => context.read<UsersCubit>().retryDetail(),
+                      onEditUser: state.selectedUserDetail == null
+                          ? null
+                          : () => _openEditUserDialog(
+                              state,
+                              state.selectedUserDetail!,
+                            ),
+                      onResetPassword: state.selectedUserDetail == null
+                          ? null
+                          : () => _openResetPasswordDialog(
+                              state.selectedUserDetail!,
+                            ),
+                      onToggleState: state.selectedUserDetail == null
+                          ? null
+                          : () => _openStateChangeDialog(
+                              detail: state.selectedUserDetail!,
+                              activate: !state.selectedUserDetail!.activo,
+                            ),
+                    );
+
+                    final headerAndFilters = <Widget>[
+                      Text(
+                        'Administra usuarios, roles, estados de acceso y credenciales del sistema.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _UsersFiltersCard(
+                        controller: _searchController,
+                        selectedFilter: state.filter,
+                        isSubmittingAction: state.isSubmittingAction,
+                        onSearchChanged: _searchAsYouType,
+                        onCreateUser: () => _openCreateUserDialog(state),
+                        onFilterChanged: (filter) {
                           _talker.ui(
-                            'Se selecciono el usuario $usuarioId desde el listado.',
+                            'Se cambio el filtro de usuarios a $filter.',
                             logLevel: LogLevel.debug,
                           );
-                          context.read<UsersCubit>().selectUser(usuarioId);
+                          context.read<UsersCubit>().load(filter: filter);
                         },
-                      );
+                      ),
+                      const Gap(AppSpacing.xl),
+                    ];
 
-                      final detailPanel = _UserDetailPanel(
-                        state: state,
-                        onRetry: () => context.read<UsersCubit>().retryDetail(),
-                        onEditUser: state.selectedUserDetail == null
-                            ? null
-                            : () => _openEditUserDialog(
-                                state,
-                                state.selectedUserDetail!,
-                              ),
-                        onResetPassword: state.selectedUserDetail == null
-                            ? null
-                            : () => _openResetPasswordDialog(
-                                state.selectedUserDetail!,
-                              ),
-                        onToggleState: state.selectedUserDetail == null
-                            ? null
-                            : () => _openStateChangeDialog(
-                                detail: state.selectedUserDetail!,
-                                activate: !state.selectedUserDetail!.activo,
-                              ),
-                      );
-
-                      final headerAndFilters = <Widget>[
-                        _UsersHeader(
-                          userName: session?.userName,
-                          itemCount: state.items.length,
-                        ),
-                        const Gap(AppSpacing.xl),
-                        _UsersFiltersCard(
-                          controller: _searchController,
-                          selectedFilter: state.filter,
-                          isLoading: state.status == UsersStatus.loading,
-                          isSubmittingAction: state.isSubmittingAction,
-                          onSearch: _applySearch,
-                          onCreateUser: () => _openCreateUserDialog(state),
-                          onFilterChanged: (filter) {
-                            _talker.ui(
-                              'Se cambio el filtro de usuarios a $filter.',
-                              logLevel: LogLevel.debug,
-                            );
-                            context.read<UsersCubit>().load(filter: filter);
-                          },
-                        ),
-                        const Gap(AppSpacing.xl),
-                      ];
-
-                      if (compactHeight) {
-                        if (isWide) {
-                          return SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...headerAndFilters,
-                                SizedBox(
-                                  height: 620,
-                                  child: Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
+                    if (compactHeight) {
+                      if (isWide) {
                         return SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ...headerAndFilters,
-                              SizedBox(height: 520, child: listPanel),
-                              const Gap(AppSpacing.xl),
-                              SizedBox(height: 560, child: detailPanel),
+                              SizedBox(
+                                height: 620,
+                                child: Row(
+                                  children: [
+                                    Expanded(flex: 9, child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(flex: 8, child: detailPanel),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         );
                       }
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...headerAndFilters,
-                          Expanded(
-                            child: isWide
-                                ? Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  )
-                                : Column(
-                                    children: [
-                                      Expanded(child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(child: detailPanel),
-                                    ],
-                                  ),
-                          ),
-                        ],
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...headerAndFilters,
+                            SizedBox(height: 520, child: listPanel),
+                            const Gap(AppSpacing.xl),
+                            SizedBox(height: 560, child: detailPanel),
+                          ],
+                        ),
                       );
-                    },
-                  ),
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...headerAndFilters,
+                        Expanded(
+                          child: isWide
+                              ? Row(
+                                  children: [
+                                    Expanded(flex: 9, child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(flex: 8, child: detailPanel),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    Expanded(child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(child: detailPanel),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _UsersHeader extends StatelessWidget {
-  const _UsersHeader({required this.userName, required this.itemCount});
-
-  final String? userName;
-  final int itemCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Wrap(
-        spacing: AppSpacing.xl,
-        runSpacing: AppSpacing.lg,
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Gestiona accesos y revisa el estado operativo del equipo.',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    height: 1.12,
-                  ),
-                ),
-                const Gap(AppSpacing.sm),
-                Text(
-                  'Consulta usuarios, valida bloqueos, revisa el ultimo acceso y ejecuta acciones administrativas desde una sola vista.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.88),
-                    height: 1.5,
-                  ),
-                ),
-              ],
             ),
-          ),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              _SummaryBadge(label: 'Usuarios visibles', value: '$itemCount'),
-              if (userName != null)
-                _SummaryBadge(label: 'Sesion actual', value: userName!),
-            ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -565,18 +514,16 @@ class _UsersFiltersCard extends StatelessWidget {
   const _UsersFiltersCard({
     required this.controller,
     required this.selectedFilter,
-    required this.isLoading,
     required this.isSubmittingAction,
-    required this.onSearch,
+    required this.onSearchChanged,
     required this.onCreateUser,
     required this.onFilterChanged,
   });
 
   final TextEditingController controller;
   final UserActivityFilter selectedFilter;
-  final bool isLoading;
   final bool isSubmittingAction;
-  final VoidCallback onSearch;
+  final ValueChanged<String> onSearchChanged;
   final VoidCallback onCreateUser;
   final ValueChanged<UserActivityFilter> onFilterChanged;
 
@@ -586,86 +533,78 @@ class _UsersFiltersCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Busqueda operativa', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            'Filtra por nombre, DNI o usuario y cambia rapidamente entre activos, inactivos o todos.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 900;
+          final search = TextField(
+            controller: controller,
+            onChanged: onSearchChanged,
+            decoration: const InputDecoration(
+              hintText: 'Buscar usuario, DNI, rol o area...',
+              prefixIcon: Icon(Icons.search_rounded),
             ),
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.lg,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              SizedBox(
-                width: 420,
-                child: TextField(
-                  controller: controller,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => onSearch(),
-                  decoration: const InputDecoration(
-                    labelText: 'Buscar usuario',
-                    hintText: 'Ej. admin, 87654321 o supervisor.log',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
-                ),
-              ),
-              AppButton.primary(
-                label: 'Aplicar busqueda',
-                icon: Icons.search_rounded,
-                isLoading: isLoading,
-                onPressed: onSearch,
-                expand: false,
-              ),
-              AppButton.secondary(
-                label: 'Nuevo usuario',
-                icon: Icons.person_add_alt_1_rounded,
-                isLoading: isSubmittingAction,
-                onPressed: onCreateUser,
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.lg),
-          SegmentedButton<UserActivityFilter>(
+          );
+          final filters = SegmentedButton<UserActivityFilter>(
             showSelectedIcon: false,
             segments: const [
               ButtonSegment<UserActivityFilter>(
                 value: UserActivityFilter.active,
                 label: Text('Activos'),
-                icon: Icon(Icons.verified_user_outlined),
               ),
               ButtonSegment<UserActivityFilter>(
                 value: UserActivityFilter.inactive,
                 label: Text('Inactivos'),
-                icon: Icon(Icons.person_off_outlined),
               ),
               ButtonSegment<UserActivityFilter>(
                 value: UserActivityFilter.all,
                 label: Text('Todos'),
-                icon: Icon(Icons.groups_2_outlined),
               ),
             ],
             selected: {selectedFilter},
             onSelectionChanged: (selection) {
               final filter = selection.firstOrNull;
-              if (filter != null) {
-                onFilterChanged(filter);
-              }
+              if (filter != null) onFilterChanged(filter);
             },
-          ),
-        ],
+          );
+          final createButton = AppButton.secondary(
+            label: 'Nuevo usuario',
+            icon: Icons.person_add_alt_1_rounded,
+            isLoading: isSubmittingAction,
+            onPressed: onCreateUser,
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                search,
+                const Gap(AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.md,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [filters, createButton],
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: search),
+              const Gap(AppSpacing.md),
+              filters,
+              const Gap(AppSpacing.md),
+              createButton,
+            ],
+          );
+        },
       ),
     );
   }
@@ -838,108 +777,113 @@ class _UserDetailPanel extends StatelessWidget {
                     );
                   }
 
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: AppSpacing.md,
-                          runSpacing: AppSpacing.md,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              detail.nombreCompleto,
-                              style: theme.textTheme.headlineSmall,
-                            ),
-                            _StatusBadge(
-                              label: detail.activo ? 'Activo' : 'Inactivo',
-                              icon: detail.activo
-                                  ? Icons.verified_user_outlined
-                                  : Icons.person_off_outlined,
-                              background: detail.activo
-                                  ? theme.colorScheme.primaryContainer
-                                  : theme.colorScheme.surfaceContainerHighest,
-                              foreground: detail.activo
-                                  ? theme.colorScheme.onPrimaryContainer
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            if (detail.debeCambiarPassword)
-                              _StatusBadge(
-                                label: 'Cambio de clave pendiente',
-                                icon: Icons.password_outlined,
-                                background: const Color(0xFFF9E8BF),
-                                foreground: const Color(0xFF7A5512),
+                  return ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(
+                      context,
+                    ).copyWith(scrollbars: false),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: AppSpacing.md,
+                            runSpacing: AppSpacing.md,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                detail.nombreCompleto,
+                                style: theme.textTheme.headlineSmall,
                               ),
-                          ],
-                        ),
-                        const Gap(AppSpacing.xs),
-                        Text(
-                          '@${detail.userName}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.primary,
+                              _StatusBadge(
+                                label: detail.activo ? 'Activo' : 'Inactivo',
+                                icon: detail.activo
+                                    ? Icons.verified_user_outlined
+                                    : Icons.person_off_outlined,
+                                background: detail.activo
+                                    ? theme.colorScheme.primaryContainer
+                                    : theme.colorScheme.surfaceContainerHighest,
+                                foreground: detail.activo
+                                    ? theme.colorScheme.onPrimaryContainer
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                              if (detail.debeCambiarPassword)
+                                _StatusBadge(
+                                  label: 'Cambio de clave pendiente',
+                                  icon: Icons.password_outlined,
+                                  background: const Color(0xFFF9E8BF),
+                                  foreground: const Color(0xFF7A5512),
+                                ),
+                            ],
                           ),
-                        ),
-                        const Gap(AppSpacing.lg),
-                        Wrap(
-                          spacing: AppSpacing.md,
-                          runSpacing: AppSpacing.md,
-                          children: [
-                            AppButton.secondary(
-                              label: 'Editar usuario',
-                              icon: Icons.edit_outlined,
-                              isLoading: state.isSubmittingAction,
-                              onPressed: onEditUser,
+                          const Gap(AppSpacing.xs),
+                          Text(
+                            '@${detail.userName}',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.primary,
                             ),
-                            AppButton.secondary(
-                              label: 'Resetear contrasena',
-                              icon: Icons.password_outlined,
-                              isLoading: state.isSubmittingAction,
-                              onPressed: onResetPassword,
-                            ),
-                            AppButton.secondary(
-                              label: detail.activo
-                                  ? 'Desactivar usuario'
-                                  : 'Reactivar usuario',
-                              icon: detail.activo
-                                  ? Icons.person_off_outlined
-                                  : Icons.person_add_alt_1_outlined,
-                              isLoading: state.isSubmittingAction,
-                              onPressed: onToggleState,
-                            ),
-                          ],
-                        ),
-                        const Gap(AppSpacing.xl),
-                        Wrap(
-                          spacing: AppSpacing.lg,
-                          runSpacing: AppSpacing.lg,
-                          children: [
-                            _DetailCard(
-                              title: 'Identidad',
-                              lines: [
-                                'DNI: ${detail.dni}',
-                                'Area: ${detail.areaNombre ?? 'Sin area'}',
-                                'Usuario ID: ${detail.usuarioId}',
-                              ],
-                            ),
-                            _DetailCard(
-                              title: 'Acceso',
-                              lines: [
-                                'Rol: ${detail.rolNombre}',
-                                'Codigo de rol: ${detail.rolCodigo}',
-                                'Intentos fallidos: ${detail.intentosFallidos}',
-                              ],
-                            ),
-                            _DetailCard(
-                              title: 'Trazabilidad',
-                              lines: [
-                                'Creado: ${_formatDateTime(detail.creadoEn)}',
-                                'Ultimo login: ${_formatOptionalDate(detail.ultimoLoginEn)}',
-                                'Bloqueado hasta: ${_formatOptionalDate(detail.bloqueadoHasta)}',
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const Gap(AppSpacing.lg),
+                          Wrap(
+                            spacing: AppSpacing.md,
+                            runSpacing: AppSpacing.md,
+                            children: [
+                              AppButton.secondary(
+                                label: 'Editar usuario',
+                                icon: Icons.edit_outlined,
+                                isLoading: state.isSubmittingAction,
+                                onPressed: onEditUser,
+                              ),
+                              AppButton.secondary(
+                                label: 'Resetear contrasena',
+                                icon: Icons.password_outlined,
+                                isLoading: state.isSubmittingAction,
+                                onPressed: onResetPassword,
+                              ),
+                              AppButton.secondary(
+                                label: detail.activo
+                                    ? 'Desactivar usuario'
+                                    : 'Reactivar usuario',
+                                icon: detail.activo
+                                    ? Icons.person_off_outlined
+                                    : Icons.person_add_alt_1_outlined,
+                                isLoading: state.isSubmittingAction,
+                                onPressed: onToggleState,
+                              ),
+                            ],
+                          ),
+                          const Gap(AppSpacing.xl),
+                          Wrap(
+                            spacing: AppSpacing.lg,
+                            runSpacing: AppSpacing.lg,
+                            children: [
+                              _DetailCard(
+                                title: 'Identidad',
+                                lines: [
+                                  'DNI: ${detail.dni}',
+                                  'Area: ${detail.areaNombre ?? 'Sin area'}',
+                                  'Usuario ID: ${detail.usuarioId}',
+                                ],
+                              ),
+                              _DetailCard(
+                                title: 'Acceso',
+                                lines: [
+                                  'Rol: ${detail.rolNombre}',
+                                  'Codigo de rol: ${detail.rolCodigo}',
+                                  'Intentos fallidos: ${detail.intentosFallidos}',
+                                ],
+                              ),
+                              _DetailCard(
+                                title: 'Trazabilidad',
+                                lines: [
+                                  'Creado: ${_formatDateTime(detail.creadoEn)}',
+                                  'Ultimo login: ${_formatOptionalDate(detail.ultimoLoginEn)}',
+                                  'Bloqueado hasta: ${_formatOptionalDate(detail.bloqueadoHasta)}',
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -1147,42 +1091,6 @@ class _MiniPill extends StatelessWidget {
         style: Theme.of(
           context,
         ).textTheme.labelMedium?.copyWith(color: foreground),
-      ),
-    );
-  }
-}
-
-class _SummaryBadge extends StatelessWidget {
-  const _SummaryBadge({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.82),
-            ),
-          ),
-          const Gap(AppSpacing.xs),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
-          ),
-        ],
       ),
     );
   }

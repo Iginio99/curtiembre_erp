@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
@@ -28,8 +30,8 @@ class LotesPage extends StatefulWidget {
 
 class _LotesPageState extends State<LotesPage> {
   final _searchController = TextEditingController();
-  final _estadoController = TextEditingController();
   final Talker _talker = getIt<Talker>();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -39,22 +41,22 @@ class _LotesPageState extends State<LotesPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
-    _estadoController.dispose();
     super.dispose();
   }
 
-  void _applyFilters() {
-    FocusScope.of(context).unfocus();
-    _talker.ui(
-      'Se aplicaron filtros en lotes con texto=${_describeSearchTerm(_searchController.text)} y estado=${_describeState(_estadoController.text)}.',
-    );
-    context.read<LotesCubit>().load(
-      searchTerm: _searchController.text.trim(),
-      estado: _estadoController.text.trim().isEmpty
-          ? null
-          : _estadoController.text.trim(),
-    );
+  void _searchAsYouType(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      context.read<LotesCubit>().load(
+        searchTerm: value.trim(),
+        resetCliente: true,
+        resetTipoPiel: true,
+        resetEstado: true,
+      );
+    });
   }
 
   Future<void> _openCreateDialog(LotesState state) async {
@@ -167,15 +169,6 @@ class _LotesPageState extends State<LotesPage> {
     return '${normalized.length} caracteres';
   }
 
-  String _describeState(String value) {
-    final normalized = value.trim();
-    if (normalized.isEmpty) {
-      return 'vacio';
-    }
-
-    return normalized;
-  }
-
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
@@ -204,7 +197,7 @@ class _LotesPageState extends State<LotesPage> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           return Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1480),
@@ -218,15 +211,6 @@ class _LotesPageState extends State<LotesPage> {
                         text: state.searchTerm,
                         selection: TextSelection.collapsed(
                           offset: state.searchTerm.length,
-                        ),
-                      );
-                    }
-
-                    if (_estadoController.text != (state.estadoFilter ?? '')) {
-                      _estadoController.value = TextEditingValue(
-                        text: state.estadoFilter ?? '',
-                        selection: TextSelection.collapsed(
-                          offset: (state.estadoFilter ?? '').length,
                         ),
                       );
                     }
@@ -258,35 +242,14 @@ class _LotesPageState extends State<LotesPage> {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const Gap(AppSpacing.xl),
+                      const Gap(AppSpacing.lg),
                       _LotesFiltersCard(
                         searchController: _searchController,
-                        estadoController: _estadoController,
                         state: state,
-                        onApply: _applyFilters,
+                        onSearchChanged: _searchAsYouType,
                         onCreate: () => _openCreateDialog(state),
-                        onClienteChanged: (value) {
-                          _talker.ui(
-                            'Se cambio el filtro de cliente en lotes a ${value ?? 'todos'}.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context.read<LotesCubit>().load(
-                            clienteId: value,
-                            resetCliente: value == null,
-                          );
-                        },
-                        onTipoPielChanged: (value) {
-                          _talker.ui(
-                            'Se cambio el filtro de tipo de piel en lotes a ${value ?? 'todos'}.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context.read<LotesCubit>().load(
-                            tipoPielId: value,
-                            resetTipoPiel: value == null,
-                          );
-                        },
                       ),
-                      const Gap(AppSpacing.xl),
+                      const Gap(AppSpacing.lg),
                     ];
 
                     if (compactHeight) {
@@ -361,129 +324,38 @@ class _LotesPageState extends State<LotesPage> {
 class _LotesFiltersCard extends StatelessWidget {
   const _LotesFiltersCard({
     required this.searchController,
-    required this.estadoController,
     required this.state,
-    required this.onApply,
+    required this.onSearchChanged,
     required this.onCreate,
-    required this.onClienteChanged,
-    required this.onTipoPielChanged,
   });
 
   final TextEditingController searchController;
-  final TextEditingController estadoController;
   final LotesState state;
-  final VoidCallback onApply;
+  final ValueChanged<String> onSearchChanged;
   final VoidCallback onCreate;
-  final ValueChanged<int?> onClienteChanged;
-  final ValueChanged<int?> onTipoPielChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AppSurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text('Busqueda operativa', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            'Filtra por codigo, cliente, tipo de piel o estado para revisar rapido la disponibilidad del lote antes de crear ordenes.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Expanded(
+            child: TextField(
+              controller: searchController,
+              onChanged: onSearchChanged,
+              decoration: const InputDecoration(
+                hintText: 'Buscar por codigo, cliente, piel, estado o fecha...',
+                prefixIcon: Icon(Icons.search_rounded),
+              ),
             ),
           ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.lg,
-            children: [
-              SizedBox(
-                width: 320,
-                child: TextField(
-                  controller: searchController,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => onApply(),
-                  decoration: const InputDecoration(
-                    labelText: 'Buscar lote',
-                    hintText: 'Ej. LT-0001 o cliente',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: DropdownButtonFormField<int?>(
-                  initialValue: state.selectedClienteId,
-                  decoration: const InputDecoration(labelText: 'Cliente'),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Todos los clientes'),
-                    ),
-                    ...state.clienteOptions.map(
-                      (option) => DropdownMenuItem<int?>(
-                        value: option.id,
-                        child: Text(option.label),
-                      ),
-                    ),
-                  ],
-                  onChanged: onClienteChanged,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: DropdownButtonFormField<int?>(
-                  initialValue: state.selectedTipoPielId,
-                  decoration: const InputDecoration(labelText: 'Tipo de piel'),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Todos los tipos'),
-                    ),
-                    ...state.tipoPielOptions.map(
-                      (option) => DropdownMenuItem<int?>(
-                        value: option.id,
-                        child: Text(option.label),
-                      ),
-                    ),
-                  ],
-                  onChanged: onTipoPielChanged,
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: TextField(
-                  controller: estadoController,
-                  onSubmitted: (_) => onApply(),
-                  decoration: const InputDecoration(
-                    labelText: 'Estado',
-                    hintText: 'Ej. DISPONIBLE',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              AppButton.primary(
-                label: 'Aplicar filtros',
-                icon: Icons.search_rounded,
-                isLoading: state.status == LotesStatus.loading,
-                onPressed: onApply,
-                expand: false,
-              ),
-              AppButton.secondary(
-                label: 'Nuevo lote',
-                icon: Icons.inventory_2_outlined,
-                isLoading: state.isSubmittingAction,
-                onPressed: onCreate,
-              ),
-            ],
+          const Gap(AppSpacing.md),
+          AppButton.secondary(
+            label: 'Nuevo lote',
+            icon: Icons.inventory_2_outlined,
+            isLoading: state.isSubmittingAction,
+            onPressed: onCreate,
           ),
         ],
       ),
@@ -507,7 +379,7 @@ class _LotesListPanel extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AppSurfaceCard(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -590,19 +462,10 @@ class _LoteDetailPanel extends StatelessWidget {
     final lote = state.selectedLote;
 
     return AppSurfaceCard(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Detalle del lote', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.xs),
-          Text(
-            'Aqui revisas identidad del lote, piel disponible, tipo de piel y trazabilidad para ordenes de produccion.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
           Expanded(
             child: Builder(
               builder: (context) {
@@ -640,145 +503,131 @@ class _LoteDetailPanel extends StatelessWidget {
                   );
                 }
 
-                final disponibilidad = state.disponibilidad;
+                final inicial = lote.cantidadPielesInicial;
+                final utilizada = lote.cantidadPielesUtilizada;
+                final progreso = inicial <= 0
+                    ? 0.0
+                    : (utilizada / inicial).clamp(0.0, 1.0).toDouble();
 
                 return SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        spacing: AppSpacing.md,
-                        runSpacing: AppSpacing.md,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                      Row(
                         children: [
-                          Text(
-                            lote.codigo,
-                            style: theme.textTheme.headlineSmall,
-                          ),
-                          _StatusBadge(
-                            label: lote.estado,
-                            background: theme.colorScheme.primaryContainer,
-                            foreground: theme.colorScheme.onPrimaryContainer,
-                          ),
-                          if (lote.clienteTraeLote)
-                            _StatusBadge(
-                              label: 'Lote del cliente',
-                              background: theme.colorScheme.tertiaryContainer,
-                              foreground: theme.colorScheme.onTertiaryContainer,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: AppSpacing.sm,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    Text(
+                                      lote.codigo,
+                                      style: theme.textTheme.titleLarge,
+                                    ),
+                                    _StatusBadge(
+                                      label: lote.estado,
+                                      background:
+                                          theme.colorScheme.primaryContainer,
+                                      foreground:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ],
+                                ),
+                                const Gap(AppSpacing.xs),
+                                Text(
+                                  lote.clienteRazonSocial,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                          AppButton.secondary(
+                            label: 'Editar',
+                            icon: Icons.edit_outlined,
+                            isLoading: state.isSubmittingAction,
+                            onPressed: onEdit,
+                          ),
                         ],
-                      ),
-                      const Gap(AppSpacing.xs),
-                      Text(
-                        lote.clienteRazonSocial,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
                       ),
                       const Gap(AppSpacing.lg),
-                      AppButton.secondary(
-                        label: 'Editar lote',
-                        icon: Icons.edit_outlined,
-                        isLoading: state.isSubmittingAction,
-                        onPressed: onEdit,
+                      const Divider(),
+                      const Gap(AppSpacing.md),
+                      Text('Identidad', style: theme.textTheme.titleSmall),
+                      const Gap(AppSpacing.md),
+                      _DetailRow(label: 'ID', value: '${lote.id}'),
+                      _DetailRow(
+                        label: 'Tipo de piel',
+                        value:
+                            '${lote.tipoPielNombre} - ${lote.tipoPielCodigo}',
                       ),
-                      const Gap(AppSpacing.xl),
-                      Wrap(
-                        spacing: AppSpacing.lg,
-                        runSpacing: AppSpacing.lg,
+                      _DetailRow(
+                        label: 'Fecha de ingreso',
+                        value: _formatDate(lote.fechaIngreso),
+                      ),
+                      _DetailRow(
+                        label: 'Costo de pieles',
+                        value: 'S/ ${_formatDecimal(lote.costoPielesTotal)}',
+                      ),
+                      const Gap(AppSpacing.md),
+                      const Divider(),
+                      const Gap(AppSpacing.md),
+                      Row(
                         children: [
-                          _DetailCard(
-                            title: 'Identidad',
-                            lines: [
-                              'ID: ${lote.id}',
-                              'Cliente: ${lote.clienteRazonSocial}',
-                              'Tipo de piel: ${lote.tipoPielNombre}',
-                              'Codigo tipo: ${lote.tipoPielCodigo}',
-                            ],
+                          Expanded(
+                            child: Text(
+                              'Disponibilidad',
+                              style: theme.textTheme.titleSmall,
+                            ),
                           ),
-                          _DetailCard(
-                            title: 'Cantidad y disponibilidad',
-                            lines: [
-                              'Inicial: ${_formatDecimal(lote.cantidadPielesInicial)}',
-                              'Utilizada: ${_formatDecimal(lote.cantidadPielesUtilizada)}',
-                              'Disponible: ${_formatDecimal(lote.cantidadPielesDisponible)}',
-                              'Lados calculados: ${_formatDecimal(lote.cantidadLadosCalculada)}',
-                            ],
-                          ),
-                          _DetailCard(
-                            title: 'Ingreso y costo',
-                            lines: [
-                              'Fecha ingreso: ${_formatDate(lote.fechaIngreso)}',
-                              'Costo pieles: ${_formatDecimal(lote.costoPielesTotal)}',
-                              'Creado: ${_formatDateTime(lote.creadoEn)}',
-                              'Usuario creador: ${lote.creadoPorUsuarioId?.toString() ?? 'Sin dato'}',
-                            ],
+                          Text(
+                            '${_formatDecimal(utilizada)} de ${_formatDecimal(inicial)} utilizadas',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
-                      const Gap(AppSpacing.xl),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Disponibilidad actual',
-                              style: theme.textTheme.titleMedium,
+                      const Gap(AppSpacing.sm),
+                      LinearProgressIndicator(value: progreso, minHeight: 5),
+                      const Gap(AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _LoteMetric(
+                              label: 'Inicial',
+                              value: _formatDecimal(inicial),
                             ),
-                            const Gap(AppSpacing.md),
-                            if (disponibilidad == null)
-                              Text(
-                                'Sin disponibilidad cargada.',
-                                style: theme.textTheme.bodyMedium,
-                              )
-                            else
-                              Wrap(
-                                spacing: AppSpacing.lg,
-                                runSpacing: AppSpacing.lg,
-                                children: [
-                                  _AvailabilityMetric(
-                                    label: 'Inicial',
-                                    value: _formatDecimal(
-                                      disponibilidad.cantidadPielesInicial,
-                                    ),
-                                  ),
-                                  _AvailabilityMetric(
-                                    label: 'Utilizada',
-                                    value: _formatDecimal(
-                                      disponibilidad.cantidadPielesUtilizada,
-                                    ),
-                                  ),
-                                  _AvailabilityMetric(
-                                    label: 'Disponible',
-                                    value: _formatDecimal(
-                                      disponibilidad.cantidadPielesDisponible,
-                                    ),
-                                  ),
-                                  _AvailabilityMetric(
-                                    label: 'Lados',
-                                    value: _formatDecimal(
-                                      disponibilidad.cantidadLadosCalculada,
-                                    ),
-                                  ),
-                                ],
+                          ),
+                          const Gap(AppSpacing.md),
+                          Expanded(
+                            child: _LoteMetric(
+                              label: 'Disponible',
+                              value: _formatDecimal(
+                                lote.cantidadPielesDisponible,
                               ),
-                          ],
-                        ),
+                            ),
+                          ),
+                          const Gap(AppSpacing.md),
+                          Expanded(
+                            child: _LoteMetric(
+                              label: 'Lados',
+                              value: _formatDecimal(
+                                lote.cantidadLadosCalculada,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       if ((lote.observacion ?? '').trim().isNotEmpty) ...[
-                        const Gap(AppSpacing.xl),
+                        const Gap(AppSpacing.lg),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerLowest,
                             borderRadius: BorderRadius.circular(20),
@@ -885,41 +734,8 @@ class _LoteListTileCard extends StatelessWidget {
   }
 }
 
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.lines});
-
-  final String title;
-  final List<String> lines;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: 280,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const Gap(AppSpacing.md),
-          for (final line in lines) ...[
-            Text(line, style: theme.textTheme.bodyMedium),
-            const Gap(AppSpacing.sm),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AvailabilityMetric extends StatelessWidget {
-  const _AvailabilityMetric({required this.label, required this.value});
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -928,18 +744,51 @@ class _AvailabilityMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 150,
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoteMetric extends StatelessWidget {
+  const _LoteMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      width: 160,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: theme.textTheme.labelLarge),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const Gap(AppSpacing.xs),
           Text(value, style: theme.textTheme.titleLarge),
         ],

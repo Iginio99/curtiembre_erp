@@ -298,7 +298,17 @@ public sealed class SqlUsuarioRepository(
                     u.usuario LIKE @TextoLike OR
                     u.nombres LIKE @TextoLike OR
                     u.apellidos LIKE @TextoLike OR
-                    u.dni LIKE @TextoLike
+                    u.dni LIKE @TextoLike OR
+                    r.codigo LIKE @TextoLike OR
+                    r.nombre LIKE @TextoLike OR
+                    a.nombre LIKE @TextoLike OR
+                    CONVERT(varchar(20), u.id) LIKE @TextoLike OR
+                    CONVERT(varchar(20), u.rol_id) LIKE @TextoLike OR
+                    CONVERT(varchar(20), u.area_id) LIKE @TextoLike OR
+                    CONVERT(varchar(19), u.ultimo_login_en, 120) LIKE @TextoLike OR
+                    CONVERT(varchar(19), u.creado_en, 120) LIKE @TextoLike OR
+                    CASE WHEN u.activo = 1 THEN 'activo' ELSE 'inactivo' END LIKE @TextoLike OR
+                    CASE WHEN u.debe_cambiar_password = 1 THEN 'cambio de clave' ELSE '' END LIKE @TextoLike
                 )
               AND (@RolId IS NULL OR u.rol_id = @RolId)
               AND (@AreaId IS NULL OR u.area_id = @AreaId)

@@ -28,7 +28,7 @@ public sealed class SqlLoteRepository(
                 l.cantidad_pieles_inicial AS CantidadPielesInicial,
                 CONVERT(DECIMAL(18,4), l.cantidad_pieles_inicial - l.cantidad_pieles_disponible) AS CantidadPielesUtilizada,
                 l.cantidad_pieles_disponible AS CantidadPielesDisponible,
-                l.cantidad_lados_calculada AS CantidadLadosCalculada,
+                CAST(l.cantidad_pieles_inicial * 2.0 AS DECIMAL(18,2)) AS CantidadLadosCalculada,
                 l.cliente_trae_lote AS ClienteTraeLote,
                 l.costo_pieles_total AS CostoPielesTotal,
                 l.observacion AS Observacion,
@@ -103,7 +103,7 @@ public sealed class SqlLoteRepository(
                 l.cantidad_pieles_inicial AS CantidadPielesInicial,
                 CONVERT(DECIMAL(18,4), l.cantidad_pieles_inicial - l.cantidad_pieles_disponible) AS CantidadPielesUtilizada,
                 l.cantidad_pieles_disponible AS CantidadPielesDisponible,
-                l.cantidad_lados_calculada AS CantidadLadosCalculada,
+                CAST(l.cantidad_pieles_inicial * 2.0 AS DECIMAL(18,2)) AS CantidadLadosCalculada,
                 l.cliente_trae_lote AS ClienteTraeLote,
                 l.costo_pieles_total AS CostoPielesTotal,
                 l.observacion AS Observacion,
@@ -117,7 +117,13 @@ public sealed class SqlLoteRepository(
                     @Texto IS NULL OR
                     l.codigo LIKE @TextoLike OR
                     c.razon_social LIKE @TextoLike OR
-                    tp.nombre LIKE @TextoLike
+                    tp.nombre LIKE @TextoLike OR
+                    tp.codigo LIKE @TextoLike OR
+                    l.estado LIKE @TextoLike OR
+                    ISNULL(l.observacion, '') LIKE @TextoLike OR
+                    CONVERT(varchar(10), l.fecha_ingreso, 120) LIKE @TextoLike OR
+                    CONVERT(varchar(30), l.cantidad_pieles_inicial) LIKE @TextoLike OR
+                    CONVERT(varchar(30), l.cantidad_pieles_disponible) LIKE @TextoLike
                 )
               AND (@ClienteId IS NULL OR l.cliente_id = @ClienteId)
               AND (@TipoPielId IS NULL OR l.tipo_piel_id = @TipoPielId)

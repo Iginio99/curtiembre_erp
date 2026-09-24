@@ -67,7 +67,7 @@ class UsersRemoteDataSource {
         path,
         queryParameters: {
           if (texto != null && texto.trim().isNotEmpty) 'texto': texto.trim(),
-          'activo': activo,
+          if (activo != null) 'activo': activo,
         },
       );
       final items = response.data ?? const [];

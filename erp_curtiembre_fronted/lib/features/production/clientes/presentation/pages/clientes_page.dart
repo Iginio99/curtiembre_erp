@@ -3,16 +3,19 @@ import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
+import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/domain/entities/cliente_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/presentation/cubit/clientes_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/presentation/cubit/clientes_state.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/presentation/widgets/cliente_upsert_dialog.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
+import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -175,169 +178,166 @@ class _ClientesPageState extends State<ClientesPage> {
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
+    final isSigningOut = context.select(
+      (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
+    );
+    final permissionCodes = context.select(
+      (SecurityAccessCubit cubit) =>
+          cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
+    );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Clientes de produccion'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.lg),
-            child: TextButton.icon(
-              onPressed: () {
-                _talker.ui(
-                  'Se regreso desde clientes de produccion al panel principal.',
-                );
-                context.go('/home');
-              },
-              icon: const Icon(Icons.dashboard_outlined),
-              label: const Text('Panel'),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1440),
-                  child: BlocBuilder<ClientesCubit, ClientesState>(
-                    builder: (context, state) {
-                      final isWide =
-                          MediaQuery.sizeOf(context).width >=
-                          AppBreakpoints.tablet;
-                      final compactHeight = constraints.maxHeight < 860;
+    if (session == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-                      if (_searchController.text != state.searchTerm) {
-                        _searchController.value = TextEditingValue(
-                          text: state.searchTerm,
-                          selection: TextSelection.collapsed(
-                            offset: state.searchTerm.length,
-                          ),
+    return AppShell(
+      title: 'Clientes',
+      currentPath: '/produccion/clientes',
+      breadcrumbs: const ['Inicio', 'Produccion', 'Clientes'],
+      userName: session.nombreCompleto,
+      roleName: session.rolNombre,
+      accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
+      onSignOut: isSigningOut
+          ? () {}
+          : () => context.read<AuthCubit>().signOut(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1440),
+                child: BlocBuilder<ClientesCubit, ClientesState>(
+                  builder: (context, state) {
+                    final isWide =
+                        MediaQuery.sizeOf(context).width >=
+                        AppBreakpoints.tablet;
+                    final compactHeight = constraints.maxHeight < 860;
+
+                    if (_searchController.text != state.searchTerm) {
+                      _searchController.value = TextEditingValue(
+                        text: state.searchTerm,
+                        selection: TextSelection.collapsed(
+                          offset: state.searchTerm.length,
+                        ),
+                      );
+                    }
+
+                    final listPanel = _ClientesListPanel(
+                      state: state,
+                      onRetry: () => context.read<ClientesCubit>().initialize(),
+                      onSelectCliente: (clienteId) {
+                        _talker.ui(
+                          'Se selecciono el cliente $clienteId desde el listado.',
+                          logLevel: LogLevel.debug,
                         );
-                      }
+                        context.read<ClientesCubit>().selectCliente(clienteId);
+                      },
+                    );
 
-                      final listPanel = _ClientesListPanel(
-                        state: state,
-                        onRetry: () =>
-                            context.read<ClientesCubit>().initialize(),
-                        onSelectCliente: (clienteId) {
+                    final detailPanel = _ClienteDetailPanel(
+                      state: state,
+                      onRetry: () =>
+                          context.read<ClientesCubit>().retryDetail(),
+                      onEdit: state.selectedCliente == null
+                          ? null
+                          : () =>
+                                _openEditDialog(state, state.selectedCliente!),
+                      onToggleState: state.selectedCliente == null
+                          ? null
+                          : () => _toggleState(state.selectedCliente!),
+                    );
+
+                    final headerAndFilters = <Widget>[
+                      Text(
+                        'Administra los clientes vinculados a lotes y ordenes de produccion.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(AppSpacing.xl),
+                      _ClientesFiltersCard(
+                        controller: _searchController,
+                        selectedFilter: state.filter,
+                        isLoading: state.status == ClientesStatus.loading,
+                        isSubmittingAction: state.isSubmittingAction,
+                        onSearch: _applySearch,
+                        onCreateCliente: () => _openCreateDialog(state),
+                        onFilterChanged: (filter) {
                           _talker.ui(
-                            'Se selecciono el cliente $clienteId desde el listado.',
+                            'Se cambio el filtro de clientes a $filter.',
                             logLevel: LogLevel.debug,
                           );
-                          context.read<ClientesCubit>().selectCliente(
-                            clienteId,
-                          );
+                          context.read<ClientesCubit>().load(filter: filter);
                         },
-                      );
+                      ),
+                      const Gap(AppSpacing.xl),
+                    ];
 
-                      final detailPanel = _ClienteDetailPanel(
-                        state: state,
-                        onRetry: () =>
-                            context.read<ClientesCubit>().retryDetail(),
-                        onEdit: state.selectedCliente == null
-                            ? null
-                            : () => _openEditDialog(
-                                state,
-                                state.selectedCliente!,
-                              ),
-                        onToggleState: state.selectedCliente == null
-                            ? null
-                            : () => _toggleState(state.selectedCliente!),
-                      );
-
-                      final headerAndFilters = <Widget>[
-                        _ClientesHeader(
-                          totalItems: state.items.length,
-                          sessionUserName: session?.userName,
-                        ),
-                        const Gap(AppSpacing.xl),
-                        _ClientesFiltersCard(
-                          controller: _searchController,
-                          selectedFilter: state.filter,
-                          isLoading: state.status == ClientesStatus.loading,
-                          isSubmittingAction: state.isSubmittingAction,
-                          onSearch: _applySearch,
-                          onCreateCliente: () => _openCreateDialog(state),
-                          onFilterChanged: (filter) {
-                            _talker.ui(
-                              'Se cambio el filtro de clientes a $filter.',
-                              logLevel: LogLevel.debug,
-                            );
-                            context.read<ClientesCubit>().load(filter: filter);
-                          },
-                        ),
-                        const Gap(AppSpacing.xl),
-                      ];
-
-                      if (compactHeight) {
-                        if (isWide) {
-                          return SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...headerAndFilters,
-                                SizedBox(
-                                  height: 620,
-                                  child: Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
+                    if (compactHeight) {
+                      if (isWide) {
                         return SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ...headerAndFilters,
-                              SizedBox(height: 520, child: listPanel),
-                              const Gap(AppSpacing.xl),
-                              SizedBox(height: 560, child: detailPanel),
+                              SizedBox(
+                                height: 620,
+                                child: Row(
+                                  children: [
+                                    Expanded(flex: 9, child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(flex: 8, child: detailPanel),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         );
                       }
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...headerAndFilters,
-                          Expanded(
-                            child: isWide
-                                ? Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  )
-                                : Column(
-                                    children: [
-                                      Expanded(child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(child: detailPanel),
-                                    ],
-                                  ),
-                          ),
-                        ],
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...headerAndFilters,
+                            SizedBox(height: 520, child: listPanel),
+                            const Gap(AppSpacing.xl),
+                            SizedBox(height: 560, child: detailPanel),
+                          ],
+                        ),
                       );
-                    },
-                  ),
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...headerAndFilters,
+                        Expanded(
+                          child: isWide
+                              ? Row(
+                                  children: [
+                                    Expanded(flex: 9, child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(flex: 8, child: detailPanel),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    Expanded(child: listPanel),
+                                    const Gap(AppSpacing.xl),
+                                    Expanded(child: detailPanel),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -432,27 +432,18 @@ class _ClientesFiltersCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Busqueda comercial', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            'Filtra por razon social, documento o contacto y revisa rapidamente quienes siguen disponibles para nuevos lotes.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
           Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.lg,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               SizedBox(
@@ -481,35 +472,29 @@ class _ClientesFiltersCard extends StatelessWidget {
                 isLoading: isSubmittingAction,
                 onPressed: onCreateCliente,
               ),
+              SegmentedButton<ClienteActivityFilter>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: ClienteActivityFilter.active,
+                    label: Text('Activos'),
+                  ),
+                  ButtonSegment(
+                    value: ClienteActivityFilter.inactive,
+                    label: Text('Inactivos'),
+                  ),
+                  ButtonSegment(
+                    value: ClienteActivityFilter.all,
+                    label: Text('Todos'),
+                  ),
+                ],
+                selected: {selectedFilter},
+                onSelectionChanged: (selection) {
+                  final filter = selection.firstOrNull;
+                  if (filter != null) onFilterChanged(filter);
+                },
+              ),
             ],
-          ),
-          const Gap(AppSpacing.lg),
-          SegmentedButton<ClienteActivityFilter>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment<ClienteActivityFilter>(
-                value: ClienteActivityFilter.active,
-                label: Text('Activos'),
-                icon: Icon(Icons.verified_outlined),
-              ),
-              ButtonSegment<ClienteActivityFilter>(
-                value: ClienteActivityFilter.inactive,
-                label: Text('Inactivos'),
-                icon: Icon(Icons.block_outlined),
-              ),
-              ButtonSegment<ClienteActivityFilter>(
-                value: ClienteActivityFilter.all,
-                label: Text('Todos'),
-                icon: Icon(Icons.groups_outlined),
-              ),
-            ],
-            selected: {selectedFilter},
-            onSelectionChanged: (selection) {
-              final filter = selection.firstOrNull;
-              if (filter != null) {
-                onFilterChanged(filter);
-              }
-            },
           ),
         ],
       ),
@@ -535,11 +520,11 @@ class _ClientesListPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -627,11 +612,11 @@ class _ClienteDetailPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
