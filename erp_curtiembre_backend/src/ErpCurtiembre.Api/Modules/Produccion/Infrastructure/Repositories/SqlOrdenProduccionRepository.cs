@@ -423,6 +423,20 @@ public sealed class SqlOrdenProduccionRepository(
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task UpdateOrderResponsibleAsync(long orderId, long responsableUsuarioId, CancellationToken cancellationToken)
+    {
+        var order = await dbContext.OrdenesProduccion.SingleAsync(x => x.Id == orderId, cancellationToken);
+        order.ResponsableUsuarioId = responsableUsuarioId;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateProcessResponsibleAsync(long processId, long responsableUsuarioId, CancellationToken cancellationToken)
+    {
+        var process = await dbContext.OrdenesProduccionProceso.SingleAsync(x => x.Id == processId, cancellationToken);
+        process.ResponsableUsuarioId = responsableUsuarioId;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<string> ResolveLoteStateAsync(
         long loteId,
         decimal cantidadDisponible,

@@ -63,9 +63,9 @@ class _Content extends StatelessWidget {
               onSelected: (_) => cubit.load(estado: 'SOLICITADA'),
             ),
             ChoiceChip(
-              label: const Text('Entregadas'),
-              selected: state.estado == 'ENTREGADA',
-              onSelected: (_) => cubit.load(estado: 'ENTREGADA'),
+              label: const Text('Aprobadas'),
+              selected: state.estado == 'APROBADA',
+              onSelected: (_) => cubit.load(estado: 'APROBADA'),
             ),
             ChoiceChip(
               label: const Text('Todas'),
@@ -108,11 +108,27 @@ class _Content extends StatelessWidget {
   }
 }
 
-class _SolicitudCard extends StatelessWidget {
+class _SolicitudCard extends StatefulWidget {
   const _SolicitudCard({required this.item, required this.isDelivering});
 
   final SolicitudInsumoRecord item;
   final bool isDelivering;
+
+  @override
+  State<_SolicitudCard> createState() => _SolicitudCardState();
+}
+
+class _SolicitudCardState extends State<_SolicitudCard> {
+  late final Future<SolicitudInsumoDetail> _detailFuture;
+
+  SolicitudInsumoRecord get item => widget.item;
+  bool get isDelivering => widget.isDelivering;
+
+  @override
+  void initState() {
+    super.initState();
+    _detailFuture = context.read<SolicitudesInsumosCubit>().getDetail(item.id);
+  }
 
   @override
   Widget build(BuildContext context) => AppSurfaceCard(
@@ -143,12 +159,54 @@ class _SolicitudCard extends StatelessWidget {
                 Text('Solicitado por: ${item.solicitadoPorNombre}'),
                 if (item.observacion?.trim().isNotEmpty ?? false)
                   Text('Observación: ${item.observacion}'),
+                const Gap(AppSpacing.md),
+                FutureBuilder<SolicitudInsumoDetail>(
+                  future: _detailFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const LinearProgressIndicator();
+                    }
+                    if (snapshot.hasError) {
+                      return const Text('No se pudo cargar el detalle.');
+                    }
+                    final lines = snapshot.data?.detalles ?? const [];
+                    return Column(
+                      children: lines
+                          .map(
+                            (line) => Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.xs,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${line.insumoCodigo} - ${line.insumoNombre}'
+                                      '${line.observacion?.trim().isNotEmpty ?? false ? ' | ${line.observacion}' : ''}',
+                                    ),
+                                  ),
+                                  const Gap(AppSpacing.md),
+                                  Text(
+                                    '${_decimal(line.cantidadSolicitada)} ${line.unidadMedidaCodigo}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    );
+                  },
+                ),
               ],
             ),
           ),
           if (item.canDeliver)
             AppButton.primary(
-              label: 'Entregar total',
+              label: 'Aprobar y registrar salida',
               icon: Icons.inventory_rounded,
               isLoading: isDelivering,
               onPressed: isDelivering ? null : () => _confirmDeliver(context),
@@ -167,12 +225,12 @@ class _SolicitudCard extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Entregar ${item.codigo}'),
+        title: Text('Aprobar ${item.codigo}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Verifica los insumos. Se realizará la salida del total solicitado; no se permiten entregas parciales.',
+              'Verifica los insumos. Al aprobar se registrará la salida del inventario y el consumo del proceso.',
             ),
             const Gap(AppSpacing.md),
             SizedBox(
@@ -215,7 +273,7 @@ class _SolicitudCard extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Confirmar entrega'),
+            child: const Text('Aprobar y registrar salida'),
           ),
         ],
       ),
@@ -232,7 +290,7 @@ class _SolicitudCard extends StatelessWidget {
       SnackBar(
         content: Text(
           error ??
-              '${item.codigo} fue entregada y la etapa quedó lista para iniciar.',
+              '${item.codigo} fue aprobada, se registró la salida y los insumos quedaron asociados al proceso.',
         ),
       ),
     );

@@ -402,18 +402,22 @@ class OrdenesProduccionRemoteDataSource {
     const path = '/api/produccion/lotes';
 
     try {
-      _talker.dataSource('GET $path con filtro estado=DISPONIBLE');
-      final response = await _dio.get<List<dynamic>>(
-        path,
-        queryParameters: {'estado': 'DISPONIBLE'},
-      );
+      _talker.dataSource('GET $path para consultar lotes con saldo disponible');
+      final response = await _dio.get<List<dynamic>>(path);
       final items = response.data ?? const [];
-      _talker.dataSource(
-        'GET $path completado con ${items.length} lotes disponibles.',
-      );
-      return items
+      final availableItems = items
           .map((item) => LoteOptionModel.fromJson(item as Map<String, dynamic>))
+          .where(
+            (item) =>
+                item.cantidadPielesDisponible > 0 &&
+                item.estado != 'ANULADO' &&
+                item.estado != 'AGOTADO',
+          )
           .toList(growable: false);
+      _talker.dataSource(
+        'GET $path completado con ${availableItems.length} lotes con saldo disponible.',
+      );
+      return availableItems;
     } on DioException catch (exception) {
       throw _mapAndLogDioException(exception, operation: 'GET $path');
     }

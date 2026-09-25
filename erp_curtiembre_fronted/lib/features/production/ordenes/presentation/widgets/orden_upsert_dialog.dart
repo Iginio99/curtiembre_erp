@@ -1,6 +1,7 @@
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/domain/entities/cliente_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/lote_option.dart';
+import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +14,7 @@ class OrdenUpsertFormData {
     this.fechaInicioPlanificada,
     required this.fechaFinEstimada,
     this.observacion,
+    this.responsableUsuarioId,
   });
 
   final int loteId;
@@ -21,6 +23,7 @@ class OrdenUpsertFormData {
   final DateTime? fechaInicioPlanificada;
   final DateTime fechaFinEstimada;
   final String? observacion;
+  final int? responsableUsuarioId;
 }
 
 class OrdenUpsertDialog extends StatefulWidget {
@@ -30,6 +33,7 @@ class OrdenUpsertDialog extends StatefulWidget {
     required this.isSubmitting,
     required this.clienteOptions,
     required this.loteOptions,
+    required this.responsableOptions,
     super.key,
   });
 
@@ -38,6 +42,7 @@ class OrdenUpsertDialog extends StatefulWidget {
   final bool isSubmitting;
   final List<ClienteOption> clienteOptions;
   final List<LoteOption> loteOptions;
+  final List<UserListItem> responsableOptions;
 
   @override
   State<OrdenUpsertDialog> createState() => _OrdenUpsertDialogState();
@@ -47,6 +52,7 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
   final _formKey = GlobalKey<FormState>();
   int? _selectedClienteId;
   int? _selectedLoteId;
+  int? _selectedResponsableId;
   DateTime? _fechaInicioPlanificada;
   late DateTime _fechaFinEstimada;
   late final TextEditingController _cantidadController;
@@ -74,6 +80,24 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
 
     return widget.loteOptions.where((lote) => lote.clienteId == _selectedClienteId).toList();
   }
+
+  LoteOption? get _selectedLote {
+    final loteId = _selectedLoteId;
+    if (loteId == null) {
+      return null;
+    }
+
+    for (final lote in widget.loteOptions) {
+      if (lote.id == loteId) {
+        return lote;
+      }
+    }
+    return null;
+  }
+
+  String _formatCantidad(double value) => value.toStringAsFixed(
+        value == value.roundToDouble() ? 0 : 2,
+      );
 
   Future<void> _pickFechaInicioPlanificada() async {
     final selected = await showDatePicker(
@@ -115,6 +139,7 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
         fechaInicioPlanificada: _fechaInicioPlanificada,
         fechaFinEstimada: _fechaFinEstimada,
         observacion: _normalizeOptional(_observacionController.text),
+        responsableUsuarioId: _selectedResponsableId,
       ),
     );
   }
@@ -183,18 +208,57 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
                       : (value) => setState(() => _selectedLoteId = value),
                   validator: (value) => value == null ? 'Selecciona un lote.' : null,
                 ),
+                if (_selectedLote case final lote?) ...[
+                  const Gap(AppSpacing.sm),
+                  Text(
+                    'Cantidad disponible: ${_formatCantidad(lote.cantidadPielesDisponible)} pieles',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                ],
+                const Gap(AppSpacing.md),
+                DropdownButtonFormField<int>(
+                  initialValue: _selectedResponsableId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Responsable de la orden',
+                  ),
+                  items: widget.responsableOptions
+                      .map(
+                        (user) => DropdownMenuItem<int>(
+                          value: user.usuarioId,
+                          child: Text(user.nombreCompleto),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: widget.isSubmitting
+                      ? null
+                      : (value) => setState(
+                          () => _selectedResponsableId = value,
+                        ),
+                  validator: (value) =>
+                      value == null ? 'Selecciona un responsable.' : null,
+                ),
                 const Gap(AppSpacing.md),
                 TextFormField(
                   controller: _cantidadController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Cantidad de pieles',
+                  decoration: InputDecoration(
+                    labelText: _selectedLote == null
+                        ? 'Cantidad de pieles'
+                        : 'Cantidad de pieles (max. ${_formatCantidad(_selectedLote!.cantidadPielesDisponible)})',
                     hintText: 'Ej. 80',
                   ),
                   validator: (value) {
                     final number = double.tryParse((value ?? '').trim());
                     if (number == null || number <= 0) {
                       return 'Ingresa una cantidad valida mayor a cero.';
+                    }
+                    final disponible = _selectedLote?.cantidadPielesDisponible;
+                    if (disponible != null && number > disponible) {
+                      return 'La cantidad maxima disponible es ${_formatCantidad(disponible)}.';
                     }
                     return null;
                   },

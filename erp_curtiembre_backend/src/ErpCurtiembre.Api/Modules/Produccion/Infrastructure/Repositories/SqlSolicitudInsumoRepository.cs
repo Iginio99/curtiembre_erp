@@ -138,7 +138,7 @@ public sealed class SqlSolicitudInsumoRepository(
         var affected = await dbContext.SolicitudesInsumo
             .Where(x => x.Id == id && x.Estado == "ENTREGANDO")
             .ExecuteUpdateAsync(
-                setters => setters.SetProperty(x => x.Estado, "ENTREGADA"),
+                setters => setters.SetProperty(x => x.Estado, "APROBADA"),
                 cancellationToken);
         return affected == 1;
     }

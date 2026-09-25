@@ -18,7 +18,6 @@ abstract final class AppAccessRoutes {
     if (permissionCodes.contains(configurationAdmin)) {
       routes.addAll({
         '/configuracion/areas',
-        '/configuracion/formulas',
         '/configuracion/parametros',
         '/configuracion/unidades-medida',
         '/configuracion/tipos-piel',

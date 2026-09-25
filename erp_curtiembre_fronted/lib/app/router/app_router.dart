@@ -15,8 +15,6 @@ import 'package:erp_curtiembre_fronted/features/auth/presentation/pages/change_p
 import 'package:erp_curtiembre_fronted/features/auth/presentation/pages/login_page.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/areas/presentation/cubit/areas_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/areas/presentation/pages/areas_page.dart';
-import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentation/cubit/formulas_cubit.dart';
-import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentation/pages/formulas_page.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/system_parameters/presentation/cubit/system_parameters_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/system_parameters/presentation/pages/system_parameters_page.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/skin_types/presentation/cubit/skin_types_cubit.dart';
@@ -169,13 +167,6 @@ class AppRouter {
             builder: (context, state) => BlocProvider<AreasCubit>(
               create: (_) => getIt<AreasCubit>()..initialize(),
               child: const AreasPage(),
-            ),
-          ),
-          GoRoute(
-            path: _formulasPath,
-            builder: (context, state) => BlocProvider<FormulasCubit>(
-              create: (_) => getIt<FormulasCubit>()..initialize(),
-              child: const FormulasPage(),
             ),
           ),
           GoRoute(
@@ -388,7 +379,6 @@ class AppRouter {
   static const String _alertsPath = '/alertas';
   static const String _usersPath = '/seguridad/usuarios';
   static const String _areasPath = '/configuracion/areas';
-  static const String _formulasPath = '/configuracion/formulas';
   static const String _systemParametersPath = '/configuracion/parametros';
   static const String _unitsPath = '/configuracion/unidades-medida';
   static const String _skinTypesPath = '/configuracion/tipos-piel';

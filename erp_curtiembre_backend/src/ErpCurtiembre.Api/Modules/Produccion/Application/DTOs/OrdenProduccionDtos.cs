@@ -98,3 +98,6 @@ public sealed record FinishOrdenProcesoRequestDto(
 
 public sealed record UpdateOrdenProcesoObservacionRequestDto(
     [property: StringLength(800)] string? Observacion);
+
+public sealed record UpdateResponsableRequestDto(
+    [property: Range(1, long.MaxValue)] long ResponsableUsuarioId);

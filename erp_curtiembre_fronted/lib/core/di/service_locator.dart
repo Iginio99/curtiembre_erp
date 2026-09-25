@@ -16,10 +16,6 @@ import 'package:erp_curtiembre_fronted/features/configuration/areas/data/datasou
 import 'package:erp_curtiembre_fronted/features/configuration/areas/data/repositories/areas_repository_impl.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/areas/domain/repositories/areas_repository.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/areas/presentation/cubit/areas_cubit.dart';
-import 'package:erp_curtiembre_fronted/features/configuration/formulas/data/datasources/formulas_remote_data_source.dart';
-import 'package:erp_curtiembre_fronted/features/configuration/formulas/data/repositories/formulas_repository_impl.dart';
-import 'package:erp_curtiembre_fronted/features/configuration/formulas/domain/repositories/formulas_repository.dart';
-import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentation/cubit/formulas_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/system_parameters/data/datasources/system_parameters_remote_data_source.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/system_parameters/data/repositories/system_parameters_repository_impl.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/system_parameters/domain/repositories/system_parameters_repository.dart';
@@ -161,9 +157,6 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<AreasRemoteDataSource>(
       () => AreasRemoteDataSource(getIt()),
     )
-    ..registerLazySingleton<FormulasRemoteDataSource>(
-      () => FormulasRemoteDataSource(getIt()),
-    )
     ..registerLazySingleton<SystemParametersRemoteDataSource>(
       () => SystemParametersRemoteDataSource(getIt()),
     )
@@ -249,9 +242,6 @@ Future<void> configureDependencies() async {
       () => AlertsRepositoryImpl(getIt()),
     )
     ..registerLazySingleton<AreasRepository>(() => AreasRepositoryImpl(getIt()))
-    ..registerLazySingleton<FormulasRepository>(
-      () => FormulasRepositoryImpl(getIt()),
-    )
     ..registerLazySingleton<SystemParametersRepository>(
       () => SystemParametersRepositoryImpl(getIt()),
     )
@@ -331,7 +321,6 @@ Future<void> configureDependencies() async {
     ..registerFactory<AuthCubit>(() => AuthCubit(getIt()))
     ..registerFactory<AlertsCubit>(() => AlertsCubit(getIt()))
     ..registerFactory<AreasCubit>(() => AreasCubit(getIt()))
-    ..registerFactory<FormulasCubit>(() => FormulasCubit(getIt()))
     ..registerFactory<SystemParametersCubit>(
       () => SystemParametersCubit(getIt()),
     )

@@ -699,11 +699,6 @@ const _moduleNavigationGroups = [
         route: '/configuracion/areas',
       ),
       _NavigationItem(
-        label: 'Fórmulas',
-        icon: Icons.science_outlined,
-        route: '/configuracion/formulas',
-      ),
-      _NavigationItem(
         label: 'Parámetros',
         icon: Icons.tune_rounded,
         route: '/configuracion/parametros',

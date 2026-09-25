@@ -16,12 +16,14 @@ class SolicitudInsumoDetailLine extends Equatable {
     required this.insumoNombre,
     required this.unidadMedidaCodigo,
     required this.cantidadSolicitada,
+    this.observacion,
   });
 
   final String insumoCodigo;
   final String insumoNombre;
   final String unidadMedidaCodigo;
   final double cantidadSolicitada;
+  final String? observacion;
 
   @override
   List<Object?> get props => [
@@ -29,5 +31,6 @@ class SolicitudInsumoDetailLine extends Equatable {
     insumoNombre,
     unidadMedidaCodigo,
     cantidadSolicitada,
+    observacion,
   ];
 }

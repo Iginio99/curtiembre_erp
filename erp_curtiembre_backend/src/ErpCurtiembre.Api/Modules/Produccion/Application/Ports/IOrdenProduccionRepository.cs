@@ -61,4 +61,8 @@ public interface IOrdenProduccionRepository
         long processId,
         string? observacion,
         CancellationToken cancellationToken);
+
+    Task UpdateOrderResponsibleAsync(long orderId, long responsableUsuarioId, CancellationToken cancellationToken);
+
+    Task UpdateProcessResponsibleAsync(long processId, long responsableUsuarioId, CancellationToken cancellationToken);
 }

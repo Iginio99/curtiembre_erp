@@ -16,6 +16,20 @@ public sealed class OrdenProduccionService(
     IDocumentSequenceService documentSequenceService,
     IDateTimeProvider dateTimeProvider)
 {
+    public async Task<UseCaseResult<OrdenProduccionDetailDto>> UpdateResponsibleAsync(
+        long orderId, UpdateResponsableRequestDto request, CancellationToken cancellationToken)
+    {
+        var order = await ordenProduccionRepository.FindByIdAsync(orderId, cancellationToken);
+        if (order is null)
+            return UseCaseResult<OrdenProduccionDetailDto>.Fail(ProduccionErrorCodes.NotFound, "No se encontro la orden.");
+        if (order.Estado == "ANULADA" || order.Estado == "FINALIZADA")
+            return UseCaseResult<OrdenProduccionDetailDto>.Fail(ProduccionErrorCodes.Conflict, "No se puede editar una orden cerrada.");
+        if (await usuarioLookupRepository.FindActiveByIdAsync(request.ResponsableUsuarioId, cancellationToken) is null)
+            return UseCaseResult<OrdenProduccionDetailDto>.Fail(ProduccionErrorCodes.Validation, "El responsable no esta activo.");
+        await ordenProduccionRepository.UpdateOrderResponsibleAsync(orderId, request.ResponsableUsuarioId, cancellationToken);
+        var updated = await ordenProduccionRepository.FindByIdAsync(orderId, cancellationToken);
+        return UseCaseResult<OrdenProduccionDetailDto>.Ok(MapDetail(updated!), "Responsable actualizado.");
+    }
     private static readonly string[] ExpectedSequenceCodes =
     [
         "REMOJO",

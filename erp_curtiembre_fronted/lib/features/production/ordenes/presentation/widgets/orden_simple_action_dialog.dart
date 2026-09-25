@@ -1,5 +1,6 @@
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
 import 'package:gap/gap.dart';
 
 class OrdenSimpleActionFormData {
@@ -8,12 +9,14 @@ class OrdenSimpleActionFormData {
     this.motivo,
     this.pesoBaseKg,
     this.fechaFinEstimada,
+    this.responsableUsuarioId,
   });
 
   final String? observacion;
   final String? motivo;
   final double? pesoBaseKg;
   final DateTime? fechaFinEstimada;
+  final int? responsableUsuarioId;
 }
 
 class OrdenSimpleActionDialog extends StatefulWidget {
@@ -25,6 +28,7 @@ class OrdenSimpleActionDialog extends StatefulWidget {
     this.requireValue = false,
     this.requireStagePlanning = false,
     this.initialValue,
+    this.responsableOptions = const [],
     super.key,
   });
 
@@ -35,6 +39,7 @@ class OrdenSimpleActionDialog extends StatefulWidget {
   final bool requireValue;
   final bool requireStagePlanning;
   final String? initialValue;
+  final List<UserListItem> responsableOptions;
 
   @override
   State<OrdenSimpleActionDialog> createState() =>
@@ -46,6 +51,7 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
   late final TextEditingController _valueController;
   late final TextEditingController _pesoController;
   late DateTime _fechaFinEstimada;
+  int? _selectedResponsableId;
 
   @override
   void initState() {
@@ -78,6 +84,7 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
         fechaFinEstimada: widget.requireStagePlanning
             ? _fechaFinEstimada
             : null,
+        responsableUsuarioId: _selectedResponsableId,
       ),
     );
   }
@@ -128,6 +135,26 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
                 },
               ),
               if (widget.requireStagePlanning) ...[
+                const Gap(AppSpacing.md),
+                DropdownButtonFormField<int>(
+                  initialValue: _selectedResponsableId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Responsable del proceso',
+                  ),
+                  items: widget.responsableOptions
+                      .map(
+                        (user) => DropdownMenuItem<int>(
+                          value: user.usuarioId,
+                          child: Text(user.nombreCompleto),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (value) =>
+                      setState(() => _selectedResponsableId = value),
+                  validator: (value) =>
+                      value == null ? 'Selecciona un responsable.' : null,
+                ),
                 const Gap(AppSpacing.md),
                 TextFormField(
                   controller: _pesoController,

@@ -39,7 +39,6 @@ public sealed class ProduccionModule : IErpModule
         services.AddScoped<IProcesoProductivoLookupRepository, SqlProcesoProductivoLookupRepository>();
         services.AddScoped<IUsuarioLookupRepository, SqlUsuarioLookupRepository>();
         services.AddScoped<IConsumoProduccionRepository, SqlConsumoProduccionRepository>();
-        services.AddScoped<IFormulaConsumptionLookupRepository, SqlFormulaConsumptionLookupRepository>();
         services.AddScoped<IProduccionInventarioGateway, ProduccionInventarioGateway>();
         services.AddScoped<ICierreProduccionRepository, SqlCierreProduccionRepository>();
         services.AddScoped<ICalidadProductoLookupRepository, SqlCalidadProductoLookupRepository>();

@@ -227,6 +227,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
   Future<OrdenesActionResult> startSelectedOrden({
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
+    int? responsableUsuarioId,
     String? observacion,
   }) async {
     final ordenId = state.selectedOrdenId;
@@ -248,6 +249,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         id: ordenId,
         pesoBaseKg: pesoBaseKg,
         fechaFinEstimada: fechaFinEstimada,
+        responsableUsuarioId: responsableUsuarioId,
         observacion: observacion,
       );
 
@@ -340,6 +342,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     required int procesoId,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
+    int? responsableUsuarioId,
     String? observacion,
   }) async {
     _talker.cubit('Iniciando proceso de produccion $procesoId.');
@@ -350,6 +353,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         id: procesoId,
         pesoBaseKg: pesoBaseKg,
         fechaFinEstimada: fechaFinEstimada,
+        responsableUsuarioId: responsableUsuarioId,
         observacion: observacion,
       );
 
@@ -804,9 +808,6 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     try {
       final orden = await _repository.getOrden(ordenId);
       final procesos = await _repository.listProcesos(ordenId);
-      final consumoPlanificado = await _repository.listConsumoPlanificado(
-        ordenId,
-      );
       final consumoReal = await _repository.listConsumoReal(ordenId);
       final desviaciones = await _repository.listDesviaciones(ordenId);
       final mermas = await _repository.listMermas(ordenProduccionId: ordenId);
@@ -814,7 +815,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         ordenId,
       );
       _talker.cubit(
-        'Detalle de la orden $ordenId cargado con procesos=${procesos.length}, planificados=${consumoPlanificado.length}, reales=${consumoReal.length}, desviaciones=${desviaciones.length}, mermas=${mermas.length}.',
+        'Detalle de la orden $ordenId cargado con procesos=${procesos.length}, reales=${consumoReal.length}, desviaciones=${desviaciones.length}, mermas=${mermas.length}.',
         logLevel: LogLevel.debug,
       );
 
@@ -823,7 +824,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
           isDetailLoading: false,
           selectedOrden: orden,
           selectedProcesos: procesos,
-          consumoPlanificado: consumoPlanificado,
+          consumoPlanificado: const [],
           consumoReal: consumoReal,
           desviaciones: desviaciones,
           mermas: mermas,

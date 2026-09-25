@@ -262,6 +262,7 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                             _ConsumoDetalleDraftCard(
                               key: ValueKey(_drafts[index]),
                               draft: _drafts[index],
+                              pesoBaseKg: widget.proceso.pesoBaseKg ?? 0,
                               insumos: widget.insumos,
                               compact: isWide,
                               showDivider: index < _drafts.length - 1,
@@ -310,6 +311,7 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
   const _ConsumoDetalleDraftCard({
     super.key,
     required this.draft,
+    required this.pesoBaseKg,
     required this.insumos,
     required this.compact,
     required this.showDivider,
@@ -318,6 +320,7 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
   });
 
   final _ConsumoDetalleDraft draft;
+  final double pesoBaseKg;
   final List<InsumoLookup> insumos;
   final bool compact;
   final bool showDivider;
@@ -350,6 +353,8 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
               children: [
                 Expanded(flex: 4, child: _buildInsumoField()),
                 const Gap(AppSpacing.md),
+                Expanded(flex: 2, child: _buildPorcentajeField()),
+                const Gap(AppSpacing.md),
                 Expanded(flex: 2, child: _buildCantidadField()),
                 const Gap(AppSpacing.md),
                 Expanded(flex: 3, child: _buildObservacionField()),
@@ -374,6 +379,8 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
                 ),
               ),
             _buildInsumoField(),
+            const Gap(AppSpacing.md),
+            _buildPorcentajeField(),
             const Gap(AppSpacing.md),
             _buildCantidadField(),
             const Gap(AppSpacing.md),
@@ -431,7 +438,7 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
 
   Widget _buildCantidadField() => TextFormField(
     controller: draft.cantidadController,
-    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    readOnly: true,
     style: const TextStyle(fontSize: 13),
     decoration: const InputDecoration(
       labelText: 'Cantidad',
@@ -447,6 +454,37 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
       return parsed == null || parsed <= 0 ? 'Cantidad invalida.' : null;
     },
   );
+
+  Widget _buildPorcentajeField() => TextFormField(
+    controller: draft.porcentajeController,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    style: const TextStyle(fontSize: 13),
+    decoration: const InputDecoration(
+      labelText: 'Porcentaje',
+      hintText: '0.35',
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+    ),
+    onChanged: (value) {
+      final porcentaje = double.tryParse(value.trim().replaceAll(',', '.'));
+      draft.cantidadController.text = porcentaje == null
+          ? ''
+          : _formatCantidad(porcentaje * pesoBaseKg);
+      onChanged();
+    },
+    validator: (value) {
+      final parsed = double.tryParse((value ?? '').trim().replaceAll(',', '.'));
+      return parsed == null || parsed <= 0 ? 'Porcentaje invalido.' : null;
+    },
+  );
+
+  String _formatCantidad(double value) {
+    final formatted = value.toStringAsFixed(4);
+    return formatted.replaceFirst(RegExp(r'\.?0+$'), '');
+  }
 
   Widget _buildObservacionField() => TextFormField(
     controller: draft.observacionController,
@@ -493,10 +531,12 @@ class _ProcesoInfo extends StatelessWidget {
 
 class _ConsumoDetalleDraft {
   int? insumoId;
+  final TextEditingController porcentajeController = TextEditingController();
   final TextEditingController cantidadController = TextEditingController();
   final TextEditingController observacionController = TextEditingController();
 
   void dispose() {
+    porcentajeController.dispose();
     cantidadController.dispose();
     observacionController.dispose();
   }

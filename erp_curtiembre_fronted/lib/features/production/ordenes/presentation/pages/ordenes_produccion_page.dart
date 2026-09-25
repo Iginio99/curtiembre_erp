@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
@@ -20,6 +22,8 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/registrar_merma_dialog.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/solicitar_consumo_dialog.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
+import 'package:erp_curtiembre_fronted/features/users/domain/repositories/users_repository.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
@@ -43,18 +47,28 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
   final _estadoController = TextEditingController();
   final Talker _talker = getIt<Talker>();
   bool _showOrderDetail = false;
+  Timer? _filterDebounce;
+  late DateTime _selectedMonth;
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month);
     _talker.ui('Se abrio la pantalla de ordenes de produccion.');
   }
 
   @override
   void dispose() {
+    _filterDebounce?.cancel();
     _searchController.dispose();
     _estadoController.dispose();
     super.dispose();
+  }
+
+  void _scheduleFilters() {
+    _filterDebounce?.cancel();
+    _filterDebounce = Timer(const Duration(milliseconds: 350), _applyFilters);
   }
 
   void _applyFilters() {
@@ -70,8 +84,13 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
     );
   }
 
+  Future<List<UserListItem>> _loadResponsables() =>
+      getIt<UsersRepository>().listUsers(activo: true);
+
   Future<void> _openCreateDialog(OrdenesProduccionState state) async {
     _talker.ui('Se abrio el dialogo para crear una orden de produccion.');
+    final responsables = await _loadResponsables();
+    if (!mounted) return;
     final payload = await showDialog<OrdenUpsertFormData>(
       context: context,
       builder: (_) => OrdenUpsertDialog(
@@ -80,6 +99,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         isSubmitting: state.isSubmittingAction,
         clienteOptions: state.clienteOptions,
         loteOptions: state.loteOptions,
+        responsableOptions: responsables,
       ),
     );
 
@@ -101,6 +121,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
       fechaInicioPlanificada: payload.fechaInicioPlanificada,
       fechaFinEstimada: payload.fechaFinEstimada,
       observacion: payload.observacion,
+      responsableUsuarioId: payload.responsableUsuarioId,
     );
 
     if (!mounted) {
@@ -112,14 +133,17 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
 
   Future<void> _startSelectedOrden() async {
     _talker.ui('Se abrio el dialogo para iniciar la orden seleccionada.');
+    final responsables = await _loadResponsables();
+    if (!mounted) return;
     final payload = await showDialog<OrdenSimpleActionFormData>(
       context: context,
-      builder: (_) => const OrdenSimpleActionDialog(
+      builder: (_) => OrdenSimpleActionDialog(
         title: 'Iniciar orden',
         submitLabel: 'Iniciar',
         labelText: 'Observacion inicial',
         hintText: 'Detalle breve del arranque de la orden',
         requireStagePlanning: true,
+        responsableOptions: responsables,
       ),
     );
 
@@ -141,6 +165,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
           pesoBaseKg: payload.pesoBaseKg!,
           fechaFinEstimada: payload.fechaFinEstimada!,
           observacion: payload.observacion,
+          responsableUsuarioId: payload.responsableUsuarioId,
         );
     if (!mounted) {
       return;
@@ -190,6 +215,8 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
 
   Future<void> _startProceso(OrdenProcesoRecord proceso) async {
     _talker.ui('Se abrio el dialogo para iniciar el proceso ${proceso.id}.');
+    final responsables = await _loadResponsables();
+    if (!mounted) return;
     final payload = await showDialog<OrdenSimpleActionFormData>(
       context: context,
       builder: (_) => OrdenSimpleActionDialog(
@@ -198,6 +225,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         labelText: 'Observacion de inicio',
         hintText: 'Detalle breve del arranque del proceso',
         requireStagePlanning: proceso.estado == 'PENDIENTE',
+        responsableOptions: responsables,
       ),
     );
 
@@ -218,6 +246,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
       pesoBaseKg: payload.pesoBaseKg ?? 0,
       fechaFinEstimada: payload.fechaFinEstimada ?? DateTime.now(),
       observacion: payload.observacion,
+      responsableUsuarioId: payload.responsableUsuarioId,
     );
     if (!mounted) {
       return;
@@ -513,6 +542,12 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                 child: BlocBuilder<OrdenesProduccionCubit, OrdenesProduccionState>(
                   builder: (context, state) {
                     final compactHeight = constraints.maxHeight < 900;
+                    final visibleItems = state.items.where((item) {
+                      final date = item.creadoEn.toLocal();
+                      return date.year == _selectedMonth.year &&
+                          date.month == _selectedMonth.month;
+                    }).toList(growable: false);
+                    final displayState = state.copyWith(items: visibleItems);
 
                     if (_searchController.text != state.searchTerm) {
                       _searchController.value = TextEditingValue(
@@ -533,7 +568,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                     }
 
                     final ordersBoard = _OrdersPipelineBoard(
-                      state: state,
+                      state: displayState,
                       onRetry: () {
                         _talker.ui(
                           'Se solicito reintentar la carga del listado de ordenes.',
@@ -580,19 +615,19 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                     );
 
                     final headerAndFilters = <Widget>[
-                      Text(
-                        'Planifica, inicia y controla la secuencia de procesos de cada orden de producción.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const Gap(AppSpacing.xl),
                       _OrdenesFiltersCard(
                         searchController: _searchController,
                         estadoController: _estadoController,
                         state: state,
                         onApply: _applyFilters,
+                        onSearchChanged: (_) => _scheduleFilters(),
                         onCreate: () => _openCreateDialog(state),
+                        selectedMonth: _selectedMonth,
+                        onMonthChanged: (value) {
+                          if (value != null) {
+                            setState(() => _selectedMonth = value);
+                          }
+                        },
                         onClienteChanged: (value) {
                           _talker.ui(
                             'Se cambio el filtro de cliente en ordenes a ${value ?? 'ninguno'}.',
@@ -614,7 +649,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                           );
                         },
                       ),
-                      const Gap(AppSpacing.xl),
+                      const Gap(AppSpacing.md),
                     ];
 
                     if (_showOrderDetail) {
@@ -681,7 +716,10 @@ class _OrdenesFiltersCard extends StatelessWidget {
     required this.estadoController,
     required this.state,
     required this.onApply,
+    required this.onSearchChanged,
     required this.onCreate,
+    required this.selectedMonth,
+    required this.onMonthChanged,
     required this.onClienteChanged,
     required this.onLoteChanged,
   });
@@ -690,7 +728,10 @@ class _OrdenesFiltersCard extends StatelessWidget {
   final TextEditingController estadoController;
   final OrdenesProduccionState state;
   final VoidCallback onApply;
+  final ValueChanged<String> onSearchChanged;
   final VoidCallback onCreate;
+  final DateTime selectedMonth;
+  final ValueChanged<DateTime?> onMonthChanged;
   final ValueChanged<int?> onClienteChanged;
   final ValueChanged<int?> onLoteChanged;
 
@@ -699,29 +740,33 @@ class _OrdenesFiltersCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Busqueda operativa', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            'Filtra por codigo, cliente, lote o estado para centrarte en las ordenes que hoy necesitan accion.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.lg,
+          Row(
             children: [
-              SizedBox(
-                width: 300,
+              Expanded(
+                child: Text('Órdenes', style: theme.textTheme.titleMedium),
+              ),
+              AppButton.primary(
+                label: 'Nueva orden',
+                icon: Icons.add_rounded,
+                isLoading: state.isSubmittingAction,
+                onPressed: onCreate,
+                expand: false,
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                flex: 6,
                 child: TextField(
                   controller: searchController,
                   textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => onApply(),
+                  onChanged: onSearchChanged,
                   decoration: const InputDecoration(
                     labelText: 'Buscar orden',
                     hintText: 'Ej. OP-0001 o cliente',
@@ -729,8 +774,9 @@ class _OrdenesFiltersCard extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(
-                width: 320,
+              const Gap(AppSpacing.sm),
+              Expanded(
+                flex: 5,
                 child: DropdownButtonFormField<int?>(
                   isExpanded: true,
                   initialValue: state.selectedClienteId,
@@ -754,8 +800,9 @@ class _OrdenesFiltersCard extends StatelessWidget {
                   onChanged: onClienteChanged,
                 ),
               ),
-              SizedBox(
-                width: 360,
+              const Gap(AppSpacing.sm),
+              Expanded(
+                flex: 5,
                 child: DropdownButtonFormField<int?>(
                   isExpanded: true,
                   initialValue: state.selectedLoteId,
@@ -779,36 +826,41 @@ class _OrdenesFiltersCard extends StatelessWidget {
                   onChanged: onLoteChanged,
                 ),
               ),
-              SizedBox(
-                width: 220,
+              const Gap(AppSpacing.sm),
+              Expanded(
+                flex: 4,
                 child: TextField(
                   controller: estadoController,
-                  onSubmitted: (_) => onApply(),
+                  onChanged: onSearchChanged,
                   decoration: const InputDecoration(
                     labelText: 'Estado',
                     hintText: 'Ej. EN_PROCESO',
                   ),
                 ),
               ),
-            ],
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              AppButton.primary(
-                label: 'Aplicar filtros',
-                icon: Icons.search_rounded,
-                isLoading: state.status == OrdenesProduccionStatus.loading,
-                onPressed: onApply,
-                expand: false,
-              ),
-              AppButton.secondary(
-                label: 'Nueva orden',
-                icon: Icons.playlist_add_outlined,
-                isLoading: state.isSubmittingAction,
-                onPressed: onCreate,
+              const Gap(AppSpacing.sm),
+              Expanded(
+                flex: 4,
+                child: DropdownButtonFormField<DateTime>(
+                  initialValue: selectedMonth,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Mes',
+                    prefixIcon: Icon(Icons.calendar_month_outlined),
+                  ),
+                  items: List.generate(18, (index) {
+                    final now = DateTime.now();
+                    final month = DateTime(now.year, now.month - index);
+                    return DropdownMenuItem<DateTime>(
+                      value: month,
+                      child: Text(
+                        _formatMonth(month),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }),
+                  onChanged: onMonthChanged,
+                ),
               ),
             ],
           ),
@@ -940,14 +992,7 @@ class _OrdenDetailPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Detalle de la orden', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.xs),
-          Text(
-            'Revisa el resumen de la orden y navega la secuencia de procesos sin perder el contexto operativo.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
+          const Gap(AppSpacing.md),
           Expanded(
             child: Builder(
               builder: (context) {
@@ -1034,39 +1079,49 @@ class _OrdenDetailPanel extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Gap(AppSpacing.xl),
-                      Wrap(
-                        spacing: AppSpacing.lg,
-                        runSpacing: AppSpacing.lg,
-                        children: [
-                          _DetailCard(
-                            title: 'Resumen',
-                            lines: [
-                              'Lote: ${orden.loteCodigo}',
-                              'Cliente: ${orden.clienteRazonSocial}',
-                              'Cantidad pieles: ${_formatDecimal(orden.cantidadPieles)}',
-                              'Responsable: ${orden.responsableNombre ?? 'Sin asignar'}',
-                            ],
+                      const Gap(AppSpacing.lg),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
                           ),
-                          _DetailCard(
-                            title: 'Fechas',
-                            lines: [
-                              'Inicio planificado: ${_formatOptionalDate(orden.fechaInicioPlanificada)}',
-                              'Inicio real: ${_formatOptionalDate(orden.fechaInicioReal)}',
-                              'Fin estimada: ${_formatDate(orden.fechaFinEstimada)}',
-                              'Fin real: ${_formatOptionalDate(orden.fechaFinReal)}',
-                            ],
-                          ),
-                          _DetailCard(
-                            title: 'Control',
-                            lines: [
-                              'Estado: ${orden.estado}',
-                              'Procesos totales: ${orden.procesosTotales}',
-                              'Procesos finalizados: ${orden.procesosFinalizados}',
-                              'Creado: ${_formatDateTime(orden.creadoEn)}',
-                            ],
-                          ),
-                        ],
+                        ),
+                        child: Wrap(
+                          spacing: AppSpacing.xl,
+                          runSpacing: AppSpacing.md,
+                          children: [
+                            _InlineInfo(
+                              label: 'Pieles',
+                              value: _formatDecimal(orden.cantidadPieles),
+                            ),
+                            _InlineInfo(
+                              label: 'Responsable',
+                              value: orden.responsableNombre ?? 'Sin asignar',
+                            ),
+                            _InlineInfo(
+                              label: 'Inicio planificado',
+                              value: _formatOptionalDate(
+                                orden.fechaInicioPlanificada,
+                              ),
+                            ),
+                            _InlineInfo(
+                              label: 'Inicio real',
+                              value: _formatOptionalDate(orden.fechaInicioReal),
+                            ),
+                            _InlineInfo(
+                              label: 'Fin estimada',
+                              value: _formatDate(orden.fechaFinEstimada),
+                            ),
+                            _InlineInfo(
+                              label: 'Fin real',
+                              value: _formatOptionalDate(orden.fechaFinReal),
+                            ),
+                          ],
+                        ),
                       ),
                       if ((orden.observacion ?? '').trim().isNotEmpty) ...[
                         const Gap(AppSpacing.xl),
@@ -1103,17 +1158,10 @@ class _OrdenDetailPanel extends StatelessWidget {
                           message: orden.motivoAnulacion!,
                         ),
                       ],
-                      const Gap(AppSpacing.xl),
+                      const Gap(AppSpacing.lg),
                       Text(
                         'Pipeline de produccion',
                         style: theme.textTheme.titleLarge,
-                      ),
-                      const Gap(AppSpacing.xs),
-                      Text(
-                        'Cada etapa se habilita al finalizar la anterior. Configura fechas, responsable e insumos sin perder la secuencia.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
                       ),
                       const Gap(AppSpacing.md),
                       _ProcessPipeline(
@@ -1162,7 +1210,7 @@ class _OrdersPipelineBoard extends StatelessWidget {
   static const _stages = <({String title, Set<String> states})>[
     (title: 'Programadas', states: {'PROGRAMADA'}),
     (
-      title: 'Preparacion',
+      title: 'Preparación',
       states: {'ESPERANDO_MATERIALES', 'LISTA_PARA_INICIAR'},
     ),
     (title: 'En proceso', states: {'EN_PROCESO'}),
@@ -1231,11 +1279,11 @@ class _OrderPipelineColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      width: 285,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      width: 240,
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -1260,7 +1308,7 @@ class _OrderPipelineColumn extends StatelessWidget {
               ),
             ],
           ),
-          const Gap(AppSpacing.md),
+          const Gap(AppSpacing.sm),
           Expanded(
             child: items.isEmpty
                 ? Center(
@@ -1273,7 +1321,7 @@ class _OrderPipelineColumn extends StatelessWidget {
                   )
                 : ListView.separated(
                     itemCount: items.length,
-                    separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                    separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final item = items[index];
                       return _OrdenListTileCard(
@@ -1308,15 +1356,15 @@ class _OrdenListTileCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primaryContainer.withValues(alpha: 0.68)
                 : theme.colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected
                   ? theme.colorScheme.primary.withValues(alpha: 0.42)
@@ -1331,9 +1379,9 @@ class _OrdenListTileCard extends StatelessWidget {
                 runSpacing: AppSpacing.sm,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(item.codigo, style: theme.textTheme.titleMedium),
+                  Text(item.codigo, style: theme.textTheme.titleSmall),
                   _MiniPill(
-                    label: item.estado,
+                    label: _humanizeStatus(item.estado),
                     background: theme.colorScheme.primaryContainer,
                     foreground: theme.colorScheme.onPrimaryContainer,
                   ),
@@ -1342,14 +1390,14 @@ class _OrdenListTileCard extends StatelessWidget {
               const Gap(AppSpacing.sm),
               Text(
                 '${item.clienteRazonSocial} · ${item.loteCodigo}',
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const Gap(AppSpacing.md),
+              const Gap(AppSpacing.sm),
               Text(
                 '${item.procesosFinalizados}/${item.procesosTotales} procesos · fin ${_formatDate(item.fechaFinEstimada)}',
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -1605,7 +1653,8 @@ class _ProcessPipeline extends StatefulWidget {
 }
 
 class _ProcessPipelineState extends State<_ProcessPipeline> {
-  int _selectedIndex = 0;
+  static final Map<int, int> _selectedStageByOrder = {};
+  int _selectedIndex = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -1617,7 +1666,15 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
         message: 'La orden no tiene una secuencia productiva disponible.',
       );
     }
-    if (_selectedIndex >= ordered.length) _selectedIndex = 0;
+    final orderId = ordered.first.ordenProduccionId;
+    if (_selectedIndex < 0) {
+      _selectedIndex = _selectedStageByOrder[orderId] ??
+          ordered.indexWhere((item) => item.estado != 'FINALIZADO');
+      if (_selectedIndex < 0) _selectedIndex = ordered.length - 1;
+    }
+    if (_selectedIndex >= ordered.length) {
+      _selectedIndex = 0;
+    }
 
     final proceso = ordered[_selectedIndex];
     final isLocked =
@@ -1662,7 +1719,10 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
             selected: {_selectedIndex},
             showSelectedIcon: false,
             onSelectionChanged: (selection) {
-              setState(() => _selectedIndex = selection.first);
+              setState(() {
+                _selectedIndex = selection.first;
+                _selectedStageByOrder[orderId] = _selectedIndex;
+              });
             },
           ),
         ),
@@ -1671,14 +1731,7 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
           AppMessageCard.info(
             title: 'La produccion comienza en Remojo',
             message:
-                'Calcula los insumos planificados y registra esta etapa para iniciar formalmente la orden.',
-          ),
-          const Gap(AppSpacing.md),
-          AppButton.secondary(
-            label: 'Calcular insumos planificados',
-            icon: Icons.auto_graph_outlined,
-            isLoading: widget.isSubmitting,
-            onPressed: widget.onCalculatePlanned,
+                'Inicia la etapa y solicita manualmente los insumos necesarios para el proceso.',
           ),
           const Gap(AppSpacing.md),
         ],
@@ -1726,20 +1779,11 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
         if (stageConsumos.isNotEmpty) ...[
           const Gap(AppSpacing.lg),
           _ConsumptionSection(
-            title: 'Consumo real de ${proceso.procesoNombre}',
-            helperText: 'Insumos descontados durante esta etapa.',
+            title: 'Insumos utilizados',
+            helperText: '',
             isEmpty: false,
             emptyMessage: '',
-            child: Column(
-              children: stageConsumos
-                  .map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: _ConsumoRealCard(item: item),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
+            child: _ConsumoRealTable(items: stageConsumos),
           ),
         ],
         if (stageMermas.isNotEmpty) ...[
@@ -1854,13 +1898,15 @@ class _ConsumptionSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: theme.textTheme.titleLarge),
-        const Gap(AppSpacing.xs),
-        Text(
-          helperText,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        if (helperText.isNotEmpty) ...[
+          const Gap(AppSpacing.xs),
+          Text(
+            helperText,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
+        ],
         const Gap(AppSpacing.md),
         if (isEmpty)
           AppMessageCard.info(title: 'Sin registros', message: emptyMessage)
@@ -1938,10 +1984,10 @@ class _PlanificadoCard extends StatelessWidget {
   }
 }
 
-class _ConsumoRealCard extends StatelessWidget {
-  const _ConsumoRealCard({required this.item});
+class _ConsumoRealTable extends StatelessWidget {
+  const _ConsumoRealTable({required this.items});
 
-  final ConsumoRealRecord item;
+  final List<ConsumoRealRecord> items;
 
   @override
   Widget build(BuildContext context) {
@@ -1949,65 +1995,39 @@ class _ConsumoRealCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            children: [
-              Text(
-                '${item.procesoNombre} · ${item.insumoCodigo}',
-                style: theme.textTheme.titleMedium,
-              ),
-              _MiniPill(
-                label: item.esExtra ? 'EXTRA' : 'PLANIFICADO',
-                background: item.esExtra
-                    ? theme.colorScheme.errorContainer
-                    : theme.colorScheme.primaryContainer,
-                foreground: item.esExtra
-                    ? theme.colorScheme.onErrorContainer
-                    : theme.colorScheme.onPrimaryContainer,
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.sm),
-          Text(
-            item.insumoNombre,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.md,
-            children: [
-              _InlineInfo(
-                label: 'Cantidad consumida',
-                value: _formatDecimal(item.cantidadConsumida),
-              ),
-              _InlineInfo(
-                label: 'Costo unitario',
-                value: _formatCurrency(item.costoUnitario),
-              ),
-              _InlineInfo(
-                label: 'Costo total',
-                value: _formatCurrency(item.costoTotal),
-              ),
-              _InlineInfo(
-                label: 'Registrado',
-                value: _formatDateTime(item.creadoEn),
-              ),
-            ],
-          ),
-        ],
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowHeight: 44,
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 56,
+          columns: const [
+            DataColumn(label: Text('Insumo')),
+            DataColumn(label: Text('Cantidad'), numeric: true),
+            DataColumn(label: Text('Costo unitario'), numeric: true),
+            DataColumn(label: Text('Costo total'), numeric: true),
+            DataColumn(label: Text('Registrado')),
+          ],
+          rows: items
+              .map(
+                (item) => DataRow(
+                  cells: [
+                    DataCell(Text(item.insumoNombre)),
+                    DataCell(Text(_formatDecimal(item.cantidadConsumida))),
+                    DataCell(Text(_formatCurrency(item.costoUnitario))),
+                    DataCell(Text(_formatCurrency(item.costoTotal))),
+                    DataCell(Text(_formatDateTime(item.creadoEn))),
+                  ],
+                ),
+              )
+              .toList(growable: false),
+        ),
       ),
     );
   }
@@ -2464,8 +2484,36 @@ String _formatCurrency(double value) {
   return 'S/ ${value.toStringAsFixed(2)}';
 }
 
+String _humanizeStatus(String value) => value
+    .toLowerCase()
+    .split('_')
+    .map(
+      (word) => word.isEmpty
+          ? word
+          : '${word[0].toUpperCase()}${word.substring(1)}',
+    )
+    .join(' ');
+
 String _formatDate(DateTime value) {
   return DateFormat('dd/MM/yyyy').format(value.toLocal());
+}
+
+String _formatMonth(DateTime value) {
+  const months = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ];
+  return '${months[value.month - 1]} ${value.year}';
 }
 
 String _formatDateTime(DateTime value) {
@@ -2485,3 +2533,4 @@ String _formatOptionalDateTime(DateTime? value) {
   }
   return _formatDateTime(value);
 }
+

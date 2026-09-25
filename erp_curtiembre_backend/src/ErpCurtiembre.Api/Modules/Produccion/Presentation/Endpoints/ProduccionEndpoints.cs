@@ -397,46 +397,6 @@ public static class ProduccionEndpoints
             return Results.Ok(await service.ListByOrderAsync(ordenId, cancellationToken));
         });
 
-        ordenes.MapPost("/{ordenId:long}/consumo-planificado/calcular", async (
-            HttpRequest request,
-            long ordenId,
-            ValidateSessionUseCase validateSessionUseCase,
-            CheckPermissionUseCase checkPermissionUseCase,
-            ConsumoProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAdminAsync(
-                request,
-                validateSessionUseCase,
-                checkPermissionUseCase,
-                cancellationToken);
-            if (authorization.Failure is not null)
-            {
-                return authorization.Failure;
-            }
-
-            return ProduccionEndpointResults.From(await service.GeneratePlannedAsync(ordenId, cancellationToken));
-        });
-
-        ordenes.MapGet("/{ordenId:long}/consumo-planificado", async (
-            HttpRequest request,
-            long ordenId,
-            ValidateSessionUseCase validateSessionUseCase,
-            ConsumoProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
-                request,
-                validateSessionUseCase,
-                cancellationToken);
-            if (authorization.Failure is not null)
-            {
-                return authorization.Failure;
-            }
-
-            return Results.Ok(await service.ListPlannedAsync(ordenId, cancellationToken));
-        });
-
         ordenes.MapPost("/{ordenId:long}/solicitar-consumo", async (
             HttpRequest request,
             long ordenId,

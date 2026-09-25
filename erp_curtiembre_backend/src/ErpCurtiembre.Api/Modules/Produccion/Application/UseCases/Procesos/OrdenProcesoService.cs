@@ -11,6 +11,20 @@ public sealed class OrdenProcesoService(
     IUsuarioLookupRepository usuarioLookupRepository,
     IDateTimeProvider dateTimeProvider)
 {
+    public async Task<UseCaseResult<OrdenProcesoListItemDto>> UpdateResponsibleAsync(
+        long processId, UpdateResponsableRequestDto request, CancellationToken cancellationToken)
+    {
+        var process = await ordenProduccionRepository.FindProcessByIdAsync(processId, cancellationToken);
+        if (process is null)
+            return UseCaseResult<OrdenProcesoListItemDto>.Fail(ProduccionErrorCodes.NotFound, "No se encontro el proceso.");
+        if (process.OrdenEstado == "ANULADA")
+            return UseCaseResult<OrdenProcesoListItemDto>.Fail(ProduccionErrorCodes.Conflict, "No se puede editar un proceso anulado.");
+        if (await usuarioLookupRepository.FindActiveByIdAsync(request.ResponsableUsuarioId, cancellationToken) is null)
+            return UseCaseResult<OrdenProcesoListItemDto>.Fail(ProduccionErrorCodes.Validation, "El responsable no esta activo.");
+        await ordenProduccionRepository.UpdateProcessResponsibleAsync(processId, request.ResponsableUsuarioId, cancellationToken);
+        var updated = await ordenProduccionRepository.FindProcessByIdAsync(processId, cancellationToken);
+        return UseCaseResult<OrdenProcesoListItemDto>.Ok(MapProcess(updated!), "Responsable actualizado.");
+    }
     public async Task<IReadOnlyCollection<OrdenProcesoListItemDto>> ListByOrderAsync(
         long ordenId,
         CancellationToken cancellationToken)

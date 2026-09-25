@@ -10,7 +10,6 @@ namespace ErpCurtiembre.Modules.Produccion.Application.UseCases.Solicitudes;
 
 public sealed class SolicitudInsumoService(
     IOrdenProduccionRepository ordenProduccionRepository,
-    IConsumoProduccionRepository consumoProduccionRepository,
     ISolicitudInsumoRepository solicitudInsumoRepository,
     ISolicitudInsumoAlertService solicitudInsumoAlertService,
     ConsumoProduccionService consumoProduccionService,
@@ -85,24 +84,6 @@ public sealed class SolicitudInsumoService(
                 "La etapa ya tiene una solicitud de insumos pendiente de atencion.");
         }
 
-        var plannedItems = await consumoProduccionRepository.ListPlannedAsync(ordenId, cancellationToken);
-        if (!plannedItems.Any(x => x.OrdenProcesoId == procesoId))
-        {
-            var generated = await consumoProduccionService.GeneratePlannedAsync(ordenId, cancellationToken);
-            if (!generated.Success)
-            {
-                return UseCaseResult<SolicitudInsumoDetailDto>.Fail(
-                    generated.ErrorCode ?? ProduccionErrorCodes.Conflict,
-                    generated.Message);
-            }
-
-            plannedItems = await consumoProduccionRepository.ListPlannedAsync(ordenId, cancellationToken);
-        }
-
-        var planByInsumo = plannedItems
-            .Where(x => x.OrdenProcesoId == procesoId)
-            .GroupBy(x => x.InsumoId)
-            .ToDictionary(x => x.Key, x => decimal.Round(x.Sum(y => y.CantidadPlanificada), 2));
         var errors = new List<string>();
         var requestedInsumos = new HashSet<long>();
         var details = new List<SolicitudInsumoDetalle>();
@@ -115,16 +96,10 @@ public sealed class SolicitudInsumoService(
                 continue;
             }
 
-            if (!planByInsumo.TryGetValue(detail.InsumoId, out var plannedQuantity))
-            {
-                errors.Add($"El insumo {detail.InsumoId} no forma parte de la formula de {process.ProcesoNombre}.");
-                continue;
-            }
-
             var quantity = decimal.Round(detail.Cantidad, 2);
-            if (quantity <= 0 || quantity > plannedQuantity)
+            if (quantity <= 0)
             {
-                errors.Add($"La cantidad solicitada del insumo {detail.InsumoId} debe ser mayor que 0 y no superar {plannedQuantity:0.00}.");
+                errors.Add($"La cantidad solicitada del insumo {detail.InsumoId} debe ser mayor que 0.");
                 continue;
             }
 
@@ -138,12 +113,7 @@ public sealed class SolicitudInsumoService(
 
         if (details.Count == 0)
         {
-            errors.Add("Debes solicitar al menos un insumo de la formula planificada.");
-        }
-
-        if (details.Count != planByInsumo.Count || details.Any(x => !planByInsumo.ContainsKey(x.InsumoId)))
-        {
-            errors.Add("La solicitud debe incluir todos los insumos planificados de la etapa; las entregas parciales no habilitan su inicio.");
+            errors.Add("Debes solicitar al menos un insumo.");
         }
 
         if (errors.Count > 0)
@@ -195,7 +165,7 @@ public sealed class SolicitudInsumoService(
                 "No se encontro la solicitud de insumos.");
         }
 
-        if (solicitud.Estado == "ENTREGADA")
+        if (solicitud.Estado == "APROBADA")
         {
             return await GetByIdAsync(id, cancellationToken);
         }
