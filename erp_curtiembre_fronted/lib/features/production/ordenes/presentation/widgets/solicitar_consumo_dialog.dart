@@ -97,7 +97,9 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
     if (details.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Agrega al menos un insumo valido para registrar consumo.'),
+          content: Text(
+            'Agrega al menos un insumo valido para registrar consumo.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -121,19 +123,35 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isWide = MediaQuery.sizeOf(context).width >= 760;
 
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 920),
+        constraints: BoxConstraints(
+          maxWidth: 1040,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.92,
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.xl,
+            AppSpacing.lg,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Solicitar consumo real', style: theme.textTheme.headlineSmall),
+                Text(
+                  'Solicitar consumo real',
+                  style: theme.textTheme.headlineSmall,
+                ),
                 const Gap(AppSpacing.sm),
                 Text(
                   'Registra los insumos consumidos por el proceso seleccionado y deja trazabilidad del movimiento real.',
@@ -141,13 +159,16 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const Gap(AppSpacing.lg),
+                const Gap(AppSpacing.md),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: theme.colorScheme.outlineVariant),
                   ),
                   child: Wrap(
@@ -170,28 +191,52 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                     ],
                   ),
                 ),
-                const Gap(AppSpacing.xl),
-                TextFormField(
-                  controller: _motivoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Motivo',
-                    hintText: 'Ej. Consumo operativo del proceso',
+                const Gap(AppSpacing.md),
+                if (isWide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _motivoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Motivo',
+                            hintText: 'Ej. Consumo operativo',
+                          ),
+                        ),
+                      ),
+                      const Gap(AppSpacing.md),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _observacionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Observacion general',
+                            hintText: 'Opcional',
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else ...[
+                  TextFormField(
+                    controller: _motivoController,
+                    decoration: const InputDecoration(labelText: 'Motivo'),
                   ),
-                ),
+                  const Gap(AppSpacing.md),
+                  TextFormField(
+                    controller: _observacionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Observacion general',
+                    ),
+                  ),
+                ],
                 const Gap(AppSpacing.lg),
-                TextFormField(
-                  controller: _observacionController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Observacion general',
-                    hintText: 'Detalle breve de la solicitud de consumo',
-                  ),
-                ),
-                const Gap(AppSpacing.xl),
                 Row(
                   children: [
-                    Text('Detalle de insumos', style: theme.textTheme.titleLarge),
+                    Text(
+                      'Detalle de insumos',
+                      style: theme.textTheme.titleMedium,
+                    ),
                     const Spacer(),
                     AppButton.secondary(
                       label: 'Agregar linea',
@@ -200,34 +245,47 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                     ),
                   ],
                 ),
-                const Gap(AppSpacing.md),
+                const Gap(AppSpacing.sm),
                 Flexible(
                   child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        for (var index = 0; index < _drafts.length; index++) ...[
-                          _ConsumoDetalleDraftCard(
-                            key: ValueKey(_drafts[index]),
-                            index: index,
-                            draft: _drafts[index],
-                            insumos: widget.insumos,
-                            onRemove: _drafts.length == 1
-                                ? null
-                                : () => _removeDraft(index),
-                          ),
-                          if (index < _drafts.length - 1) const Gap(AppSpacing.md),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          for (var index = 0; index < _drafts.length; index++)
+                            _ConsumoDetalleDraftCard(
+                              key: ValueKey(_drafts[index]),
+                              draft: _drafts[index],
+                              insumos: widget.insumos,
+                              compact: isWide,
+                              showDivider: index < _drafts.length - 1,
+                              onChanged: () => setState(() {}),
+                              onRemove: _drafts.length == 1
+                                  ? null
+                                  : () => _removeDraft(index),
+                            ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-                const Gap(AppSpacing.xl),
+                const Gap(AppSpacing.md),
+                Divider(height: 1, color: theme.colorScheme.outlineVariant),
+                const Gap(AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     AppButton.secondary(
                       label: 'Cancelar',
-                      onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: widget.isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                     ),
                     const Gap(AppSpacing.md),
                     AppButton.primary(
@@ -251,15 +309,19 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
 class _ConsumoDetalleDraftCard extends StatelessWidget {
   const _ConsumoDetalleDraftCard({
     super.key,
-    required this.index,
     required this.draft,
     required this.insumos,
+    required this.compact,
+    required this.showDivider,
+    required this.onChanged,
     this.onRemove,
   });
 
-  final int index;
   final _ConsumoDetalleDraft draft;
   final List<InsumoLookup> insumos;
+  final bool compact;
+  final bool showDivider;
+  final VoidCallback onChanged;
   final VoidCallback? onRemove;
 
   @override
@@ -268,87 +330,141 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+              )
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('Linea ${index + 1}', style: theme.textTheme.titleMedium),
-              const Spacer(),
-              if (onRemove != null)
-                IconButton(
+          if (compact)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 4, child: _buildInsumoField()),
+                const Gap(AppSpacing.md),
+                Expanded(flex: 2, child: _buildCantidadField()),
+                const Gap(AppSpacing.md),
+                Expanded(flex: 3, child: _buildObservacionField()),
+                if (onRemove != null) ...[
+                  const Gap(AppSpacing.sm),
+                  IconButton(
+                    onPressed: onRemove,
+                    tooltip: 'Quitar insumo',
+                    icon: const Icon(Icons.delete_outline_rounded),
+                  ),
+                ],
+              ],
+            )
+          else ...[
+            if (onRemove != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
                   onPressed: onRemove,
-                  tooltip: 'Quitar linea',
+                  tooltip: 'Quitar insumo',
                   icon: const Icon(Icons.delete_outline_rounded),
                 ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          DropdownButtonFormField<int?>(
-            initialValue: draft.insumoId,
-            decoration: const InputDecoration(labelText: 'Insumo'),
-            items: insumos
-                .map(
-                  (item) => DropdownMenuItem<int?>(
-                    value: item.id,
-                    child: Text('${item.codigo} - ${item.nombre}'),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) => draft.insumoId = value,
-            validator: (value) => value == null ? 'Selecciona un insumo.' : null,
-          ),
-          const Gap(AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: draft.cantidadController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Cantidad consumida',
-                    hintText: '0.00',
-                  ),
-                  validator: (value) {
-                    final parsed = double.tryParse(
-                      (value ?? '').trim().replaceAll(',', '.'),
-                    );
-                    if (parsed == null || parsed <= 0) {
-                      return 'Cantidad invalida.';
-                    }
-                    return null;
-                  },
-                ),
               ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          TextFormField(
-            controller: draft.observacionController,
-            minLines: 1,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Observacion de linea',
-              hintText: 'Opcional',
-            ),
-          ),
+            _buildInsumoField(),
+            const Gap(AppSpacing.md),
+            _buildCantidadField(),
+            const Gap(AppSpacing.md),
+            _buildObservacionField(),
+          ],
         ],
       ),
     );
   }
+
+  InsumoLookup? get _selectedInsumo {
+    for (final item in insumos) {
+      if (item.id == draft.insumoId) return item;
+    }
+    return null;
+  }
+
+  String _stockLabel(InsumoLookup item) {
+    return item.stockActual.toStringAsFixed(2);
+  }
+
+  Widget _buildInsumoField() => DropdownButtonFormField<int?>(
+    initialValue: draft.insumoId,
+    isExpanded: true,
+    decoration: InputDecoration(
+      labelText: 'Insumo',
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      helperText: _selectedInsumo == null
+          ? null
+          : 'Stock disponible: ${_stockLabel(_selectedInsumo!)}',
+      helperStyle: const TextStyle(fontSize: 11),
+    ),
+    items: insumos
+        .map(
+          (item) => DropdownMenuItem<int?>(
+            value: item.id,
+            child: Text(
+              '${item.codigo} - ${item.nombre} · ${_stockLabel(item)}',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        )
+        .toList(growable: false),
+    onChanged: (value) {
+      draft.insumoId = value;
+      onChanged();
+    },
+    validator: (value) => value == null ? 'Selecciona un insumo.' : null,
+  );
+
+  Widget _buildCantidadField() => TextFormField(
+    controller: draft.cantidadController,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    style: const TextStyle(fontSize: 13),
+    decoration: const InputDecoration(
+      labelText: 'Cantidad',
+      hintText: '0.00',
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+    ),
+    validator: (value) {
+      final parsed = double.tryParse((value ?? '').trim().replaceAll(',', '.'));
+      return parsed == null || parsed <= 0 ? 'Cantidad invalida.' : null;
+    },
+  );
+
+  Widget _buildObservacionField() => TextFormField(
+    controller: draft.observacionController,
+    style: const TextStyle(fontSize: 13),
+    decoration: const InputDecoration(
+      labelText: 'Observacion',
+      hintText: 'Opcional',
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+    ),
+  );
 }
 
 class _ProcesoInfo extends StatelessWidget {
-  const _ProcesoInfo({
-    required this.label,
-    required this.value,
-  });
+  const _ProcesoInfo({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -357,7 +473,7 @@ class _ProcesoInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SizedBox(
-      width: 220,
+      width: 190,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

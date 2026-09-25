@@ -1120,6 +1120,10 @@ class _OrdenDetailPanel extends StatelessWidget {
                         procesos: state.selectedProcesos,
                         planificados: state.consumoPlanificado,
                         consumos: state.consumoReal,
+                        mermas: state.mermas,
+                        desviaciones: state.desviaciones,
+                        controlCalidad: state.controlCalidad,
+                        productoTerminado: state.productoTerminado,
                         isSubmitting: state.isSubmittingAction,
                         onStart: onStartProceso,
                         onFinish: onFinishProceso,
@@ -1131,116 +1135,6 @@ class _OrdenDetailPanel extends StatelessWidget {
                         onRegisterQuality: onRegisterCalidadFinal,
                         onFinalizeOrder: onFinalizeOrden,
                         hasQuality: state.controlCalidad != null,
-                      ),
-                      const Gap(AppSpacing.xl),
-                      _ConsumptionSection(
-                        title: 'Mermas registradas',
-                        helperText:
-                            'Muestra las perdidas reportadas por proceso dentro de la orden actual.',
-                        isEmpty: state.mermas.isEmpty,
-                        emptyMessage:
-                            'Todavia no hay mermas registradas en esta orden.',
-                        child: Column(
-                          children: state.mermas
-                              .map(
-                                (item) => Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.md,
-                                  ),
-                                  child: _MermaCard(item: item),
-                                ),
-                              )
-                              .toList(growable: false),
-                        ),
-                      ),
-                      const Gap(AppSpacing.xl),
-                      _ConsumptionSection(
-                        title: 'Calidad final',
-                        helperText:
-                            'Resume la evaluacion final antes de generar producto terminado y cerrar la orden.',
-                        isEmpty: state.controlCalidad == null,
-                        emptyMessage:
-                            'Todavia no se ha registrado calidad final para esta orden.',
-                        child: state.controlCalidad == null
-                            ? const SizedBox.shrink()
-                            : _CalidadFinalCard(item: state.controlCalidad!),
-                      ),
-                      const Gap(AppSpacing.xl),
-                      _ConsumptionSection(
-                        title: 'Producto terminado',
-                        helperText:
-                            'Muestra el resultado final generado al cerrar correctamente la orden.',
-                        isEmpty: state.productoTerminado == null,
-                        emptyMessage:
-                            'Todavia no existe producto terminado generado para esta orden.',
-                        child: state.productoTerminado == null
-                            ? const SizedBox.shrink()
-                            : _ProductoTerminadoCard(
-                                item: state.productoTerminado!,
-                              ),
-                      ),
-                      const Gap(AppSpacing.xl),
-                      _ConsumptionSection(
-                        title: 'Consumo planificado',
-                        helperText:
-                            'Se genera desde la formula vigente y queda como base comparativa de la orden.',
-                        isEmpty: state.consumoPlanificado.isEmpty,
-                        emptyMessage:
-                            'Todavia no hay consumo planificado calculado para esta orden.',
-                        child: Column(
-                          children: state.consumoPlanificado
-                              .map(
-                                (item) => Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.md,
-                                  ),
-                                  child: _PlanificadoCard(item: item),
-                                ),
-                              )
-                              .toList(growable: false),
-                        ),
-                      ),
-                      const Gap(AppSpacing.xl),
-                      _ConsumptionSection(
-                        title: 'Consumo real',
-                        helperText:
-                            'Aqui aparecen los descuentos reales hechos sobre inventario para esta orden.',
-                        isEmpty: state.consumoReal.isEmpty,
-                        emptyMessage:
-                            'Todavia no hay consumo real registrado para esta orden.',
-                        child: Column(
-                          children: state.consumoReal
-                              .map(
-                                (item) => Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.md,
-                                  ),
-                                  child: _ConsumoRealCard(item: item),
-                                ),
-                              )
-                              .toList(growable: false),
-                        ),
-                      ),
-                      const Gap(AppSpacing.xl),
-                      _ConsumptionSection(
-                        title: 'Desviaciones',
-                        helperText:
-                            'Se registran cuando el consumo real supera lo planificado o usa un insumo no previsto.',
-                        isEmpty: state.desviaciones.isEmpty,
-                        emptyMessage:
-                            'Todavia no se detectaron desviaciones de consumo en esta orden.',
-                        child: Column(
-                          children: state.desviaciones
-                              .map(
-                                (item) => Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.md,
-                                  ),
-                                  child: _DesviacionCard(item: item),
-                                ),
-                              )
-                              .toList(growable: false),
-                        ),
                       ),
                     ],
                   ),
@@ -1670,6 +1564,10 @@ class _ProcessPipeline extends StatefulWidget {
     required this.procesos,
     required this.planificados,
     required this.consumos,
+    required this.mermas,
+    required this.desviaciones,
+    required this.controlCalidad,
+    required this.productoTerminado,
     required this.isSubmitting,
     required this.onStart,
     required this.onFinish,
@@ -1686,6 +1584,10 @@ class _ProcessPipeline extends StatefulWidget {
   final List<OrdenProcesoRecord> procesos;
   final List<ConsumoPlanificadoRecord> planificados;
   final List<ConsumoRealRecord> consumos;
+  final List<MermaProcesoRecord> mermas;
+  final List<DesviacionConsumoRecord> desviaciones;
+  final ControlCalidadRecord? controlCalidad;
+  final ProductoTerminadoRecord? productoTerminado;
   final bool isSubmitting;
   final ValueChanged<OrdenProcesoRecord> onStart;
   final ValueChanged<OrdenProcesoRecord> onFinish;
@@ -1725,6 +1627,12 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
         .where((item) => item.ordenProcesoId == proceso.id)
         .toList(growable: false);
     final stageConsumos = widget.consumos
+        .where((item) => item.ordenProcesoId == proceso.id)
+        .toList(growable: false);
+    final stageMermas = widget.mermas
+        .where((item) => item.ordenProcesoId == proceso.id)
+        .toList(growable: false);
+    final stageDesviaciones = widget.desviaciones
         .where((item) => item.ordenProcesoId == proceso.id)
         .toList(growable: false);
     final isLastStage = _selectedIndex == ordered.length - 1;
@@ -1796,6 +1704,82 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
               ? () => widget.onRegisterMerma(proceso)
               : null,
         ),
+        if (stagePlanificados.isNotEmpty) ...[
+          const Gap(AppSpacing.lg),
+          _ConsumptionSection(
+            title: 'Insumos planificados de ${proceso.procesoNombre}',
+            helperText: 'Cantidades previstas para esta etapa.',
+            isEmpty: false,
+            emptyMessage: '',
+            child: Column(
+              children: stagePlanificados
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _PlanificadoCard(item: item),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ),
+        ],
+        if (stageConsumos.isNotEmpty) ...[
+          const Gap(AppSpacing.lg),
+          _ConsumptionSection(
+            title: 'Consumo real de ${proceso.procesoNombre}',
+            helperText: 'Insumos descontados durante esta etapa.',
+            isEmpty: false,
+            emptyMessage: '',
+            child: Column(
+              children: stageConsumos
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _ConsumoRealCard(item: item),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ),
+        ],
+        if (stageMermas.isNotEmpty) ...[
+          const Gap(AppSpacing.lg),
+          _ConsumptionSection(
+            title: 'Mermas de ${proceso.procesoNombre}',
+            helperText: 'Perdidas registradas durante esta etapa.',
+            isEmpty: false,
+            emptyMessage: '',
+            child: Column(
+              children: stageMermas
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _MermaCard(item: item),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ),
+        ],
+        if (stageDesviaciones.isNotEmpty) ...[
+          const Gap(AppSpacing.lg),
+          _ConsumptionSection(
+            title: 'Desviaciones de ${proceso.procesoNombre}',
+            helperText: 'Diferencias entre el consumo previsto y el real.',
+            isEmpty: false,
+            emptyMessage: '',
+            child: Column(
+              children: stageDesviaciones
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _DesviacionCard(item: item),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ),
+        ],
         if (isLastStage) ...[
           const Gap(AppSpacing.lg),
           Wrap(
@@ -1821,6 +1805,26 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
               ),
             ],
           ),
+          if (widget.controlCalidad != null) ...[
+            const Gap(AppSpacing.lg),
+            _ConsumptionSection(
+              title: 'Calidad final',
+              helperText: 'Evaluacion registrada para cerrar la orden.',
+              isEmpty: false,
+              emptyMessage: '',
+              child: _CalidadFinalCard(item: widget.controlCalidad!),
+            ),
+          ],
+          if (widget.productoTerminado != null) ...[
+            const Gap(AppSpacing.lg),
+            _ConsumptionSection(
+              title: 'Producto terminado',
+              helperText: 'Resultado generado al finalizar la orden.',
+              isEmpty: false,
+              emptyMessage: '',
+              child: _ProductoTerminadoCard(item: widget.productoTerminado!),
+            ),
+          ],
         ],
       ],
     );
