@@ -110,6 +110,13 @@ abstract class OrdenesProduccionRepository {
     required RegistrarCalidadFinalInput input,
   });
 
+  Future<ControlCalidadRecord?> getCalidadFinal(int ordenId);
+
+  Future<ControlCalidadRecord> updateCalidadFinal({
+    required int ordenId,
+    required RegistrarCalidadFinalInput input,
+  });
+
   Future<ProductoTerminadoRecord?> getProductoTerminadoByOrder(int ordenId);
 
   Future<ProductoTerminadoRecord> finalizeOrden({

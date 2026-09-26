@@ -705,6 +705,20 @@ public static class ProduccionEndpoints
                 await service.RegisterMermaAsync(id, body, authorization.Session!.UsuarioId, cancellationToken));
         });
 
+        ordenes.MapGet("/{ordenId:long}/calidad-final", async (
+            HttpRequest request,
+            long ordenId,
+            ValidateSessionUseCase validateSessionUseCase,
+            CierreProduccionService service,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
+                request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(
+                await service.GetFinalQualityAsync(ordenId, cancellationToken));
+        });
+
         ordenes.MapPost("/{ordenId:long}/calidad-final", async (
             HttpRequest request,
             long ordenId,
@@ -724,6 +738,21 @@ public static class ProduccionEndpoints
 
             return ProduccionEndpointResults.From(
                 await service.RegisterFinalQualityAsync(ordenId, body, authorization.Session!.UsuarioId, cancellationToken));
+        });
+
+        ordenes.MapPut("/{ordenId:long}/calidad-final", async (
+            HttpRequest request,
+            long ordenId,
+            RegistrarCalidadFinalRequestDto body,
+            ValidateSessionUseCase validateSessionUseCase,
+            CierreProduccionService service,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
+                request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(
+                await service.UpdateFinalQualityAsync(ordenId, body, authorization.Session!.UsuarioId, cancellationToken));
         });
 
         ordenes.MapGet("/{ordenId:long}/producto-terminado", async (

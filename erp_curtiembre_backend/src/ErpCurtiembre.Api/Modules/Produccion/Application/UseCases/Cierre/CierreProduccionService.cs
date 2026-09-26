@@ -72,6 +72,12 @@ public sealed class CierreProduccionService(
         long actorId,
         CancellationToken cancellationToken)
     {
+        if (await cierreProduccionRepository.FindLatestControlCalidadAsync(orderId, cancellationToken) is not null)
+        {
+            return UseCaseResult<ControlCalidadDto>.Fail(
+                ProduccionErrorCodes.Conflict,
+                "La orden ya tiene una calidad final registrada. Usa la opcion Editar.");
+        }
         var order = await ordenProduccionRepository.FindByIdAsync(orderId, cancellationToken);
         if (order is null)
         {
@@ -159,6 +165,55 @@ public sealed class CierreProduccionService(
         return created is null
             ? UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.NotFound, "No se pudo recuperar el control de calidad registrado.")
             : UseCaseResult<ControlCalidadDto>.Ok(MapQuality(created), "Calidad final registrada correctamente.");
+    }
+
+    public async Task<UseCaseResult<ControlCalidadDto>> GetFinalQualityAsync(
+        long orderId,
+        CancellationToken cancellationToken)
+    {
+        var quality = await cierreProduccionRepository.FindLatestControlCalidadAsync(orderId, cancellationToken);
+        return quality is null
+            ? UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.NotFound, "La orden aun no tiene calidad final registrada.")
+            : UseCaseResult<ControlCalidadDto>.Ok(MapQuality(quality));
+    }
+
+    public async Task<UseCaseResult<ControlCalidadDto>> UpdateFinalQualityAsync(
+        long orderId,
+        RegistrarCalidadFinalRequestDto request,
+        long actorId,
+        CancellationToken cancellationToken)
+    {
+        var order = await ordenProduccionRepository.FindByIdAsync(orderId, cancellationToken);
+        var current = await cierreProduccionRepository.FindLatestControlCalidadAsync(orderId, cancellationToken);
+        if (order is null || current is null)
+            return UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.NotFound, "No se encontro la calidad final.");
+        if (current.ProductoTerminadoId.HasValue)
+            return UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.Conflict, "No se puede editar despues de generar el producto terminado.");
+
+        var calidad = await calidadProductoLookupRepository.FindActiveByIdAsync(request.CalidadProductoId, cancellationToken);
+        if (calidad is null || !AllowedQualityCodes.Contains(calidad.Codigo))
+            return UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.Validation, "La calidad seleccionada no es valida.");
+
+        var cantidades = new[] { request.CantidadLadosA, request.CantidadLadosB, request.CantidadLadosC, request.CantidadLadosMerma };
+        if (cantidades.Any(x => x < 0 || x != decimal.Truncate(x)) || cantidades.Sum() != order.CantidadPieles * 2m)
+            return UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.Validation, "La distribucion debe coincidir con el total de lados de la orden.");
+
+        var updated = new ControlCalidad
+        {
+            OrdenProduccionId = orderId,
+            CalidadProductoId = calidad.Id,
+            CantidadLadosA = request.CantidadLadosA,
+            CantidadLadosB = request.CantidadLadosB,
+            CantidadLadosC = request.CantidadLadosC,
+            CantidadLadosMerma = request.CantidadLadosMerma,
+            Resultado = string.IsNullOrWhiteSpace(request.Resultado) ? "APROBADO" : request.Resultado.Trim().ToUpperInvariant(),
+            Observacion = NormalizeNullable(request.Observacion),
+            EvaluadoEn = dateTimeProvider.Now,
+            EvaluadoPorUsuarioId = actorId
+        };
+        await cierreProduccionRepository.UpdateControlCalidadAsync(current.Id, updated, cancellationToken);
+        var saved = await cierreProduccionRepository.FindControlCalidadByIdAsync(current.Id, cancellationToken);
+        return UseCaseResult<ControlCalidadDto>.Ok(MapQuality(saved!), "Calidad final actualizada correctamente.");
     }
 
     public async Task<UseCaseResult<ProductoTerminadoDetailDto>> GetProductoTerminadoByOrderAsync(

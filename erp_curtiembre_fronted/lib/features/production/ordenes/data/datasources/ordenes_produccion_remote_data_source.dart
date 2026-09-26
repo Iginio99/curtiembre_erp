@@ -365,6 +365,47 @@ class OrdenesProduccionRemoteDataSource {
     }
   }
 
+  Future<ControlCalidadRecordModel?> getCalidadFinal(int ordenId) async {
+    final path = '/api/produccion/ordenes/$ordenId/calidad-final';
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(path);
+      return ControlCalidadRecordModel.fromJson(response.data!);
+    } on DioException catch (exception) {
+      if (exception.response?.statusCode == 404) return null;
+      throw _mapAndLogDioException(exception, operation: 'GET $path');
+    }
+  }
+
+  Future<ControlCalidadRecordModel> updateCalidadFinal({
+    required int ordenId,
+    required int calidadProductoId,
+    required double cantidadLadosA,
+    required double cantidadLadosB,
+    required double cantidadLadosC,
+    required double cantidadLadosMerma,
+    required String resultado,
+    String? observacion,
+  }) async {
+    final path = '/api/produccion/ordenes/$ordenId/calidad-final';
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        path,
+        data: {
+          'calidadProductoId': calidadProductoId,
+          'cantidadLadosA': cantidadLadosA,
+          'cantidadLadosB': cantidadLadosB,
+          'cantidadLadosC': cantidadLadosC,
+          'cantidadLadosMerma': cantidadLadosMerma,
+          'resultado': resultado,
+          'observacion': observacion,
+        },
+      );
+      return ControlCalidadRecordModel.fromJson(response.data!);
+    } on DioException catch (exception) {
+      throw _mapAndLogDioException(exception, operation: 'PUT $path');
+    }
+  }
+
   Future<ProductoTerminadoRecordModel?> getProductoTerminadoByOrder(
     int ordenId,
   ) async {

@@ -79,6 +79,21 @@ public sealed class SqlCierreProduccionRepository(
         return entity.Id;
     }
 
+    public async Task UpdateControlCalidadAsync(long id, ControlCalidad quality, CancellationToken cancellationToken)
+    {
+        var entity = await dbContext.ControlesCalidad.SingleAsync(x => x.Id == id, cancellationToken);
+        entity.CalidadProductoId = quality.CalidadProductoId;
+        entity.CantidadLadosA = quality.CantidadLadosA;
+        entity.CantidadLadosB = quality.CantidadLadosB;
+        entity.CantidadLadosC = quality.CantidadLadosC;
+        entity.CantidadLadosMerma = quality.CantidadLadosMerma;
+        entity.Resultado = quality.Resultado;
+        entity.Observacion = quality.Observacion;
+        entity.EvaluadoEn = quality.EvaluadoEn;
+        entity.EvaluadoPorUsuarioId = quality.EvaluadoPorUsuarioId;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<ControlCalidad?> FindControlCalidadByIdAsync(long id, CancellationToken cancellationToken)
     {
         const string sql = """

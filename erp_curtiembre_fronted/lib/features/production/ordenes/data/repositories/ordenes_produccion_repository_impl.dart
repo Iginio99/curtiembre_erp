@@ -212,6 +212,29 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
   }
 
   @override
+  Future<ControlCalidadRecord?> getCalidadFinal(int ordenId) async {
+    return (await _remoteDataSource.getCalidadFinal(ordenId))?.toEntity();
+  }
+
+  @override
+  Future<ControlCalidadRecord> updateCalidadFinal({
+    required int ordenId,
+    required RegistrarCalidadFinalInput input,
+  }) async {
+    final item = await _remoteDataSource.updateCalidadFinal(
+      ordenId: ordenId,
+      calidadProductoId: input.calidadProductoId,
+      cantidadLadosA: input.cantidadLadosA,
+      cantidadLadosB: input.cantidadLadosB,
+      cantidadLadosC: input.cantidadLadosC,
+      cantidadLadosMerma: input.cantidadLadosMerma,
+      resultado: input.resultado,
+      observacion: input.observacion,
+    );
+    return item.toEntity();
+  }
+
+  @override
   Future<ProductoTerminadoRecord?> getProductoTerminadoByOrder(
     int ordenId,
   ) async {

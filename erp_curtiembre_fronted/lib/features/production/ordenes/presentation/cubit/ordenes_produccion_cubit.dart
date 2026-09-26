@@ -706,6 +706,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
 
   Future<OrdenesActionResult> registerCalidadFinal({
     required RegistrarCalidadFinalInput input,
+    bool update = false,
   }) async {
     final ordenId = state.selectedOrdenId;
     if (ordenId == null) {
@@ -723,10 +724,15 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     );
     emit(state.copyWith(isSubmittingAction: true));
     try {
-      final controlCalidad = await _repository.registerCalidadFinal(
-        ordenId: ordenId,
-        input: input,
-      );
+      final controlCalidad = update
+          ? await _repository.updateCalidadFinal(
+              ordenId: ordenId,
+              input: input,
+            )
+          : await _repository.registerCalidadFinal(
+              ordenId: ordenId,
+              input: input,
+            );
       emit(
         state.copyWith(
           isSubmittingAction: false,
@@ -736,8 +742,10 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
       _talker.cubit(
         'Calidad final registrada correctamente para la orden $ordenId.',
       );
-      return const OrdenesActionResult.success(
-        'Calidad final registrada correctamente.',
+      return OrdenesActionResult.success(
+        update
+            ? 'Calidad final actualizada correctamente.'
+            : 'Calidad final registrada correctamente.',
       );
     } on ApiException catch (exception) {
       _talker.cubit(
@@ -840,6 +848,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
       final consumoReal = await _repository.listConsumoReal(ordenId);
       final desviaciones = await _repository.listDesviaciones(ordenId);
       final mermas = await _repository.listMermas(ordenProduccionId: ordenId);
+      final controlCalidad = await _repository.getCalidadFinal(ordenId);
       final productoTerminado = await _repository.getProductoTerminadoByOrder(
         ordenId,
       );
@@ -857,6 +866,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
           consumoReal: consumoReal,
           desviaciones: desviaciones,
           mermas: mermas,
+          controlCalidad: controlCalidad,
           productoTerminado: productoTerminado,
           clearDetailError: true,
         ),

@@ -10,6 +10,8 @@ public interface ICierreProduccionRepository
 
     Task<long> RegisterControlCalidadAsync(ControlCalidad quality, CancellationToken cancellationToken);
 
+    Task UpdateControlCalidadAsync(long id, ControlCalidad quality, CancellationToken cancellationToken);
+
     Task<ControlCalidad?> FindControlCalidadByIdAsync(long id, CancellationToken cancellationToken);
 
     Task<ControlCalidad?> FindLatestControlCalidadAsync(long orderId, CancellationToken cancellationToken);

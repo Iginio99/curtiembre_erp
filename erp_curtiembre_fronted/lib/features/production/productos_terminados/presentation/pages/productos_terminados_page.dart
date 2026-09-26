@@ -237,6 +237,12 @@ class _ProductoDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final totalLados = item == null
+        ? 0.0
+        : item!.cantidadLadosA +
+              item!.cantidadLadosB +
+              item!.cantidadLadosC +
+              item!.cantidadLadosMerma;
 
     return AppSurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -251,41 +257,39 @@ class _ProductoDetailPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item!.codigo, style: theme.textTheme.headlineSmall),
-                const Gap(AppSpacing.sm),
-                Text(
-                  '${item!.calidadNombre} · ${item!.calidadCodigo}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const Gap(AppSpacing.xl),
-                Wrap(
-                  spacing: AppSpacing.lg,
-                  runSpacing: AppSpacing.lg,
+                const Gap(AppSpacing.lg),
+                Row(
                   children: [
-                    _DetailCard(
-                      title: 'Origen',
-                      lines: [
-                        'Orden: ${item!.ordenCodigo}',
-                        'Estado: ${item!.estado}',
-                      ],
+                    Expanded(
+                      child: _DetailCard(
+                        title: 'Origen',
+                        lines: [
+                          'Orden: ${item!.ordenCodigo}',
+                          'Estado: ${item!.estado}',
+                        ],
+                      ),
                     ),
-                    _DetailCard(
-                      title: 'Clasificación final',
-                      lines: [
-                        'A: ${_formatDecimal(item!.cantidadLadosA)} lados (${_formatDecimal(item!.cantidadLadosA / 2)} pieles)',
-                        'B: ${_formatDecimal(item!.cantidadLadosB)} lados (${_formatDecimal(item!.cantidadLadosB / 2)} pieles)',
-                        'C: ${_formatDecimal(item!.cantidadLadosC)} lados (${_formatDecimal(item!.cantidadLadosC / 2)} pieles)',
-                        'Merma: ${_formatDecimal(item!.cantidadLadosMerma)} lados (${_formatDecimal(item!.cantidadLadosMerma / 2)} pieles)',
-                      ],
+                    const Gap(AppSpacing.md),
+                    Expanded(
+                      child: _DetailCard(
+                        title: 'Totales registrados',
+                        lines: [
+                          '${_formatDecimal(totalLados)} lados',
+                          '${_formatDecimal(totalLados / 2)} pieles',
+                          'Ingreso: ${_formatDateTime(item!.fechaIngreso)}',
+                        ],
+                      ),
                     ),
-                    _DetailCard(
-                      title: 'Ingreso',
-                      lines: [
-                        'Fecha: ${_formatDateTime(item!.fechaIngreso)}',
-                        'Calidad: ${item!.calidadCodigo}',
-                      ],
-                    ),
+                  ],
+                ),
+                const Gap(AppSpacing.md),
+                _DetailCard(
+                  title: 'Distribución de calidad',
+                  lines: [
+                    'A: ${_formatDecimal(item!.cantidadLadosA)} lados (${_formatDecimal(item!.cantidadLadosA / 2)} pieles)',
+                    'B: ${_formatDecimal(item!.cantidadLadosB)} lados (${_formatDecimal(item!.cantidadLadosB / 2)} pieles)',
+                    'C: ${_formatDecimal(item!.cantidadLadosC)} lados (${_formatDecimal(item!.cantidadLadosC / 2)} pieles)',
+                    'Merma: ${_formatDecimal(item!.cantidadLadosMerma)} lados (${_formatDecimal(item!.cantidadLadosMerma / 2)} pieles)',
                   ],
                 ),
                 if ((item!.observacion ?? '').trim().isNotEmpty) ...[
@@ -333,6 +337,11 @@ class _ProductoListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final totalLados =
+        item.cantidadLadosA +
+        item.cantidadLadosB +
+        item.cantidadLadosC +
+        item.cantidadLadosMerma;
 
     return Material(
       color: Colors.transparent,
@@ -358,14 +367,14 @@ class _ProductoListTile extends StatelessWidget {
               Text(item.codigo, style: theme.textTheme.titleMedium),
               const Gap(AppSpacing.sm),
               Text(
-                '${item.ordenCodigo} · ${item.calidadCodigo}',
+                item.ordenCodigo,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
               ),
               const Gap(AppSpacing.md),
               Text(
-                'Lados: ${_formatDecimal(item.cantidadLadosCalculada)} · ${_formatDate(item.fechaIngreso)}',
+                '${_formatDecimal(totalLados)} lados · ${_formatDecimal(totalLados / 2)} pieles · ${_formatDate(item.fechaIngreso)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -389,7 +398,7 @@ class _DetailCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      width: 270,
+      width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,

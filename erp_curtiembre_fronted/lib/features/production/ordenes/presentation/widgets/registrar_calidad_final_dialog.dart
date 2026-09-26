@@ -1,5 +1,6 @@
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/control_calidad_record.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,10 +16,12 @@ class RegistrarCalidadFinalDialog extends StatefulWidget {
     super.key,
     required this.isSubmitting,
     required this.cantidadPieles,
+    this.initialValue,
   });
 
   final bool isSubmitting;
   final double cantidadPieles;
+  final ControlCalidadRecord? initialValue;
 
   @override
   State<RegistrarCalidadFinalDialog> createState() =>
@@ -28,11 +31,22 @@ class RegistrarCalidadFinalDialog extends StatefulWidget {
 class _RegistrarCalidadFinalDialogState
     extends State<RegistrarCalidadFinalDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _aController = TextEditingController();
-  final _bController = TextEditingController();
-  final _cController = TextEditingController();
-  final _mermaController = TextEditingController();
-  final _observacionController = TextEditingController();
+  late final TextEditingController _aController;
+  late final TextEditingController _bController;
+  late final TextEditingController _cController;
+  late final TextEditingController _mermaController;
+  late final TextEditingController _observacionController;
+
+  @override
+  void initState() {
+    super.initState();
+    final value = widget.initialValue;
+    _aController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosA));
+    _bController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosB));
+    _cController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosC));
+    _mermaController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosMerma));
+    _observacionController = TextEditingController(text: value?.observacion ?? '');
+  }
 
   double _value(TextEditingController controller) =>
       double.tryParse(controller.text.trim()) ?? 0;
@@ -98,7 +112,9 @@ class _RegistrarCalidadFinalDialogState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Registrar calidad final',
+                  widget.initialValue == null
+                      ? 'Registrar calidad final'
+                      : 'Editar calidad final',
                   style: theme.textTheme.headlineSmall,
                 ),
                 const Gap(AppSpacing.xs),

@@ -477,6 +477,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
       builder: (_) => RegistrarCalidadFinalDialog(
         isSubmitting: state.isSubmittingAction,
         cantidadPieles: state.selectedOrden?.cantidadPieles ?? 0,
+        initialValue: state.controlCalidad,
       ),
     );
 
@@ -493,7 +494,10 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
 
     final result = await context
         .read<OrdenesProduccionCubit>()
-        .registerCalidadFinal(input: payload.input);
+        .registerCalidadFinal(
+          input: payload.input,
+          update: state.controlCalidad != null,
+        );
 
     if (!mounted) {
       return;
@@ -1896,16 +1900,17 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.md,
             children: [
-              AppButton.secondary(
-                label: 'Registrar calidad final',
-                icon: Icons.verified_outlined,
-                isLoading: widget.isSubmitting,
-                onPressed: proceso.estado == 'FINALIZADO'
-                    ? widget.onRegisterQuality
-                    : null,
-              ),
+              if (widget.controlCalidad == null)
+                AppButton.secondary(
+                  label: 'Registrar calidad final',
+                  icon: Icons.verified_outlined,
+                  isLoading: widget.isSubmitting,
+                  onPressed: proceso.estado == 'FINALIZADO'
+                      ? widget.onRegisterQuality
+                      : null,
+                ),
               AppButton.primary(
-                label: 'Generar producto terminado',
+                label: 'Finalizar y pasar a productos terminados',
                 icon: Icons.inventory_2_outlined,
                 isLoading: widget.isSubmitting,
                 onPressed: proceso.estado == 'FINALIZADO' && widget.hasQuality
@@ -1922,7 +1927,12 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
               helperText: 'Evaluacion registrada para cerrar la orden.',
               isEmpty: false,
               emptyMessage: '',
-              child: _CalidadFinalCard(item: widget.controlCalidad!),
+              child: _CalidadFinalCard(
+                item: widget.controlCalidad!,
+                onEdit: widget.productoTerminado == null
+                    ? widget.onRegisterQuality
+                    : null,
+              ),
             ),
           ],
           if (widget.productoTerminado != null) ...[
@@ -2273,9 +2283,10 @@ class _MermaCard extends StatelessWidget {
 }
 
 class _CalidadFinalCard extends StatelessWidget {
-  const _CalidadFinalCard({required this.item});
+  const _CalidadFinalCard({required this.item, this.onEdit});
 
   final ControlCalidadRecord item;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -2292,14 +2303,8 @@ class _CalidadFinalCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
+          Row(
             children: [
-              Text(
-                '${item.calidadNombre} · ${item.calidadCodigo}',
-                style: theme.textTheme.titleMedium,
-              ),
               _MiniPill(
                 label: item.resultado,
                 background: item.resultado == 'APROBADO'
@@ -2309,52 +2314,64 @@ class _CalidadFinalCard extends StatelessWidget {
                     ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.onErrorContainer,
               ),
+              const Spacer(),
+              if (onEdit != null)
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Editar'),
+                ),
             ],
           ),
           const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.md,
+          Row(
             children: [
-              _InlineInfo(
-                label: 'Evaluado por',
-                value: item.evaluadoPorNombre ?? 'Sin dato',
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Evaluado por',
+                  value: item.evaluadoPorNombre ?? 'Sin dato',
+                ),
               ),
-              _InlineInfo(
-                label: 'Fecha',
-                value: _formatDateTime(item.evaluadoEn),
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Fecha',
+                  value: _formatDateTime(item.evaluadoEn),
+                ),
               ),
-              _InlineInfo(
-                label: 'Producto terminado',
-                value:
-                    item.productoTerminadoId?.toString() ?? 'Aun no generado',
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Producto terminado',
+                  value: item.productoTerminadoId?.toString() ?? 'Aun no generado',
+                ),
               ),
             ],
           ),
           const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.md,
+          Row(
             children: [
-              _InlineInfo(
-                label: 'Calidad A',
-                value:
-                    '${_formatDecimal(item.cantidadLadosA)} lados / ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Calidad A',
+                  value: '${_formatDecimal(item.cantidadLadosA)} lados / ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+                ),
               ),
-              _InlineInfo(
-                label: 'Calidad B',
-                value:
-                    '${_formatDecimal(item.cantidadLadosB)} lados / ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Calidad B',
+                  value: '${_formatDecimal(item.cantidadLadosB)} lados / ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+                ),
               ),
-              _InlineInfo(
-                label: 'Calidad C',
-                value:
-                    '${_formatDecimal(item.cantidadLadosC)} lados / ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Calidad C',
+                  value: '${_formatDecimal(item.cantidadLadosC)} lados / ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+                ),
               ),
-              _InlineInfo(
-                label: 'Merma final',
-                value:
-                    '${_formatDecimal(item.cantidadLadosMerma)} lados / ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+              Expanded(
+                child: _InlineInfo(
+                  label: 'Merma final',
+                  value: '${_formatDecimal(item.cantidadLadosMerma)} lados / ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+                ),
               ),
             ],
           ),
@@ -2404,13 +2421,6 @@ class _ProductoTerminadoCard extends StatelessWidget {
                 foreground: theme.colorScheme.onPrimaryContainer,
               ),
             ],
-          ),
-          const Gap(AppSpacing.sm),
-          Text(
-            '${item.calidadNombre} · ${item.calidadCodigo}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
           ),
           const Gap(AppSpacing.md),
           Wrap(

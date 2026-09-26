@@ -200,7 +200,10 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.CalidadProductoId).HasColumnName("calidad_producto_id");
             entity.Property(x => x.FechaIngreso).HasColumnName("fecha_ingreso");
             entity.Property(x => x.CantidadPielesBuenas).HasColumnName("cantidad_pieles_buenas").HasPrecision(18, 4);
-            entity.Property(x => x.CantidadLados).HasColumnName("cantidad_lados_calculada").HasPrecision(18, 4);
+            entity.Property(x => x.CantidadLados)
+                .HasColumnName("cantidad_lados_calculada")
+                .HasPrecision(18, 4)
+                .HasComputedColumnSql();
             entity.Property(x => x.CantidadLadosA).HasColumnName("cantidad_lados_a").HasPrecision(18, 2);
             entity.Property(x => x.CantidadLadosB).HasColumnName("cantidad_lados_b").HasPrecision(18, 2);
             entity.Property(x => x.CantidadLadosC).HasColumnName("cantidad_lados_c").HasPrecision(18, 2);
