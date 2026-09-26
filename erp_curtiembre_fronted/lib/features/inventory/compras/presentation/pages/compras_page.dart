@@ -4,6 +4,7 @@ import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
+import 'package:erp_curtiembre_fronted/features/inventory/compras/domain/entities/orden_compra_detail.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/compras/domain/entities/orden_compra_record.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/compras/presentation/cubit/compras_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/compras/presentation/cubit/compras_state.dart';
@@ -783,10 +784,10 @@ class _CompraDetailPanel extends StatelessWidget {
                           color: theme.colorScheme.primary,
                         ),
                       ),
-                      const Gap(AppSpacing.lg),
+                      const Gap(AppSpacing.md),
                       Wrap(
-                        spacing: AppSpacing.md,
-                        runSpacing: AppSpacing.md,
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
                         children: [
                           AppButton.secondary(
                             label: 'Aprobar',
@@ -808,58 +809,75 @@ class _CompraDetailPanel extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Gap(AppSpacing.xl),
-                      _DetailCard(
-                        title: 'Cabecera',
-                        lines: [
-                          'Proveedor: ${detail.proveedorRazonSocial}',
-                          'Fecha emision: ${DateFormat('dd/MM/yyyy').format(detail.fechaEmision.toLocal())}',
-                          'Observacion: ${detail.observacion ?? 'Sin observacion'}',
-                          'Motivo: ${detail.motivo ?? 'Sin motivo registrado'}',
-                        ],
+                      const Gap(AppSpacing.lg),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Wrap(
+                          spacing: AppSpacing.lg,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            _CompactInfo(
+                              label: 'Emision',
+                              value: DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(detail.fechaEmision.toLocal()),
+                            ),
+                            if ((detail.observacion ?? '').trim().isNotEmpty)
+                              _CompactInfo(
+                                label: 'Observacion',
+                                value: detail.observacion!,
+                              ),
+                            if ((detail.motivo ?? '').trim().isNotEmpty)
+                              _CompactInfo(
+                                label: 'Motivo',
+                                value: detail.motivo!,
+                              ),
+                          ],
+                        ),
                       ),
                       const Gap(AppSpacing.lg),
-                      Text('Items', style: theme.textTheme.titleMedium),
-                      const Gap(AppSpacing.md),
-                      ...detail.detalles.map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerLowest,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${item.insumoCodigo} · ${item.insumoNombre}',
-                                  style: theme.textTheme.titleSmall,
-                                ),
-                                const Gap(AppSpacing.sm),
-                                Text(
-                                  'Solicitado: ${item.cantidadSolicitada.toStringAsFixed(2)} · Recibido: ${item.cantidadRecibida.toStringAsFixed(2)} · Pendiente: ${item.saldoPendiente.toStringAsFixed(2)}',
-                                ),
-                                const Gap(AppSpacing.xs),
-                                Text(
-                                  'Costo estimado: ${item.costoUnitarioEstimado == null ? 'Sin costo' : 'S/ ${item.costoUnitarioEstimado!.toStringAsFixed(2)}'} · Monto: S/ ${item.montoEstimado.toStringAsFixed(2)}',
-                                ),
-                                const Gap(AppSpacing.xs),
-                                Text(
-                                  'Unidad: ${item.unidadMedidaCodigo} · ${item.unidadMedidaNombre}',
-                                ),
-                                if (item.observacion?.isNotEmpty == true) ...[
-                                  const Gap(AppSpacing.xs),
-                                  Text('Observacion: ${item.observacion}'),
-                                ],
-                              ],
+                      Row(
+                        children: [
+                          Text('Insumos', style: theme.textTheme.titleMedium),
+                          const Spacer(),
+                          Text(
+                            '${detail.detalles.length} items',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
+                        ],
+                      ),
+                      const Gap(AppSpacing.sm),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            for (
+                              var index = 0;
+                              index < detail.detalles.length;
+                              index++
+                            )
+                              _CompraItemRow(
+                                item: detail.detalles[index],
+                                showDivider: index < detail.detalles.length - 1,
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -868,6 +886,118 @@ class _CompraDetailPanel extends StatelessWidget {
               },
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactInfo extends StatelessWidget {
+  const _CompactInfo({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return RichText(
+      text: TextSpan(
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurface,
+        ),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          TextSpan(text: value),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompraItemRow extends StatelessWidget {
+  const _CompraItemRow({required this.item, required this.showDivider});
+
+  final OrdenCompraDetalleLine item;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final unitCost = item.costoUnitarioEstimado == null
+        ? 'Sin costo'
+        : 'S/ ${item.costoUnitarioEstimado!.toStringAsFixed(2)}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+              )
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${item.insumoCodigo} · ${item.insumoNombre}',
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const Gap(AppSpacing.sm),
+              Text(
+                'S/ ${item.montoEstimado.toStringAsFixed(2)}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _CompactInfo(
+                label: 'Solic.',
+                value: item.cantidadSolicitada.toStringAsFixed(2),
+              ),
+              _CompactInfo(
+                label: 'Recib.',
+                value: item.cantidadRecibida.toStringAsFixed(2),
+              ),
+              _CompactInfo(
+                label: 'Pend.',
+                value: item.saldoPendiente.toStringAsFixed(2),
+              ),
+              _CompactInfo(label: 'Unit.', value: unitCost),
+            ],
+          ),
+          if ((item.observacion ?? '').trim().isNotEmpty) ...[
+            const Gap(AppSpacing.xs),
+            Text(
+              item.observacion!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1023,39 +1153,6 @@ class _CompraListTileCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.lines});
-
-  final String title;
-  final List<String> lines;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const Gap(AppSpacing.md),
-          for (final line in lines) ...[
-            Text(line, style: theme.textTheme.bodyMedium),
-            const Gap(AppSpacing.sm),
-          ],
-        ],
       ),
     );
   }

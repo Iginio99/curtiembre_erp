@@ -31,17 +31,17 @@ class MermaProcesoRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        ordenProduccionId,
-        ordenProcesoId,
-        procesoProductivoId,
-        procesoCodigo,
-        procesoNombre,
-        cantidadPerdida,
-        motivo,
-        observacion,
-        registradoEn,
-        registradoPorUsuarioId,
-        registradoPorNombre,
-      ];
+    id,
+    ordenProduccionId,
+    ordenProcesoId,
+    procesoProductivoId,
+    procesoCodigo,
+    procesoNombre,
+    cantidadPerdida,
+    motivo,
+    observacion,
+    registradoEn,
+    registradoPorUsuarioId,
+    registradoPorNombre,
+  ];
 }

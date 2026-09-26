@@ -1,6 +1,5 @@
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
@@ -26,7 +25,10 @@ class EntradasPage extends StatefulWidget {
   State<EntradasPage> createState() => _EntradasPageState();
 }
 
+enum _EntradaView { stockInicial, recepcionCompra }
+
 class _EntradasPageState extends State<EntradasPage> {
+  _EntradaView _selectedView = _EntradaView.stockInicial;
   final _stockDocumentoController = TextEditingController();
   final _stockObservacionController = TextEditingController();
   final _recepcionDocumentoController = TextEditingController();
@@ -362,86 +364,73 @@ class _EntradasPageState extends State<EntradasPage> {
                       );
                     }
 
-                    final isWide =
-                        MediaQuery.sizeOf(context).width >=
-                        AppBreakpoints.tablet;
                     final compactHeight = constraints.maxHeight < 860;
+                    final isStockInitial =
+                        _selectedView == _EntradaView.stockInicial;
+                    final visibleEntry =
+                        state.lastEntry?.tipoEntrada ==
+                            (isStockInitial ? 'STOCK_INICIAL' : 'COMPRA')
+                        ? state.lastEntry
+                        : null;
 
-                    final forms = isWide
-                        ? Row(
-                            children: [
-                              Expanded(
-                                child: _StockInicialPanel(
-                                  state: state,
-                                  drafts: _stockDrafts,
-                                  documentoController:
-                                      _stockDocumentoController,
-                                  observacionController:
-                                      _stockObservacionController,
-                                  onAddDraft: _addStockDraft,
-                                  onRemoveDraft: _removeStockDraft,
-                                  onSubmit: () => _submitStockInitial(state),
-                                ),
-                              ),
-                              const Gap(AppSpacing.xl),
-                              Expanded(
-                                child: _RecepcionCompraPanel(
-                                  state: state,
-                                  drafts: _recepcionDrafts,
-                                  documentoController:
-                                      _recepcionDocumentoController,
-                                  observacionController:
-                                      _recepcionObservacionController,
-                                  onOrderChanged: (value) =>
-                                      _prepareRecepcionDrafts(state, value),
-                                  onSubmit: () => _submitRecepcion(state),
-                                ),
-                              ),
-                            ],
+                    final form = isStockInitial
+                        ? _StockInicialPanel(
+                            state: state,
+                            drafts: _stockDrafts,
+                            documentoController: _stockDocumentoController,
+                            observacionController: _stockObservacionController,
+                            onAddDraft: _addStockDraft,
+                            onRemoveDraft: _removeStockDraft,
+                            onSubmit: () => _submitStockInitial(state),
                           )
-                        : Column(
-                            children: [
-                              _StockInicialPanel(
-                                state: state,
-                                drafts: _stockDrafts,
-                                documentoController: _stockDocumentoController,
-                                observacionController:
-                                    _stockObservacionController,
-                                onAddDraft: _addStockDraft,
-                                onRemoveDraft: _removeStockDraft,
-                                onSubmit: () => _submitStockInitial(state),
-                              ),
-                              const Gap(AppSpacing.xl),
-                              _RecepcionCompraPanel(
-                                state: state,
-                                drafts: _recepcionDrafts,
-                                documentoController:
-                                    _recepcionDocumentoController,
-                                observacionController:
-                                    _recepcionObservacionController,
-                                onOrderChanged: (value) =>
-                                    _prepareRecepcionDrafts(state, value),
-                                onSubmit: () => _submitRecepcion(state),
-                              ),
-                            ],
+                        : _RecepcionCompraPanel(
+                            state: state,
+                            drafts: _recepcionDrafts,
+                            documentoController: _recepcionDocumentoController,
+                            observacionController:
+                                _recepcionObservacionController,
+                            onOrderChanged: (value) =>
+                                _prepareRecepcionDrafts(state, value),
+                            onSubmit: () => _submitRecepcion(state),
                           );
 
                     final content = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Registra el stock inicial y las recepciones de compras aprobadas para mantener el inventario actualizado.',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                        SegmentedButton<_EntradaView>(
+                          segments: const [
+                            ButtonSegment(
+                              value: _EntradaView.stockInicial,
+                              icon: Icon(Icons.inventory_outlined),
+                              label: Text('Stock inicial'),
+                            ),
+                            ButtonSegment(
+                              value: _EntradaView.recepcionCompra,
+                              icon: Icon(Icons.move_to_inbox_outlined),
+                              label: Text('Recepcion de compra'),
+                            ),
+                          ],
+                          selected: {_selectedView},
+                          showSelectedIcon: false,
+                          onSelectionChanged: (selection) {
+                            setState(() => _selectedView = selection.first);
+                          },
+                        ),
+                        const Gap(AppSpacing.lg),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: KeyedSubtree(
+                            key: ValueKey(_selectedView),
+                            child: form,
+                          ),
                         ),
                         const Gap(AppSpacing.xl),
-                        forms,
-                        const Gap(AppSpacing.xl),
-                        _LastEntryPanel(entry: state.lastEntry),
+                        _LastEntryPanel(
+                          entry: visibleEntry,
+                          emptyMessage: isStockInitial
+                              ? 'Cuando registres stock inicial, aqui se mostrara el detalle generado.'
+                              : 'Cuando registres una recepcion de compra, aqui se mostrara el detalle generado.',
+                        ),
                       ],
                     );
 
@@ -674,9 +663,10 @@ class _RecepcionCompraPanel extends StatelessWidget {
 }
 
 class _LastEntryPanel extends StatelessWidget {
-  const _LastEntryPanel({required this.entry});
+  const _LastEntryPanel({required this.entry, required this.emptyMessage});
 
   final dynamic entry;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -685,10 +675,9 @@ class _LastEntryPanel extends StatelessWidget {
     return AppSurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: entry == null
-          ? const AppMessageCard.info(
+          ? AppMessageCard.info(
               title: 'Sin entrada reciente',
-              message:
-                  'Cuando registres un ingreso, aqui se mostrara el detalle generado.',
+              message: emptyMessage,
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,

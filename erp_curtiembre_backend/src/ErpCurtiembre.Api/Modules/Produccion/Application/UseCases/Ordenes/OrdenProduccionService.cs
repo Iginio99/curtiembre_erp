@@ -106,19 +106,6 @@ public sealed class OrdenProduccionService(
             errors.Add("La fecha fin estimada no puede ser menor que la fecha inicio planificada.");
         }
 
-        UsuarioLookup? responsable = null;
-        if (request.ResponsableUsuarioId.HasValue)
-        {
-            responsable = await usuarioLookupRepository.FindActiveByIdAsync(
-                request.ResponsableUsuarioId.Value,
-                cancellationToken);
-
-            if (responsable is null)
-            {
-                errors.Add("No se encontro el responsable seleccionado o se encuentra inactivo.");
-            }
-        }
-
         var procesos = await procesoProductivoLookupRepository.ListBaseSequenceAsync(cancellationToken);
         if (procesos.Count != ExpectedSequenceCodes.Length ||
             procesos.Select(x => x.Codigo.ToUpperInvariant()).SequenceEqual(ExpectedSequenceCodes) is false)
@@ -150,7 +137,8 @@ public sealed class OrdenProduccionService(
                 CantidadPieles = decimal.Round(request.CantidadPieles, 4),
                 FechaInicioPlanificada = request.FechaInicioPlanificada?.Date,
                 FechaFinEstimada = request.FechaFinEstimada.Date,
-                ResponsableUsuarioId = responsable?.Id,
+                ResponsableNombre = request.ResponsableNombre.Trim(),
+                ResponsableCargo = request.ResponsableCargo.Trim(),
                 Estado = "PROGRAMADA",
                 Observacion = NormalizeNullable(request.Observacion),
                 CreadoPorUsuarioId = actorId
@@ -183,14 +171,6 @@ public sealed class OrdenProduccionService(
                 "Solo se pueden preparar ordenes en estado PROGRAMADA.");
         }
 
-        if (request.ResponsableUsuarioId.HasValue &&
-            await usuarioLookupRepository.FindActiveByIdAsync(request.ResponsableUsuarioId.Value, cancellationToken) is null)
-        {
-            return UseCaseResult<OrdenProduccionDetailDto>.Fail(
-                ProduccionErrorCodes.Validation,
-                "No se encontro el responsable seleccionado o se encuentra inactivo.");
-        }
-
         if (request.PesoBaseKg <= 0)
         {
             return UseCaseResult<OrdenProduccionDetailDto>.Fail(
@@ -207,7 +187,8 @@ public sealed class OrdenProduccionService(
 
         await ordenProduccionRepository.StartOrderAsync(
             id,
-            request.ResponsableUsuarioId,
+            request.ResponsableNombre.Trim(),
+            request.ResponsableCargo.Trim(),
             decimal.Round(request.PesoBaseKg, 2),
             request.FechaFinEstimada.Date,
             NormalizeNullable(request.Observacion),
@@ -291,6 +272,7 @@ public sealed class OrdenProduccionService(
             order.FechaFinReal,
             order.ResponsableUsuarioId,
             order.ResponsableNombre,
+            order.ResponsableCargo,
             order.Estado,
             order.Observacion,
             order.ProcesosTotales,
@@ -312,6 +294,7 @@ public sealed class OrdenProduccionService(
             order.FechaFinReal,
             order.ResponsableUsuarioId,
             order.ResponsableNombre,
+            order.ResponsableCargo,
             order.Estado,
             order.MotivoAnulacion,
             order.Observacion,

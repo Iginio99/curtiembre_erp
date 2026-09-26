@@ -11,6 +11,8 @@ using ErpCurtiembre.Modules.Produccion.Application.UseCases.Solicitudes;
 using ErpCurtiembre.Modules.Seguridad.Application.UseCases.Auth;
 using ErpCurtiembre.Modules.Seguridad.Application.UseCases.Permissions;
 using ErpCurtiembre.Modules.Seguridad.Domain.Constants;
+using ErpCurtiembre.Shared.Persistence;
+using Dapper;
 
 namespace ErpCurtiembre.Modules.Produccion.Presentation.Endpoints;
 
@@ -25,6 +27,62 @@ public static class ProduccionEndpoints
             module = "Produccion",
             status = "ready"
         }));
+
+        var personal = group.MapGroup("/personal");
+        personal.MapGet("/", async (
+            HttpRequest request,
+            ValidateSessionUseCase validateSessionUseCase,
+            ISqlConnectionFactory connectionFactory,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
+                request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+
+            const string sql = """
+                SELECT id AS Id, nombre AS Nombre, cargo AS Cargo, activo AS Activo
+                FROM produccion.personal_empresa
+                WHERE activo = 1
+                ORDER BY nombre, cargo;
+                """;
+            using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+            var items = await connection.QueryAsync<PersonalEmpresaDto>(
+                new CommandDefinition(sql, cancellationToken: cancellationToken));
+            return Results.Ok(items);
+        });
+
+        personal.MapPost("/", async (
+            HttpRequest request,
+            CreatePersonalEmpresaDto payload,
+            ValidateSessionUseCase validateSessionUseCase,
+            CheckPermissionUseCase checkPermissionUseCase,
+            ISqlConnectionFactory connectionFactory,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(
+                request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            if (string.IsNullOrWhiteSpace(payload.Nombre) || string.IsNullOrWhiteSpace(payload.Cargo))
+                return Results.BadRequest(new { message = "Nombre y cargo son obligatorios." });
+
+            const string sql = """
+                IF EXISTS (SELECT 1 FROM produccion.personal_empresa WHERE LOWER(nombre)=LOWER(@Nombre) AND LOWER(cargo)=LOWER(@Cargo))
+                BEGIN
+                    UPDATE produccion.personal_empresa SET activo=1 WHERE LOWER(nombre)=LOWER(@Nombre) AND LOWER(cargo)=LOWER(@Cargo);
+                    SELECT TOP 1 id AS Id, nombre AS Nombre, cargo AS Cargo, activo AS Activo
+                    FROM produccion.personal_empresa WHERE LOWER(nombre)=LOWER(@Nombre) AND LOWER(cargo)=LOWER(@Cargo);
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO produccion.personal_empresa(nombre,cargo,activo) VALUES(@Nombre,@Cargo,1);
+                    SELECT CAST(SCOPE_IDENTITY() AS bigint) AS Id, @Nombre AS Nombre, @Cargo AS Cargo, CAST(1 AS bit) AS Activo;
+                END
+                """;
+            using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+            var item = await connection.QuerySingleAsync<PersonalEmpresaDto>(new CommandDefinition(
+                sql, new { Nombre = payload.Nombre.Trim(), Cargo = payload.Cargo.Trim() }, cancellationToken: cancellationToken));
+            return Results.Ok(item);
+        });
 
         var clientes = group.MapGroup("/clientes");
         clientes.MapGet("/", async (

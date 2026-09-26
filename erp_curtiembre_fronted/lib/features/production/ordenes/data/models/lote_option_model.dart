@@ -23,7 +23,8 @@ class LoteOptionModel {
       codigo: json['codigo'] as String,
       clienteId: (json['clienteId'] as num).toInt(),
       clienteRazonSocial: json['clienteRazonSocial'] as String,
-      cantidadPielesDisponible: (json['cantidadPielesDisponible'] as num).toDouble(),
+      cantidadPielesDisponible: (json['cantidadPielesDisponible'] as num)
+          .toDouble(),
       estado: json['estado'] as String,
     );
   }

@@ -280,7 +280,7 @@ class _InsumosPageState extends State<InsumosPage> {
 
                   final headerAndFilters = <Widget>[
                     Text(
-                      'Administra el catálogo de insumos, sus mínimos de stock y reglas de trazabilidad.',
+                      'Administra el catálogo, la clasificación y las reglas operativas de cada insumo.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -461,8 +461,6 @@ class _InsumosFiltersCard extends StatelessWidget {
                       const Gap(AppSpacing.md),
                       filters.activityFilter,
                       const Gap(AppSpacing.md),
-                      filters.lowStockToggle,
-                      const Gap(AppSpacing.md),
                       action,
                     ],
                   );
@@ -483,11 +481,7 @@ class _InsumosFiltersCard extends StatelessWidget {
                       spacing: AppSpacing.md,
                       runSpacing: AppSpacing.md,
                       crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        filters.typeFilter,
-                        filters.activityFilter,
-                        filters.lowStockToggle,
-                      ],
+                      children: [filters.typeFilter, filters.activityFilter],
                     ),
                   ],
                 );
@@ -524,8 +518,6 @@ class _InsumosFiltersCard extends StatelessWidget {
             Text('Estado', style: Theme.of(context).textTheme.labelLarge),
             const Gap(AppSpacing.sm),
             SizedBox(width: double.infinity, child: filters.activityFilter),
-            const Gap(AppSpacing.lg),
-            filters.lowStockToggle,
           ],
         ),
       ),
@@ -797,7 +789,8 @@ class _InsumosDataTable extends StatelessWidget {
               DataColumn(label: Text('Nombre')),
               DataColumn(label: Text('Tipo')),
               DataColumn(label: Text('Unidad')),
-              DataColumn(label: Text('Stock'), numeric: true),
+              DataColumn(label: Text('Presentación')),
+              DataColumn(label: Text('Control')),
               DataColumn(label: Text('Estado')),
             ],
             rows: items.map((item) {
@@ -827,19 +820,8 @@ class _InsumosDataTable extends StatelessWidget {
                   ),
                   DataCell(Text(_tipoBienLabel(item.tipoBien))),
                   DataCell(Text(item.unidadMedidaCodigo)),
-                  DataCell(
-                    Text(
-                      item.stockActual.toStringAsFixed(2),
-                      style: TextStyle(
-                        color: item.stockBajo
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.onSurface,
-                        fontWeight: item.stockBajo
-                            ? FontWeight.w800
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                  DataCell(Text(item.presentacion ?? 'Sin presentación')),
+                  DataCell(Text(item.requiereLote ? 'Con lote' : 'Sin lote')),
                   DataCell(
                     _StatusBadge(
                       label: item.activo ? 'Activo' : 'Inactivo',
@@ -968,13 +950,6 @@ class _InsumoDetailPanel extends StatelessWidget {
                               background: const Color(0xFFE8F2FF),
                               foreground: const Color(0xFF0F4C81),
                             ),
-                          if (insumo.stockBajo)
-                            _StatusBadge(
-                              label: 'Stock bajo',
-                              icon: Icons.warning_amber_rounded,
-                              background: const Color(0xFFF9E8BF),
-                              foreground: const Color(0xFF7A5512),
-                            ),
                         ],
                       ),
                       const Gap(AppSpacing.xs),
@@ -1008,34 +983,15 @@ class _InsumoDetailPanel extends StatelessWidget {
                         ],
                       ),
                       const Gap(AppSpacing.lg),
-                      Wrap(
-                        spacing: AppSpacing.lg,
-                        runSpacing: AppSpacing.lg,
-                        children: [
-                          _DetailCard(
-                            title: 'Operacion',
-                            lines: [
-                              'Tipo: ${_tipoBienLabel(insumo.tipoBien)}',
-                              'Unidad: ${insumo.unidadMedidaCodigo} · ${insumo.unidadMedidaNombre}',
-                              'Presentacion: ${insumo.presentacion ?? 'Sin presentacion'}',
-                              'Requiere lote: ${insumo.requiereLote ? 'Si' : 'No'}',
-                            ],
-                          ),
-                          _DetailCard(
-                            title: 'Stock y costo',
-                            lines: [
-                              'Stock actual: ${insumo.stockActual.toStringAsFixed(2)}',
-                              'Stock minimo: ${insumo.stockMinimo.toStringAsFixed(2)}',
-                              'Costo promedio: S/ ${insumo.costoPromedioActual.toStringAsFixed(2)}',
-                            ],
-                          ),
-                          _DetailCard(
-                            title: 'Trazabilidad',
-                            lines: [
-                              'Creado: ${_formatDateTime(insumo.creadoEn)}',
-                              'Actualizado: ${_formatOptionalDate(insumo.actualizadoEn)}',
-                            ],
-                          ),
+                      _DetailCard(
+                        title: 'Ficha del insumo',
+                        lines: [
+                          'Tipo: ${_tipoBienLabel(insumo.tipoBien)}',
+                          'Unidad: ${insumo.unidadMedidaCodigo} · ${insumo.unidadMedidaNombre}',
+                          'Presentación: ${insumo.presentacion ?? 'Sin presentación'}',
+                          'Control de lote: ${insumo.requiereLote ? 'Requerido' : 'No requerido'}',
+                          'Creado: ${_formatDateTime(insumo.creadoEn)}',
+                          'Actualizado: ${_formatOptionalDate(insumo.actualizadoEn)}',
                         ],
                       ),
                     ],
@@ -1165,19 +1121,13 @@ class _InsumoListTileCard extends StatelessWidget {
                 height: 38,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: item.stockBajo
-                      ? theme.colorScheme.errorContainer
-                      : theme.colorScheme.primaryContainer,
+                  color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  item.stockBajo
-                      ? Icons.warning_amber_rounded
-                      : Icons.inventory_2_outlined,
+                  Icons.category_outlined,
                   size: 19,
-                  color: item.stockBajo
-                      ? theme.colorScheme.onErrorContainer
-                      : theme.colorScheme.onPrimaryContainer,
+                  color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
               const Gap(AppSpacing.md),
@@ -1227,14 +1177,6 @@ class _InsumoListTileCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (item.stockBajo) ...[
-                const Gap(AppSpacing.xs),
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: theme.colorScheme.error,
-                  size: 18,
-                ),
-              ],
             ],
           ),
         ),
@@ -1254,22 +1196,29 @@ class _DetailCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: theme.textTheme.titleMedium),
-          const Gap(AppSpacing.md),
-          for (final line in lines) ...[
-            Text(line, style: theme.textTheme.bodyMedium),
-            const Gap(AppSpacing.sm),
-          ],
+          const Gap(AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final line in lines)
+                SizedBox(
+                  width: 220,
+                  child: Text(line, style: theme.textTheme.bodySmall),
+                ),
+            ],
+          ),
         ],
       ),
     );

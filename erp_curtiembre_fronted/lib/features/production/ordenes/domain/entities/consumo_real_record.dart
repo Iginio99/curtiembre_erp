@@ -37,20 +37,20 @@ class ConsumoRealRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        ordenProduccionId,
-        ordenProcesoId,
-        procesoProductivoId,
-        procesoCodigo,
-        procesoNombre,
-        salidaInventarioDetalleId,
-        insumoId,
-        insumoCodigo,
-        insumoNombre,
-        cantidadConsumida,
-        costoUnitario,
-        costoTotal,
-        esExtra,
-        creadoEn,
-      ];
+    id,
+    ordenProduccionId,
+    ordenProcesoId,
+    procesoProductivoId,
+    procesoCodigo,
+    procesoNombre,
+    salidaInventarioDetalleId,
+    insumoId,
+    insumoCodigo,
+    insumoNombre,
+    cantidadConsumida,
+    costoUnitario,
+    costoTotal,
+    esExtra,
+    creadoEn,
+  ];
 }

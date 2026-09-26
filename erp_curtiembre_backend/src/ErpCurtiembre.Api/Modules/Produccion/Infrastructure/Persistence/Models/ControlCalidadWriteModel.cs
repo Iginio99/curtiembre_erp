@@ -10,6 +10,14 @@ public sealed class ControlCalidadWriteModel
 
     public long CalidadProductoId { get; set; }
 
+    public decimal CantidadLadosA { get; set; }
+
+    public decimal CantidadLadosB { get; set; }
+
+    public decimal CantidadLadosC { get; set; }
+
+    public decimal CantidadLadosMerma { get; set; }
+
     public string Resultado { get; set; } = string.Empty;
 
     public string? Observacion { get; set; }

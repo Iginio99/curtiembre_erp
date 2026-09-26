@@ -727,6 +727,11 @@ const _moduleNavigationGroups = [
       route: '/produccion/lotes',
     ),
     _NavigationItem(
+      label: 'Personal',
+      icon: Icons.badge_outlined,
+      route: '/produccion/personal',
+    ),
+    _NavigationItem(
       label: 'Órdenes',
       icon: Icons.assignment_outlined,
       route: '/produccion/ordenes',

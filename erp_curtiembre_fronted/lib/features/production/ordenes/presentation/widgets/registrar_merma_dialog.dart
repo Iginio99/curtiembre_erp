@@ -97,14 +97,17 @@ class _RegistrarMermaDialogState extends State<RegistrarMermaDialog> {
                 const Gap(AppSpacing.lg),
                 TextFormField(
                   controller: _cantidadController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Cantidad perdida',
                     hintText: '0.00',
                   ),
                   validator: (value) {
-                    final parsed =
-                        double.tryParse((value ?? '').trim().replaceAll(',', '.'));
+                    final parsed = double.tryParse(
+                      (value ?? '').trim().replaceAll(',', '.'),
+                    );
                     if (parsed == null || parsed <= 0) {
                       return 'Ingresa una cantidad valida.';
                     }
@@ -135,7 +138,9 @@ class _RegistrarMermaDialogState extends State<RegistrarMermaDialog> {
                   children: [
                     AppButton.secondary(
                       label: 'Cancelar',
-                      onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: widget.isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                     ),
                     const Gap(AppSpacing.md),
                     AppButton.primary(

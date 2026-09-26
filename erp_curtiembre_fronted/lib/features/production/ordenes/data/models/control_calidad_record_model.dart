@@ -7,6 +7,10 @@ class ControlCalidadRecordModel {
     required this.calidadProductoId,
     required this.calidadCodigo,
     required this.calidadNombre,
+    required this.cantidadLadosA,
+    required this.cantidadLadosB,
+    required this.cantidadLadosC,
+    required this.cantidadLadosMerma,
     required this.resultado,
     required this.evaluadoEn,
     this.productoTerminadoId,
@@ -21,6 +25,10 @@ class ControlCalidadRecordModel {
   final int calidadProductoId;
   final String calidadCodigo;
   final String calidadNombre;
+  final double cantidadLadosA;
+  final double cantidadLadosB;
+  final double cantidadLadosC;
+  final double cantidadLadosMerma;
   final String resultado;
   final String? observacion;
   final DateTime evaluadoEn;
@@ -35,6 +43,10 @@ class ControlCalidadRecordModel {
       calidadProductoId: (json['calidadProductoId'] as num).toInt(),
       calidadCodigo: json['calidadCodigo'] as String,
       calidadNombre: json['calidadNombre'] as String,
+      cantidadLadosA: (json['cantidadLadosA'] as num).toDouble(),
+      cantidadLadosB: (json['cantidadLadosB'] as num).toDouble(),
+      cantidadLadosC: (json['cantidadLadosC'] as num).toDouble(),
+      cantidadLadosMerma: (json['cantidadLadosMerma'] as num).toDouble(),
       resultado: json['resultado'] as String,
       observacion: json['observacion'] as String?,
       evaluadoEn: DateTime.parse(json['evaluadoEn'] as String),
@@ -51,6 +63,10 @@ class ControlCalidadRecordModel {
       calidadProductoId: calidadProductoId,
       calidadCodigo: calidadCodigo,
       calidadNombre: calidadNombre,
+      cantidadLadosA: cantidadLadosA,
+      cantidadLadosB: cantidadLadosB,
+      cantidadLadosC: cantidadLadosC,
+      cantidadLadosMerma: cantidadLadosMerma,
       resultado: resultado,
       observacion: observacion,
       evaluadoEn: evaluadoEn,

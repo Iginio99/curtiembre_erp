@@ -21,6 +21,8 @@ public sealed class OrdenProduccionWriteModel
     public DateTime? FechaFinReal { get; set; }
 
     public long? ResponsableUsuarioId { get; set; }
+    public string? ResponsableNombre { get; set; }
+    public string? ResponsableCargo { get; set; }
 
     public string Estado { get; set; } = string.Empty;
 

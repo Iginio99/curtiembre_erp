@@ -14,6 +14,14 @@ public sealed class ControlCalidad
 
     public string CalidadNombre { get; init; } = string.Empty;
 
+    public decimal CantidadLadosA { get; init; }
+
+    public decimal CantidadLadosB { get; init; }
+
+    public decimal CantidadLadosC { get; init; }
+
+    public decimal CantidadLadosMerma { get; init; }
+
     public string Resultado { get; init; } = string.Empty;
 
     public string? Observacion { get; init; }

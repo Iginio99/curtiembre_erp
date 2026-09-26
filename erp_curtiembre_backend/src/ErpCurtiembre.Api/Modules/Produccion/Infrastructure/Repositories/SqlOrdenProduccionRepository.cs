@@ -39,7 +39,8 @@ public sealed class SqlOrdenProduccionRepository(
             CantidadPieles = orden.CantidadPieles,
             FechaInicioPlanificada = orden.FechaInicioPlanificada,
             FechaFinEstimada = orden.FechaFinEstimada,
-            ResponsableUsuarioId = orden.ResponsableUsuarioId,
+            ResponsableNombre = orden.ResponsableNombre,
+            ResponsableCargo = orden.ResponsableCargo,
             Estado = orden.Estado,
             Observacion = orden.Observacion,
             CreadoPorUsuarioId = orden.CreadoPorUsuarioId
@@ -83,7 +84,8 @@ public sealed class SqlOrdenProduccionRepository(
                 op.fecha_fin_estimada AS FechaFinEstimada,
                 op.fecha_fin_real AS FechaFinReal,
                 op.responsable_usuario_id AS ResponsableUsuarioId,
-                CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END AS ResponsableNombre,
+                COALESCE(op.responsable_nombre, CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END) AS ResponsableNombre,
+                op.responsable_cargo AS ResponsableCargo,
                 op.estado AS Estado,
                 op.motivo_anulacion AS MotivoAnulacion,
                 op.observacion AS Observacion,
@@ -112,6 +114,8 @@ public sealed class SqlOrdenProduccionRepository(
                 op.fecha_fin_estimada,
                 op.fecha_fin_real,
                 op.responsable_usuario_id,
+                op.responsable_nombre,
+                op.responsable_cargo,
                 u.id,
                 u.nombres,
                 u.apellidos,
@@ -147,7 +151,8 @@ public sealed class SqlOrdenProduccionRepository(
                 op.fecha_fin_estimada AS FechaFinEstimada,
                 op.fecha_fin_real AS FechaFinReal,
                 op.responsable_usuario_id AS ResponsableUsuarioId,
-                CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END AS ResponsableNombre,
+                COALESCE(op.responsable_nombre, CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END) AS ResponsableNombre,
+                op.responsable_cargo AS ResponsableCargo,
                 op.estado AS Estado,
                 op.motivo_anulacion AS MotivoAnulacion,
                 op.observacion AS Observacion,
@@ -184,6 +189,8 @@ public sealed class SqlOrdenProduccionRepository(
                 op.fecha_fin_estimada,
                 op.fecha_fin_real,
                 op.responsable_usuario_id,
+                op.responsable_nombre,
+                op.responsable_cargo,
                 u.id,
                 u.nombres,
                 u.apellidos,
@@ -228,7 +235,8 @@ public sealed class SqlOrdenProduccionRepository(
                 pp.nombre AS ProcesoNombre,
                 opp.secuencia AS Secuencia,
                 opp.responsable_usuario_id AS ResponsableUsuarioId,
-                CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END AS ResponsableNombre,
+                COALESCE(opp.responsable_nombre, CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END) AS ResponsableNombre,
+                opp.responsable_cargo AS ResponsableCargo,
                 opp.peso_base_kg AS PesoBaseKg,
                 opp.fecha_fin_estimada AS FechaFinEstimada,
                 opp.fecha_inicio AS FechaInicio,
@@ -263,7 +271,8 @@ public sealed class SqlOrdenProduccionRepository(
                 pp.nombre AS ProcesoNombre,
                 opp.secuencia AS Secuencia,
                 opp.responsable_usuario_id AS ResponsableUsuarioId,
-                CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END AS ResponsableNombre,
+                COALESCE(opp.responsable_nombre, CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END) AS ResponsableNombre,
+                opp.responsable_cargo AS ResponsableCargo,
                 opp.peso_base_kg AS PesoBaseKg,
                 opp.fecha_fin_estimada AS FechaFinEstimada,
                 opp.fecha_inicio AS FechaInicio,
@@ -285,7 +294,8 @@ public sealed class SqlOrdenProduccionRepository(
 
     public async Task StartOrderAsync(
         long orderId,
-        long? responsableUsuarioId,
+        string responsableNombre,
+        string responsableCargo,
         decimal pesoBaseKg,
         DateTime fechaFinEstimada,
         string? observacion,
@@ -301,19 +311,21 @@ public sealed class SqlOrdenProduccionRepository(
             .ThenBy(x => x.Id)
             .FirstAsync(cancellationToken);
 
-        order.Estado = "ESPERANDO_MATERIALES";
+        order.Estado = "EN_PROCESO";
         order.FechaInicioReal = startedAt;
-        order.ResponsableUsuarioId = responsableUsuarioId ?? order.ResponsableUsuarioId;
+        order.ResponsableNombre = responsableNombre;
+        order.ResponsableCargo = responsableCargo;
         if (observacion is not null)
         {
             order.Observacion = observacion;
         }
 
-        firstProcess.Estado = "ESPERANDO_MATERIALES";
+        firstProcess.Estado = "EN_PROCESO";
         firstProcess.PesoBaseKg = pesoBaseKg;
         firstProcess.FechaFinEstimada = fechaFinEstimada.Date;
         firstProcess.FechaInicio = startedAt;
-        firstProcess.ResponsableUsuarioId = responsableUsuarioId ?? firstProcess.ResponsableUsuarioId ?? order.ResponsableUsuarioId;
+        firstProcess.ResponsableNombre = responsableNombre;
+        firstProcess.ResponsableCargo = responsableCargo;
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -345,7 +357,8 @@ public sealed class SqlOrdenProduccionRepository(
 
     public async Task StartProcessAsync(
         long processId,
-        long? responsableUsuarioId,
+        string responsableNombre,
+        string responsableCargo,
         decimal pesoBaseKg,
         DateTime fechaFinEstimada,
         string? observacion,
@@ -354,11 +367,13 @@ public sealed class SqlOrdenProduccionRepository(
     {
         var process = await dbContext.OrdenesProduccionProceso.SingleAsync(x => x.Id == processId, cancellationToken);
         var order = await dbContext.OrdenesProduccion.SingleAsync(x => x.Id == process.OrdenProduccionId, cancellationToken);
-        process.Estado = "ESPERANDO_MATERIALES";
+        process.Estado = "EN_PROCESO";
+        process.FechaInicio ??= startedAt;
         process.PesoBaseKg = pesoBaseKg;
         process.FechaFinEstimada = fechaFinEstimada.Date;
-        process.ResponsableUsuarioId = responsableUsuarioId ?? process.ResponsableUsuarioId;
-        order.Estado = "ESPERANDO_MATERIALES";
+        process.ResponsableNombre = responsableNombre;
+        process.ResponsableCargo = responsableCargo;
+        order.Estado = "EN_PROCESO";
         if (observacion is not null)
         {
             process.Observacion = observacion;
@@ -385,8 +400,8 @@ public sealed class SqlOrdenProduccionRepository(
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var process = await dbContext.OrdenesProduccionProceso.SingleAsync(x => x.Id == processId, cancellationToken);
         var order = await dbContext.OrdenesProduccion.SingleAsync(x => x.Id == process.OrdenProduccionId, cancellationToken);
-        process.Estado = "LISTA_PARA_INICIAR";
-        order.Estado = "LISTA_PARA_INICIAR";
+        process.Estado = process.FechaInicio.HasValue ? "EN_PROCESO" : "LISTA_PARA_INICIAR";
+        order.Estado = process.FechaInicio.HasValue ? "EN_PROCESO" : "LISTA_PARA_INICIAR";
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }

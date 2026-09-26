@@ -39,21 +39,21 @@ class DesviacionConsumoRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        ordenConsumoPlanificadoId,
-        ordenConsumoRealId,
-        ordenProduccionId,
-        ordenProcesoId,
-        procesoProductivoId,
-        procesoCodigo,
-        procesoNombre,
-        insumoId,
-        insumoCodigo,
-        insumoNombre,
-        cantidadPlanificada,
-        cantidadReal,
-        cantidadDesviacion,
-        motivo,
-        registradoEn,
-      ];
+    id,
+    ordenConsumoPlanificadoId,
+    ordenConsumoRealId,
+    ordenProduccionId,
+    ordenProcesoId,
+    procesoProductivoId,
+    procesoCodigo,
+    procesoNombre,
+    insumoId,
+    insumoCodigo,
+    insumoNombre,
+    cantidadPlanificada,
+    cantidadReal,
+    cantidadDesviacion,
+    motivo,
+    registradoEn,
+  ];
 }

@@ -28,6 +28,8 @@ public sealed class OrdenProduccion
 
     public string? ResponsableNombre { get; init; }
 
+    public string? ResponsableCargo { get; init; }
+
     public string Estado { get; init; } = string.Empty;
 
     public string? MotivoAnulacion { get; init; }

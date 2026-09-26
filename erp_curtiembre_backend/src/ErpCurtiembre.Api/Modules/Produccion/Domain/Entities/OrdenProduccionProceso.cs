@@ -20,6 +20,8 @@ public sealed class OrdenProduccionProceso
 
     public string? ResponsableNombre { get; init; }
 
+    public string? ResponsableCargo { get; init; }
+
     public decimal? PesoBaseKg { get; init; }
 
     public DateTime? FechaFinEstimada { get; init; }

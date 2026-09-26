@@ -43,7 +43,8 @@ class MermaProcesoRecordModel {
       registradoEn: DateTime.parse(json['registradoEn'] as String),
       registradoPorUsuarioId: _parseOptionalInt(json['registradoPorUsuarioId']),
       registradoPorNombre:
-          json['registradoPorNombre'] as String? ?? json['responsable'] as String?,
+          json['registradoPorNombre'] as String? ??
+          json['responsable'] as String?,
     );
   }
 

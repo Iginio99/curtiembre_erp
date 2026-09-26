@@ -19,6 +19,7 @@ class OrdenProduccionRecord extends Equatable {
     this.fechaFinReal,
     this.responsableUsuarioId,
     this.responsableNombre,
+    this.responsableCargo,
     this.observacion,
     this.motivoAnulacion,
     this.creadoPorUsuarioId,
@@ -39,6 +40,7 @@ class OrdenProduccionRecord extends Equatable {
   final DateTime? fechaFinReal;
   final int? responsableUsuarioId;
   final String? responsableNombre;
+  final String? responsableCargo;
   final String estado;
   final String? observacion;
   final String? motivoAnulacion;
@@ -76,6 +78,7 @@ class OrdenProduccionRecord extends Equatable {
     fechaFinReal,
     responsableUsuarioId,
     responsableNombre,
+    responsableCargo,
     estado,
     observacion,
     motivoAnulacion,

@@ -12,6 +12,10 @@ class ProductoTerminadoRecordModel {
     required this.fechaIngreso,
     required this.cantidadPielesBuenas,
     required this.cantidadLadosCalculada,
+    required this.cantidadLadosA,
+    required this.cantidadLadosB,
+    required this.cantidadLadosC,
+    required this.cantidadLadosMerma,
     required this.estado,
     this.observacion,
   });
@@ -26,6 +30,10 @@ class ProductoTerminadoRecordModel {
   final DateTime fechaIngreso;
   final double cantidadPielesBuenas;
   final double cantidadLadosCalculada;
+  final double cantidadLadosA;
+  final double cantidadLadosB;
+  final double cantidadLadosC;
+  final double cantidadLadosMerma;
   final String estado;
   final String? observacion;
 
@@ -40,7 +48,12 @@ class ProductoTerminadoRecordModel {
       calidadNombre: json['calidadNombre'] as String,
       fechaIngreso: DateTime.parse(json['fechaIngreso'] as String),
       cantidadPielesBuenas: (json['cantidadPielesBuenas'] as num).toDouble(),
-      cantidadLadosCalculada: (json['cantidadLadosCalculada'] as num).toDouble(),
+      cantidadLadosCalculada: (json['cantidadLadosCalculada'] as num)
+          .toDouble(),
+      cantidadLadosA: (json['cantidadLadosA'] as num).toDouble(),
+      cantidadLadosB: (json['cantidadLadosB'] as num).toDouble(),
+      cantidadLadosC: (json['cantidadLadosC'] as num).toDouble(),
+      cantidadLadosMerma: (json['cantidadLadosMerma'] as num).toDouble(),
       estado: json['estado'] as String,
       observacion: json['observacion'] as String?,
     );
@@ -58,6 +71,10 @@ class ProductoTerminadoRecordModel {
       fechaIngreso: fechaIngreso,
       cantidadPielesBuenas: cantidadPielesBuenas,
       cantidadLadosCalculada: cantidadLadosCalculada,
+      cantidadLadosA: cantidadLadosA,
+      cantidadLadosB: cantidadLadosB,
+      cantidadLadosC: cantidadLadosC,
+      cantidadLadosMerma: cantidadLadosMerma,
       estado: estado,
       observacion: observacion,
     );

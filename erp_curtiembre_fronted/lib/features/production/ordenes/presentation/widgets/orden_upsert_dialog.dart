@@ -1,7 +1,7 @@
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/domain/entities/cliente_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/lote_option.dart';
-import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -14,7 +14,8 @@ class OrdenUpsertFormData {
     this.fechaInicioPlanificada,
     required this.fechaFinEstimada,
     this.observacion,
-    this.responsableUsuarioId,
+    required this.responsableNombre,
+    required this.responsableCargo,
   });
 
   final int loteId;
@@ -23,7 +24,8 @@ class OrdenUpsertFormData {
   final DateTime? fechaInicioPlanificada;
   final DateTime fechaFinEstimada;
   final String? observacion;
-  final int? responsableUsuarioId;
+  final String responsableNombre;
+  final String responsableCargo;
 }
 
 class OrdenUpsertDialog extends StatefulWidget {
@@ -33,7 +35,8 @@ class OrdenUpsertDialog extends StatefulWidget {
     required this.isSubmitting,
     required this.clienteOptions,
     required this.loteOptions,
-    required this.responsableOptions,
+    this.responsableOptions = const [],
+    this.onAddPersonal,
     super.key,
   });
 
@@ -42,7 +45,8 @@ class OrdenUpsertDialog extends StatefulWidget {
   final bool isSubmitting;
   final List<ClienteOption> clienteOptions;
   final List<LoteOption> loteOptions;
-  final List<UserListItem> responsableOptions;
+  final List<PersonalEmpresaOption> responsableOptions;
+  final Future<PersonalEmpresaOption?> Function()? onAddPersonal;
 
   @override
   State<OrdenUpsertDialog> createState() => _OrdenUpsertDialogState();
@@ -52,11 +56,14 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
   final _formKey = GlobalKey<FormState>();
   int? _selectedClienteId;
   int? _selectedLoteId;
-  int? _selectedResponsableId;
   DateTime? _fechaInicioPlanificada;
   late DateTime _fechaFinEstimada;
   late final TextEditingController _cantidadController;
   late final TextEditingController _observacionController;
+  late final TextEditingController _responsableNombreController;
+  late final TextEditingController _responsableCargoController;
+  late List<PersonalEmpresaOption> _personalOptions;
+  int? _selectedPersonalId;
 
   @override
   void initState() {
@@ -64,12 +71,17 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
     _fechaFinEstimada = DateTime.now().add(const Duration(days: 7));
     _cantidadController = TextEditingController();
     _observacionController = TextEditingController();
+    _responsableNombreController = TextEditingController();
+    _responsableCargoController = TextEditingController();
+    _personalOptions = List.of(widget.responsableOptions);
   }
 
   @override
   void dispose() {
     _cantidadController.dispose();
     _observacionController.dispose();
+    _responsableNombreController.dispose();
+    _responsableCargoController.dispose();
     super.dispose();
   }
 
@@ -78,7 +90,9 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
       return widget.loteOptions;
     }
 
-    return widget.loteOptions.where((lote) => lote.clienteId == _selectedClienteId).toList();
+    return widget.loteOptions
+        .where((lote) => lote.clienteId == _selectedClienteId)
+        .toList();
   }
 
   LoteOption? get _selectedLote {
@@ -95,9 +109,8 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
     return null;
   }
 
-  String _formatCantidad(double value) => value.toStringAsFixed(
-        value == value.roundToDouble() ? 0 : 2,
-      );
+  String _formatCantidad(double value) =>
+      value.toStringAsFixed(value == value.roundToDouble() ? 0 : 2);
 
   Future<void> _pickFechaInicioPlanificada() async {
     final selected = await showDatePicker(
@@ -139,7 +152,8 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
         fechaInicioPlanificada: _fechaInicioPlanificada,
         fechaFinEstimada: _fechaFinEstimada,
         observacion: _normalizeOptional(_observacionController.text),
-        responsableUsuarioId: _selectedResponsableId,
+        responsableNombre: _responsableNombreController.text.trim(),
+        responsableCargo: _responsableCargoController.text.trim(),
       ),
     );
   }
@@ -184,17 +198,22 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
                           setState(() {
                             _selectedClienteId = value;
                             if (_selectedLoteId != null &&
-                                !_filteredLotes.any((lote) => lote.id == _selectedLoteId)) {
+                                !_filteredLotes.any(
+                                  (lote) => lote.id == _selectedLoteId,
+                                )) {
                               _selectedLoteId = null;
                             }
                           });
                         },
-                  validator: (value) => value == null ? 'Selecciona un cliente.' : null,
+                  validator: (value) =>
+                      value == null ? 'Selecciona un cliente.' : null,
                 ),
                 const Gap(AppSpacing.md),
                 DropdownButtonFormField<int>(
                   initialValue: _selectedLoteId,
-                  decoration: const InputDecoration(labelText: 'Lote disponible'),
+                  decoration: const InputDecoration(
+                    labelText: 'Lote disponible',
+                  ),
                   items: _filteredLotes
                       .map(
                         (option) => DropdownMenuItem<int>(
@@ -206,45 +225,111 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
                   onChanged: widget.isSubmitting
                       ? null
                       : (value) => setState(() => _selectedLoteId = value),
-                  validator: (value) => value == null ? 'Selecciona un lote.' : null,
+                  validator: (value) =>
+                      value == null ? 'Selecciona un lote.' : null,
                 ),
                 if (_selectedLote case final lote?) ...[
                   const Gap(AppSpacing.sm),
                   Text(
                     'Cantidad disponible: ${_formatCantidad(lote.cantidadPielesDisponible)} pieles',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ],
                 const Gap(AppSpacing.md),
-                DropdownButtonFormField<int>(
-                  initialValue: _selectedResponsableId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Responsable de la orden',
+                if (_personalOptions.isNotEmpty ||
+                    widget.onAddPersonal != null) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: _selectedPersonalId,
+                          decoration: const InputDecoration(
+                            labelText: 'Responsable',
+                          ),
+                          items: _personalOptions
+                              .map(
+                                (item) => DropdownMenuItem(
+                                  value: item.id,
+                                  child: Text(item.label),
+                                ),
+                              )
+                              .toList(growable: false),
+                          onChanged: widget.isSubmitting
+                              ? null
+                              : (id) {
+                                  final item = _personalOptions.firstWhere(
+                                    (x) => x.id == id,
+                                  );
+                                  setState(() => _selectedPersonalId = item.id);
+                                  _responsableNombreController.text =
+                                      item.nombre;
+                                  _responsableCargoController.text = item.cargo;
+                                },
+                        ),
+                      ),
+                      if (widget.onAddPersonal != null) ...[
+                        const Gap(AppSpacing.sm),
+                        IconButton.filledTonal(
+                          tooltip: 'Agregar personal',
+                          onPressed: () async {
+                            final item = await widget.onAddPersonal!();
+                            if (item == null || !mounted) return;
+                            setState(() {
+                              _personalOptions = [
+                                ..._personalOptions.where(
+                                  (option) => option.id != item.id,
+                                ),
+                                item,
+                              ]..sort((a, b) => a.nombre.compareTo(b.nombre));
+                              _selectedPersonalId = item.id;
+                            });
+                            _responsableNombreController.text = item.nombre;
+                            _responsableCargoController.text = item.cargo;
+                          },
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    ],
                   ),
-                  items: widget.responsableOptions
-                      .map(
-                        (user) => DropdownMenuItem<int>(
-                          value: user.usuarioId,
-                          child: Text(user.nombreCompleto),
-                        ),
-                      )
-                      .toList(growable: false),
-                  onChanged: widget.isSubmitting
-                      ? null
-                      : (value) => setState(
-                          () => _selectedResponsableId = value,
-                        ),
-                  validator: (value) =>
-                      value == null ? 'Selecciona un responsable.' : null,
+                  const Gap(AppSpacing.md),
+                ],
+                Offstage(
+                  child: TextFormField(
+                    controller: _responsableNombreController,
+                    enabled: !widget.isSubmitting,
+                    maxLength: 150,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre del responsable',
+                      hintText: 'Ej. Juan Pérez',
+                    ),
+                    validator: (value) => (value ?? '').trim().isEmpty
+                        ? 'Ingresa el nombre del responsable.'
+                        : null,
+                  ),
+                ),
+                Offstage(
+                  child: TextFormField(
+                    controller: _responsableCargoController,
+                    enabled: !widget.isSubmitting,
+                    maxLength: 100,
+                    decoration: const InputDecoration(
+                      labelText: 'Cargo',
+                      hintText: 'Ej. Supervisor de producción',
+                    ),
+                    validator: (value) => (value ?? '').trim().isEmpty
+                        ? 'Ingresa el cargo del responsable.'
+                        : null,
+                  ),
                 ),
                 const Gap(AppSpacing.md),
                 TextFormField(
                   controller: _cantidadController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: _selectedLote == null
                         ? 'Cantidad de pieles'
@@ -265,7 +350,9 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
                 ),
                 const Gap(AppSpacing.md),
                 InkWell(
-                  onTap: widget.isSubmitting ? null : _pickFechaInicioPlanificada,
+                  onTap: widget.isSubmitting
+                      ? null
+                      : _pickFechaInicioPlanificada,
                   borderRadius: BorderRadius.circular(16),
                   child: InputDecorator(
                     decoration: const InputDecoration(
@@ -305,7 +392,9 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+          onPressed: widget.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
         FilledButton.icon(

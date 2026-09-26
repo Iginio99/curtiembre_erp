@@ -19,6 +19,7 @@ class OrdenProduccionRecordModel {
     this.fechaFinReal,
     this.responsableUsuarioId,
     this.responsableNombre,
+    this.responsableCargo,
     this.observacion,
     this.motivoAnulacion,
     this.creadoPorUsuarioId,
@@ -39,6 +40,7 @@ class OrdenProduccionRecordModel {
   final DateTime? fechaFinReal;
   final int? responsableUsuarioId;
   final String? responsableNombre;
+  final String? responsableCargo;
   final String estado;
   final String? observacion;
   final String? motivoAnulacion;
@@ -58,12 +60,15 @@ class OrdenProduccionRecordModel {
       clienteId: (json['clienteId'] as num).toInt(),
       clienteRazonSocial: json['clienteRazonSocial'] as String,
       cantidadPieles: (json['cantidadPieles'] as num).toDouble(),
-      fechaInicioPlanificada: _parseOptionalDate(json['fechaInicioPlanificada']),
+      fechaInicioPlanificada: _parseOptionalDate(
+        json['fechaInicioPlanificada'],
+      ),
       fechaInicioReal: _parseOptionalDate(json['fechaInicioReal']),
       fechaFinEstimada: DateTime.parse(json['fechaFinEstimada'] as String),
       fechaFinReal: _parseOptionalDate(json['fechaFinReal']),
       responsableUsuarioId: _parseOptionalInt(json['responsableUsuarioId']),
       responsableNombre: json['responsableNombre'] as String?,
+      responsableCargo: json['responsableCargo'] as String?,
       estado: json['estado'] as String,
       observacion: json['observacion'] as String?,
       motivoAnulacion: json['motivoAnulacion'] as String?,
@@ -72,7 +77,9 @@ class OrdenProduccionRecordModel {
       creadoEn: DateTime.parse(json['creadoEn'] as String),
       creadoPorUsuarioId: _parseOptionalInt(json['creadoPorUsuarioId']),
       actualizadoEn: _parseOptionalDate(json['actualizadoEn']),
-      actualizadoPorUsuarioId: _parseOptionalInt(json['actualizadoPorUsuarioId']),
+      actualizadoPorUsuarioId: _parseOptionalInt(
+        json['actualizadoPorUsuarioId'],
+      ),
     );
   }
 
@@ -91,6 +98,7 @@ class OrdenProduccionRecordModel {
       fechaFinReal: fechaFinReal,
       responsableUsuarioId: responsableUsuarioId,
       responsableNombre: responsableNombre,
+      responsableCargo: responsableCargo,
       estado: estado,
       observacion: observacion,
       motivoAnulacion: motivoAnulacion,

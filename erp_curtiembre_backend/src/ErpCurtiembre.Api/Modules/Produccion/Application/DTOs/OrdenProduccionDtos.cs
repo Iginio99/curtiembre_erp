@@ -2,17 +2,25 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ErpCurtiembre.Modules.Produccion.Application.DTOs;
 
+public sealed record PersonalEmpresaDto(long Id, string Nombre, string Cargo, bool Activo);
+
+public sealed record CreatePersonalEmpresaDto(
+    [property: Required, StringLength(150)] string Nombre,
+    [property: Required, StringLength(100)] string Cargo);
+
 public sealed record CreateOrdenProduccionRequestDto(
     [property: Range(1, long.MaxValue)] long LoteId,
     [property: Range(1, long.MaxValue)] long ClienteId,
     [property: Range(typeof(decimal), "0.0001", "999999999999999.9999")] decimal CantidadPieles,
     DateTime? FechaInicioPlanificada,
     DateTime FechaFinEstimada,
-    [property: Range(1, long.MaxValue)] long? ResponsableUsuarioId,
+    [property: Required, StringLength(150)] string ResponsableNombre,
+    [property: Required, StringLength(100)] string ResponsableCargo,
     [property: StringLength(500)] string? Observacion);
 
 public sealed record StartOrdenProduccionRequestDto(
-    [property: Range(1, long.MaxValue)] long? ResponsableUsuarioId,
+    [property: Required, StringLength(150)] string ResponsableNombre,
+    [property: Required, StringLength(100)] string ResponsableCargo,
     [property: Range(typeof(decimal), "0.01", "999999999999999.99")] decimal PesoBaseKg,
     DateTime FechaFinEstimada,
     [property: StringLength(500)] string? Observacion);
@@ -40,6 +48,7 @@ public sealed record OrdenProduccionListItemDto(
     DateTime? FechaFinReal,
     long? ResponsableUsuarioId,
     string? ResponsableNombre,
+    string? ResponsableCargo,
     string Estado,
     string? Observacion,
     int ProcesosTotales,
@@ -60,6 +69,7 @@ public sealed record OrdenProduccionDetailDto(
     DateTime? FechaFinReal,
     long? ResponsableUsuarioId,
     string? ResponsableNombre,
+    string? ResponsableCargo,
     string Estado,
     string? MotivoAnulacion,
     string? Observacion,
@@ -79,6 +89,7 @@ public sealed record OrdenProcesoListItemDto(
     int Secuencia,
     long? ResponsableUsuarioId,
     string? ResponsableNombre,
+    string? ResponsableCargo,
     decimal? PesoBaseKg,
     DateTime? FechaFinEstimada,
     DateTime? FechaInicio,
@@ -88,7 +99,8 @@ public sealed record OrdenProcesoListItemDto(
     string? Observacion);
 
 public sealed record StartOrdenProcesoRequestDto(
-    [property: Range(1, long.MaxValue)] long? ResponsableUsuarioId,
+    [property: Required, StringLength(150)] string ResponsableNombre,
+    [property: Required, StringLength(100)] string ResponsableCargo,
     [property: Range(typeof(decimal), "0.01", "999999999999999.99")] decimal PesoBaseKg,
     DateTime FechaFinEstimada,
     [property: StringLength(800)] string? Observacion);

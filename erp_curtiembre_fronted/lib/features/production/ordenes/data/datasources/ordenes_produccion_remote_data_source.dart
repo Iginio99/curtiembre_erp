@@ -11,11 +11,35 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/l
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/merma_proceso_record_model.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/orden_proceso_record_model.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/orden_produccion_record_model.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/producto_terminado_record_model.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 class OrdenesProduccionRemoteDataSource {
   OrdenesProduccionRemoteDataSource(this._dio, this._talker);
+
+  Future<List<PersonalEmpresaOption>> listPersonal() async {
+    const path = '/api/produccion/personal';
+    final response = await _dio.get<List<dynamic>>(path);
+    return (response.data ?? const [])
+        .map(
+          (item) =>
+              PersonalEmpresaOption.fromJson(item as Map<String, dynamic>),
+        )
+        .toList(growable: false);
+  }
+
+  Future<PersonalEmpresaOption> createPersonal({
+    required String nombre,
+    required String cargo,
+  }) async {
+    const path = '/api/produccion/personal';
+    final response = await _dio.post<Map<String, dynamic>>(
+      path,
+      data: {'nombre': nombre, 'cargo': cargo},
+    );
+    return PersonalEmpresaOption.fromJson(response.data!);
+  }
 
   final Dio _dio;
   final Talker _talker;
@@ -309,6 +333,10 @@ class OrdenesProduccionRemoteDataSource {
   Future<ControlCalidadRecordModel> registerCalidadFinal({
     required int ordenId,
     required int calidadProductoId,
+    required double cantidadLadosA,
+    required double cantidadLadosB,
+    required double cantidadLadosC,
+    required double cantidadLadosMerma,
     required String resultado,
     String? observacion,
   }) async {
@@ -322,6 +350,10 @@ class OrdenesProduccionRemoteDataSource {
         path,
         data: {
           'calidadProductoId': calidadProductoId,
+          'cantidadLadosA': cantidadLadosA,
+          'cantidadLadosB': cantidadLadosB,
+          'cantidadLadosC': cantidadLadosC,
+          'cantidadLadosMerma': cantidadLadosMerma,
           'resultado': resultado,
           'observacion': observacion,
         },
@@ -429,14 +461,15 @@ class OrdenesProduccionRemoteDataSource {
     required double cantidadPieles,
     DateTime? fechaInicioPlanificada,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     const path = '/api/produccion/ordenes';
 
     try {
       _talker.dataSource(
-        'POST $path para loteId=$loteId, clienteId=$clienteId, cantidadPieles=$cantidadPieles, responsableUsuarioId=$responsableUsuarioId, observacion=${_describeText(observacion)}',
+        'POST $path para loteId=$loteId, clienteId=$clienteId, cantidadPieles=$cantidadPieles, responsable=$responsableNombre, observacion=${_describeText(observacion)}',
       );
       final response = await _dio.post<Map<String, dynamic>>(
         path,
@@ -446,7 +479,8 @@ class OrdenesProduccionRemoteDataSource {
           'cantidadPieles': cantidadPieles,
           'fechaInicioPlanificada': fechaInicioPlanificada?.toIso8601String(),
           'fechaFinEstimada': fechaFinEstimada.toIso8601String(),
-          'responsableUsuarioId': responsableUsuarioId,
+          'responsableNombre': responsableNombre,
+          'responsableCargo': responsableCargo,
           'observacion': observacion,
         },
       );
@@ -461,19 +495,21 @@ class OrdenesProduccionRemoteDataSource {
     required int id,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     final path = '/api/produccion/ordenes/$id/iniciar';
 
     try {
       _talker.dataSource(
-        'POST $path con responsableUsuarioId=$responsableUsuarioId, observacion=${_describeText(observacion)}',
+        'POST $path con responsable operativo y observacion=${_describeText(observacion)}',
       );
       final response = await _dio.post<Map<String, dynamic>>(
         path,
         data: {
-          'responsableUsuarioId': responsableUsuarioId,
+          'responsableNombre': responsableNombre,
+          'responsableCargo': responsableCargo,
           'pesoBaseKg': pesoBaseKg,
           'fechaFinEstimada': fechaFinEstimada.toIso8601String(),
           'observacion': observacion,
@@ -509,19 +545,21 @@ class OrdenesProduccionRemoteDataSource {
     required int id,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     final path = '/api/produccion/procesos/$id/iniciar';
 
     try {
       _talker.dataSource(
-        'POST $path con responsableUsuarioId=$responsableUsuarioId, observacion=${_describeText(observacion)}',
+        'POST $path con responsable operativo y observacion=${_describeText(observacion)}',
       );
       final response = await _dio.post<Map<String, dynamic>>(
         path,
         data: {
-          'responsableUsuarioId': responsableUsuarioId,
+          'responsableNombre': responsableNombre,
+          'responsableCargo': responsableCargo,
           'pesoBaseKg': pesoBaseKg,
           'fechaFinEstimada': fechaFinEstimada.toIso8601String(),
           'observacion': observacion,

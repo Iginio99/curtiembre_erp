@@ -40,7 +40,9 @@ class DesviacionConsumoRecordModel {
   factory DesviacionConsumoRecordModel.fromJson(Map<String, dynamic> json) {
     return DesviacionConsumoRecordModel(
       id: (json['id'] as num).toInt(),
-      ordenConsumoPlanificadoId: _parseOptionalInt(json['ordenConsumoPlanificadoId']),
+      ordenConsumoPlanificadoId: _parseOptionalInt(
+        json['ordenConsumoPlanificadoId'],
+      ),
       ordenConsumoRealId: (json['ordenConsumoRealId'] as num).toInt(),
       ordenProduccionId: (json['ordenProduccionId'] as num).toInt(),
       ordenProcesoId: (json['ordenProcesoId'] as num).toInt(),

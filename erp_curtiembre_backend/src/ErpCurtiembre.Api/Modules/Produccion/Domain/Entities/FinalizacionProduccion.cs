@@ -12,6 +12,14 @@ public sealed class FinalizacionProduccion
 
     public decimal CantidadLados { get; init; }
 
+    public decimal CantidadLadosA { get; init; }
+
+    public decimal CantidadLadosB { get; init; }
+
+    public decimal CantidadLadosC { get; init; }
+
+    public decimal CantidadLadosMerma { get; init; }
+
     public string? Observacion { get; init; }
 
     public long ActorId { get; init; }

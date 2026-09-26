@@ -1,6 +1,7 @@
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/network/api_exception.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -25,6 +26,26 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
   final OrdenesProduccionRepository _repository;
   final Talker _talker;
 
+  Future<PersonalEmpresaOption?> createPersonal({
+    required String nombre,
+    required String cargo,
+  }) async {
+    try {
+      final item = await _repository.createPersonal(
+        nombre: nombre,
+        cargo: cargo,
+      );
+      final options = [
+        ...state.personalOptions.where((x) => x.id != item.id),
+        item,
+      ]..sort((a, b) => a.nombre.compareTo(b.nombre));
+      emit(state.copyWith(personalOptions: options));
+      return item;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> initialize() async {
     _talker.cubit('Inicializando modulo de ordenes de produccion.');
     emit(const OrdenesProduccionState.loading());
@@ -32,6 +53,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     try {
       final clienteOptions = await _repository.listActiveClientes();
       final loteOptions = await _repository.listLotesDisponibles();
+      final personalOptions = await _repository.listPersonal();
       final insumoOptions = await _repository.listActiveInsumos();
       _talker.cubit(
         'Catalogos base cargados para ordenes: clientes=${clienteOptions.length}, lotes=${loteOptions.length}, insumos=${insumoOptions.length}.',
@@ -41,6 +63,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         state.copyWith(
           clienteOptions: clienteOptions,
           loteOptions: loteOptions,
+          personalOptions: personalOptions,
           insumoOptions: insumoOptions,
         ),
       );
@@ -173,7 +196,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     required double cantidadPieles,
     DateTime? fechaInicioPlanificada,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     _talker.cubit(
@@ -188,7 +212,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         cantidadPieles: cantidadPieles,
         fechaInicioPlanificada: fechaInicioPlanificada,
         fechaFinEstimada: fechaFinEstimada,
-        responsableUsuarioId: responsableUsuarioId,
+        responsableNombre: responsableNombre,
+        responsableCargo: responsableCargo,
         observacion: observacion,
       );
 
@@ -227,7 +252,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
   Future<OrdenesActionResult> startSelectedOrden({
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     final ordenId = state.selectedOrdenId;
@@ -249,7 +275,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         id: ordenId,
         pesoBaseKg: pesoBaseKg,
         fechaFinEstimada: fechaFinEstimada,
-        responsableUsuarioId: responsableUsuarioId,
+        responsableNombre: responsableNombre,
+        responsableCargo: responsableCargo,
         observacion: observacion,
       );
 
@@ -342,7 +369,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     required int procesoId,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     _talker.cubit('Iniciando proceso de produccion $procesoId.');
@@ -353,7 +381,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
         id: procesoId,
         pesoBaseKg: pesoBaseKg,
         fechaFinEstimada: fechaFinEstimada,
-        responsableUsuarioId: responsableUsuarioId,
+        responsableNombre: responsableNombre,
+        responsableCargo: responsableCargo,
         observacion: observacion,
       );
 

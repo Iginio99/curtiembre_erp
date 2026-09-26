@@ -64,6 +64,10 @@ public sealed class SqlCierreProduccionRepository(
         {
             OrdenProduccionId = quality.OrdenProduccionId,
             CalidadProductoId = quality.CalidadProductoId,
+            CantidadLadosA = quality.CantidadLadosA,
+            CantidadLadosB = quality.CantidadLadosB,
+            CantidadLadosC = quality.CantidadLadosC,
+            CantidadLadosMerma = quality.CantidadLadosMerma,
             Resultado = quality.Resultado,
             Observacion = quality.Observacion,
             EvaluadoEn = quality.EvaluadoEn,
@@ -85,6 +89,10 @@ public sealed class SqlCierreProduccionRepository(
                 q.calidad_producto_id AS CalidadProductoId,
                 c.codigo AS CalidadCodigo,
                 c.nombre AS CalidadNombre,
+                q.cantidad_lados_a AS CantidadLadosA,
+                q.cantidad_lados_b AS CantidadLadosB,
+                q.cantidad_lados_c AS CantidadLadosC,
+                q.cantidad_lados_merma AS CantidadLadosMerma,
                 q.resultado AS Resultado,
                 q.observacion AS Observacion,
                 q.evaluado_en AS EvaluadoEn,
@@ -111,6 +119,10 @@ public sealed class SqlCierreProduccionRepository(
                 q.calidad_producto_id AS CalidadProductoId,
                 c.codigo AS CalidadCodigo,
                 c.nombre AS CalidadNombre,
+                q.cantidad_lados_a AS CantidadLadosA,
+                q.cantidad_lados_b AS CantidadLadosB,
+                q.cantidad_lados_c AS CantidadLadosC,
+                q.cantidad_lados_merma AS CantidadLadosMerma,
                 q.resultado AS Resultado,
                 q.observacion AS Observacion,
                 q.evaluado_en AS EvaluadoEn,
@@ -142,6 +154,10 @@ public sealed class SqlCierreProduccionRepository(
                 pt.fecha_ingreso AS FechaIngreso,
                 pt.cantidad_pieles_buenas AS CantidadPielesBuenas,
                 pt.cantidad_lados_calculada AS CantidadLadosCalculada,
+                pt.cantidad_lados_a AS CantidadLadosA,
+                pt.cantidad_lados_b AS CantidadLadosB,
+                pt.cantidad_lados_c AS CantidadLadosC,
+                pt.cantidad_lados_merma AS CantidadLadosMerma,
                 pt.estado AS Estado,
                 pt.observacion AS Observacion
             FROM produccion.producto_terminado pt
@@ -169,6 +185,10 @@ public sealed class SqlCierreProduccionRepository(
                 pt.fecha_ingreso AS FechaIngreso,
                 pt.cantidad_pieles_buenas AS CantidadPielesBuenas,
                 pt.cantidad_lados_calculada AS CantidadLadosCalculada,
+                pt.cantidad_lados_a AS CantidadLadosA,
+                pt.cantidad_lados_b AS CantidadLadosB,
+                pt.cantidad_lados_c AS CantidadLadosC,
+                pt.cantidad_lados_merma AS CantidadLadosMerma,
                 pt.estado AS Estado,
                 pt.observacion AS Observacion
             FROM produccion.producto_terminado pt
@@ -200,8 +220,12 @@ public sealed class SqlCierreProduccionRepository(
             OrdenProduccionId = finalizacion.OrdenProduccionId,
             CalidadProductoId = finalizacion.CalidadProductoId,
             FechaIngreso = finalizacion.Timestamp,
-            CantidadPielesBuenas = 0,
+            CantidadPielesBuenas = finalizacion.CantidadLados / 2m,
             CantidadLados = finalizacion.CantidadLados,
+            CantidadLadosA = finalizacion.CantidadLadosA,
+            CantidadLadosB = finalizacion.CantidadLadosB,
+            CantidadLadosC = finalizacion.CantidadLadosC,
+            CantidadLadosMerma = finalizacion.CantidadLadosMerma,
             Estado = "DISPONIBLE",
             Observacion = finalizacion.Observacion
         };

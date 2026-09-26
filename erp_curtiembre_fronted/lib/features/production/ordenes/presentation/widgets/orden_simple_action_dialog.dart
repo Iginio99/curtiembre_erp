@@ -1,6 +1,6 @@
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:flutter/material.dart';
-import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
 import 'package:gap/gap.dart';
 
 class OrdenSimpleActionFormData {
@@ -9,14 +9,16 @@ class OrdenSimpleActionFormData {
     this.motivo,
     this.pesoBaseKg,
     this.fechaFinEstimada,
-    this.responsableUsuarioId,
+    this.responsableNombre,
+    this.responsableCargo,
   });
 
   final String? observacion;
   final String? motivo;
   final double? pesoBaseKg;
   final DateTime? fechaFinEstimada;
-  final int? responsableUsuarioId;
+  final String? responsableNombre;
+  final String? responsableCargo;
 }
 
 class OrdenSimpleActionDialog extends StatefulWidget {
@@ -29,6 +31,7 @@ class OrdenSimpleActionDialog extends StatefulWidget {
     this.requireStagePlanning = false,
     this.initialValue,
     this.responsableOptions = const [],
+    this.onAddPersonal,
     super.key,
   });
 
@@ -39,7 +42,8 @@ class OrdenSimpleActionDialog extends StatefulWidget {
   final bool requireValue;
   final bool requireStagePlanning;
   final String? initialValue;
-  final List<UserListItem> responsableOptions;
+  final List<PersonalEmpresaOption> responsableOptions;
+  final Future<PersonalEmpresaOption?> Function()? onAddPersonal;
 
   @override
   State<OrdenSimpleActionDialog> createState() =>
@@ -51,7 +55,10 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
   late final TextEditingController _valueController;
   late final TextEditingController _pesoController;
   late DateTime _fechaFinEstimada;
-  int? _selectedResponsableId;
+  final _responsableNombreController = TextEditingController();
+  final _responsableCargoController = TextEditingController();
+  late List<PersonalEmpresaOption> _personalOptions;
+  int? _selectedPersonalId;
 
   @override
   void initState() {
@@ -59,12 +66,15 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
     _valueController = TextEditingController(text: widget.initialValue ?? '');
     _pesoController = TextEditingController();
     _fechaFinEstimada = DateTime.now();
+    _personalOptions = List.of(widget.responsableOptions);
   }
 
   @override
   void dispose() {
     _valueController.dispose();
     _pesoController.dispose();
+    _responsableNombreController.dispose();
+    _responsableCargoController.dispose();
     super.dispose();
   }
 
@@ -84,7 +94,8 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
         fechaFinEstimada: widget.requireStagePlanning
             ? _fechaFinEstimada
             : null,
-        responsableUsuarioId: _selectedResponsableId,
+        responsableNombre: _responsableNombreController.text.trim(),
+        responsableCargo: _responsableCargoController.text.trim(),
       ),
     );
   }
@@ -136,24 +147,79 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
               ),
               if (widget.requireStagePlanning) ...[
                 const Gap(AppSpacing.md),
-                DropdownButtonFormField<int>(
-                  initialValue: _selectedResponsableId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Responsable del proceso',
-                  ),
-                  items: widget.responsableOptions
-                      .map(
-                        (user) => DropdownMenuItem<int>(
-                          value: user.usuarioId,
-                          child: Text(user.nombreCompleto),
+                if (_personalOptions.isNotEmpty ||
+                    widget.onAddPersonal != null) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: _selectedPersonalId,
+                          decoration: const InputDecoration(
+                            labelText: 'Responsable',
+                          ),
+                          items: _personalOptions
+                              .map(
+                                (item) => DropdownMenuItem(
+                                  value: item.id,
+                                  child: Text(item.label),
+                                ),
+                              )
+                              .toList(growable: false),
+                          onChanged: (id) {
+                            final item = _personalOptions.firstWhere(
+                              (x) => x.id == id,
+                            );
+                            setState(() => _selectedPersonalId = item.id);
+                            _responsableNombreController.text = item.nombre;
+                            _responsableCargoController.text = item.cargo;
+                          },
                         ),
-                      )
-                      .toList(growable: false),
-                  onChanged: (value) =>
-                      setState(() => _selectedResponsableId = value),
-                  validator: (value) =>
-                      value == null ? 'Selecciona un responsable.' : null,
+                      ),
+                      if (widget.onAddPersonal != null) ...[
+                        const Gap(AppSpacing.sm),
+                        IconButton.filledTonal(
+                          tooltip: 'Agregar personal',
+                          onPressed: () async {
+                            final item = await widget.onAddPersonal!();
+                            if (item == null || !mounted) return;
+                            setState(() {
+                              _personalOptions = [
+                                ..._personalOptions.where(
+                                  (option) => option.id != item.id,
+                                ),
+                                item,
+                              ]..sort((a, b) => a.nombre.compareTo(b.nombre));
+                              _selectedPersonalId = item.id;
+                            });
+                            _responsableNombreController.text = item.nombre;
+                            _responsableCargoController.text = item.cargo;
+                          },
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const Gap(AppSpacing.md),
+                ],
+                Offstage(
+                  child: TextFormField(
+                    controller: _responsableNombreController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre completo del responsable',
+                    ),
+                    validator: (value) => (value?.trim().isEmpty ?? true)
+                        ? 'Ingresa el nombre del responsable.'
+                        : null,
+                  ),
+                ),
+                Offstage(
+                  child: TextFormField(
+                    controller: _responsableCargoController,
+                    decoration: const InputDecoration(labelText: 'Cargo'),
+                    validator: (value) => (value?.trim().isEmpty ?? true)
+                        ? 'Ingresa el cargo.'
+                        : null,
+                  ),
                 ),
                 const Gap(AppSpacing.md),
                 TextFormField(

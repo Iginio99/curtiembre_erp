@@ -271,9 +271,12 @@ class _ProductoDetailPanel extends StatelessWidget {
                       ],
                     ),
                     _DetailCard(
-                      title: 'Cantidad',
+                      title: 'Clasificación final',
                       lines: [
-                        'Lados registrados: ${_formatDecimal(item!.cantidadLadosCalculada)}',
+                        'A: ${_formatDecimal(item!.cantidadLadosA)} lados (${_formatDecimal(item!.cantidadLadosA / 2)} pieles)',
+                        'B: ${_formatDecimal(item!.cantidadLadosB)} lados (${_formatDecimal(item!.cantidadLadosB / 2)} pieles)',
+                        'C: ${_formatDecimal(item!.cantidadLadosC)} lados (${_formatDecimal(item!.cantidadLadosC / 2)} pieles)',
+                        'Merma: ${_formatDecimal(item!.cantidadLadosMerma)} lados (${_formatDecimal(item!.cantidadLadosMerma / 2)} pieles)',
                       ],
                     ),
                     _DetailCard(

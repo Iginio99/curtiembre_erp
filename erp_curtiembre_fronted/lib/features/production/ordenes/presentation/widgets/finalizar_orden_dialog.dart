@@ -17,12 +17,14 @@ class FinalizarOrdenDialog extends StatefulWidget {
     required this.procesosFinalizados,
     required this.procesosTotales,
     required this.tieneProductoTerminado,
+    required this.cantidadLadosClasificados,
   });
 
   final bool isSubmitting;
   final int procesosFinalizados;
   final int procesosTotales;
   final bool tieneProductoTerminado;
+  final double cantidadLadosClasificados;
 
   @override
   State<FinalizarOrdenDialog> createState() => _FinalizarOrdenDialogState();
@@ -30,8 +32,16 @@ class FinalizarOrdenDialog extends StatefulWidget {
 
 class _FinalizarOrdenDialogState extends State<FinalizarOrdenDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _cantidadController = TextEditingController();
+  late final TextEditingController _cantidadController;
   final _observacionController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _cantidadController = TextEditingController(
+      text: widget.cantidadLadosClasificados.toStringAsFixed(0),
+    );
+  }
 
   @override
   void dispose() {
@@ -119,12 +129,14 @@ class _FinalizarOrdenDialogState extends State<FinalizarOrdenDialog> {
                 const Gap(AppSpacing.xl),
                 TextFormField(
                   controller: _cantidadController,
+                  readOnly: true,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   decoration: const InputDecoration(
-                    labelText: 'Cantidad de lados',
+                    labelText: 'Lados de producto terminado',
                     hintText: '0.00',
+                    helperText: 'Calculado automáticamente: A + B + C.',
                   ),
                   validator: (value) {
                     final parsed = double.tryParse(

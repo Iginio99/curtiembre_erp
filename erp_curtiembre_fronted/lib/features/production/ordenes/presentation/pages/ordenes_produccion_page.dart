@@ -13,6 +13,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/finalizar_orden_dialog.dart';
@@ -22,8 +23,6 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/registrar_merma_dialog.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/widgets/solicitar_consumo_dialog.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
-import 'package:erp_curtiembre_fronted/features/users/domain/entities/user_list_item.dart';
-import 'package:erp_curtiembre_fronted/features/users/domain/repositories/users_repository.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
@@ -84,13 +83,55 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
     );
   }
 
-  Future<List<UserListItem>> _loadResponsables() =>
-      getIt<UsersRepository>().listUsers(activo: true);
+  Future<PersonalEmpresaOption?> _createPersonal() async {
+    final nombre = TextEditingController();
+    final cargo = TextEditingController();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Nuevo personal'),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nombre,
+                decoration: const InputDecoration(labelText: 'Nombre completo'),
+              ),
+              const Gap(AppSpacing.md),
+              TextField(
+                controller: cargo,
+                decoration: const InputDecoration(labelText: 'Cargo'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Registrar'),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true ||
+        nombre.text.trim().isEmpty ||
+        cargo.text.trim().isEmpty ||
+        !mounted)
+      return null;
+    return context.read<OrdenesProduccionCubit>().createPersonal(
+      nombre: nombre.text.trim(),
+      cargo: cargo.text.trim(),
+    );
+  }
 
   Future<void> _openCreateDialog(OrdenesProduccionState state) async {
     _talker.ui('Se abrio el dialogo para crear una orden de produccion.');
-    final responsables = await _loadResponsables();
-    if (!mounted) return;
     final payload = await showDialog<OrdenUpsertFormData>(
       context: context,
       builder: (_) => OrdenUpsertDialog(
@@ -99,7 +140,8 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         isSubmitting: state.isSubmittingAction,
         clienteOptions: state.clienteOptions,
         loteOptions: state.loteOptions,
-        responsableOptions: responsables,
+        responsableOptions: state.personalOptions,
+        onAddPersonal: _createPersonal,
       ),
     );
 
@@ -121,7 +163,8 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
       fechaInicioPlanificada: payload.fechaInicioPlanificada,
       fechaFinEstimada: payload.fechaFinEstimada,
       observacion: payload.observacion,
-      responsableUsuarioId: payload.responsableUsuarioId,
+      responsableNombre: payload.responsableNombre,
+      responsableCargo: payload.responsableCargo,
     );
 
     if (!mounted) {
@@ -133,8 +176,6 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
 
   Future<void> _startSelectedOrden() async {
     _talker.ui('Se abrio el dialogo para iniciar la orden seleccionada.');
-    final responsables = await _loadResponsables();
-    if (!mounted) return;
     final payload = await showDialog<OrdenSimpleActionFormData>(
       context: context,
       builder: (_) => OrdenSimpleActionDialog(
@@ -143,7 +184,11 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         labelText: 'Observacion inicial',
         hintText: 'Detalle breve del arranque de la orden',
         requireStagePlanning: true,
-        responsableOptions: responsables,
+        responsableOptions: context
+            .read<OrdenesProduccionCubit>()
+            .state
+            .personalOptions,
+        onAddPersonal: _createPersonal,
       ),
     );
 
@@ -165,7 +210,8 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
           pesoBaseKg: payload.pesoBaseKg!,
           fechaFinEstimada: payload.fechaFinEstimada!,
           observacion: payload.observacion,
-          responsableUsuarioId: payload.responsableUsuarioId,
+          responsableNombre: payload.responsableNombre!,
+          responsableCargo: payload.responsableCargo!,
         );
     if (!mounted) {
       return;
@@ -215,8 +261,6 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
 
   Future<void> _startProceso(OrdenProcesoRecord proceso) async {
     _talker.ui('Se abrio el dialogo para iniciar el proceso ${proceso.id}.');
-    final responsables = await _loadResponsables();
-    if (!mounted) return;
     final payload = await showDialog<OrdenSimpleActionFormData>(
       context: context,
       builder: (_) => OrdenSimpleActionDialog(
@@ -225,7 +269,11 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         labelText: 'Observacion de inicio',
         hintText: 'Detalle breve del arranque del proceso',
         requireStagePlanning: proceso.estado == 'PENDIENTE',
-        responsableOptions: responsables,
+        responsableOptions: context
+            .read<OrdenesProduccionCubit>()
+            .state
+            .personalOptions,
+        onAddPersonal: _createPersonal,
       ),
     );
 
@@ -246,7 +294,8 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
       pesoBaseKg: payload.pesoBaseKg ?? 0,
       fechaFinEstimada: payload.fechaFinEstimada ?? DateTime.now(),
       observacion: payload.observacion,
-      responsableUsuarioId: payload.responsableUsuarioId,
+      responsableNombre: payload.responsableNombre!,
+      responsableCargo: payload.responsableCargo!,
     );
     if (!mounted) {
       return;
@@ -425,8 +474,10 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
     _talker.ui('Se abrio el dialogo para registrar calidad final.');
     final payload = await showDialog<RegistrarCalidadFinalDialogResult>(
       context: context,
-      builder: (_) =>
-          RegistrarCalidadFinalDialog(isSubmitting: state.isSubmittingAction),
+      builder: (_) => RegistrarCalidadFinalDialog(
+        isSubmitting: state.isSubmittingAction,
+        cantidadPieles: state.selectedOrden?.cantidadPieles ?? 0,
+      ),
     );
 
     if (!mounted || payload == null) {
@@ -463,6 +514,10 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         procesosFinalizados: state.selectedOrden?.procesosFinalizados ?? 0,
         procesosTotales: state.selectedOrden?.procesosTotales ?? 0,
         tieneProductoTerminado: state.productoTerminado != null,
+        cantidadLadosClasificados:
+            (state.controlCalidad?.cantidadLadosA ?? 0) +
+            (state.controlCalidad?.cantidadLadosB ?? 0) +
+            (state.controlCalidad?.cantidadLadosC ?? 0),
       ),
     );
 
@@ -542,11 +597,13 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
                 child: BlocBuilder<OrdenesProduccionCubit, OrdenesProduccionState>(
                   builder: (context, state) {
                     final compactHeight = constraints.maxHeight < 900;
-                    final visibleItems = state.items.where((item) {
-                      final date = item.creadoEn.toLocal();
-                      return date.year == _selectedMonth.year &&
-                          date.month == _selectedMonth.month;
-                    }).toList(growable: false);
+                    final visibleItems = state.items
+                        .where((item) {
+                          final date = item.creadoEn.toLocal();
+                          return date.year == _selectedMonth.year &&
+                              date.month == _selectedMonth.month;
+                        })
+                        .toList(growable: false);
                     final displayState = state.copyWith(items: visibleItems);
 
                     if (_searchController.text != state.searchTerm) {
@@ -1100,7 +1157,10 @@ class _OrdenDetailPanel extends StatelessWidget {
                             ),
                             _InlineInfo(
                               label: 'Responsable',
-                              value: orden.responsableNombre ?? 'Sin asignar',
+                              value: _formatResponsable(
+                                orden.responsableNombre,
+                                orden.responsableCargo,
+                              ),
                             ),
                             _InlineInfo(
                               label: 'Inicio planificado',
@@ -1507,7 +1567,10 @@ class _ProcesoCard extends StatelessWidget {
             children: [
               _InlineInfo(
                 label: 'Responsable',
-                value: proceso.responsableNombre ?? 'Sin asignar',
+                value: _formatResponsable(
+                  proceso.responsableNombre,
+                  proceso.responsableCargo,
+                ),
               ),
               _InlineInfo(
                 label: 'Peso base',
@@ -1569,18 +1632,20 @@ class _ProcesoCard extends StatelessWidget {
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.md,
             children: [
-              AppButton.secondary(
-                label: 'Iniciar',
-                icon: Icons.play_circle_outline,
-                isLoading: isSubmitting,
-                onPressed: onStart,
-              ),
-              AppButton.secondary(
-                label: 'Finalizar',
-                icon: Icons.task_alt_outlined,
-                isLoading: isSubmitting,
-                onPressed: onFinish,
-              ),
+              if (proceso.canStart)
+                AppButton.secondary(
+                  label: 'Iniciar',
+                  icon: Icons.play_circle_outline,
+                  isLoading: isSubmitting,
+                  onPressed: onStart,
+                ),
+              if (proceso.canFinish)
+                AppButton.secondary(
+                  label: 'Finalizar',
+                  icon: Icons.task_alt_outlined,
+                  isLoading: isSubmitting,
+                  onPressed: onFinish,
+                ),
               AppButton.secondary(
                 label: 'Observacion',
                 icon: Icons.edit_note_outlined,
@@ -1668,7 +1733,8 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
     }
     final orderId = ordered.first.ordenProduccionId;
     if (_selectedIndex < 0) {
-      _selectedIndex = _selectedStageByOrder[orderId] ??
+      _selectedIndex =
+          _selectedStageByOrder[orderId] ??
           ordered.indexWhere((item) => item.estado != 'FINALIZADO');
       if (_selectedIndex < 0) _selectedIndex = ordered.length - 1;
     }
@@ -1959,6 +2025,31 @@ class _PlanificadoCard extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          /*
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Calidad A',
+                value: '${_formatDecimal(item.cantidadLadosA)} lados · ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+              ),
+              _InlineInfo(
+                label: 'Calidad B',
+                value: '${_formatDecimal(item.cantidadLadosB)} lados · ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+              ),
+              _InlineInfo(
+                label: 'Calidad C',
+                value: '${_formatDecimal(item.cantidadLadosC)} lados · ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+              ),
+              _InlineInfo(
+                label: 'Merma final',
+                value: '${_formatDecimal(item.cantidadLadosMerma)} lados · ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+              ),
+            ],
+          ),
+          */
           const Gap(AppSpacing.md),
           Wrap(
             spacing: AppSpacing.lg,
@@ -2240,6 +2331,33 @@ class _CalidadFinalCard extends StatelessWidget {
               ),
             ],
           ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Calidad A',
+                value:
+                    '${_formatDecimal(item.cantidadLadosA)} lados / ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+              ),
+              _InlineInfo(
+                label: 'Calidad B',
+                value:
+                    '${_formatDecimal(item.cantidadLadosB)} lados / ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+              ),
+              _InlineInfo(
+                label: 'Calidad C',
+                value:
+                    '${_formatDecimal(item.cantidadLadosC)} lados / ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+              ),
+              _InlineInfo(
+                label: 'Merma final',
+                value:
+                    '${_formatDecimal(item.cantidadLadosMerma)} lados / ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+              ),
+            ],
+          ),
           if ((item.observacion ?? '').trim().isNotEmpty) ...[
             const Gap(AppSpacing.md),
             Text(
@@ -2308,6 +2426,29 @@ class _ProductoTerminadoCard extends StatelessWidget {
               _InlineInfo(
                 label: 'Fecha ingreso',
                 value: _formatDateTime(item.fechaIngreso),
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.md,
+            children: [
+              _InlineInfo(
+                label: 'Calidad A',
+                value: '${_formatDecimal(item.cantidadLadosA)} lados',
+              ),
+              _InlineInfo(
+                label: 'Calidad B',
+                value: '${_formatDecimal(item.cantidadLadosB)} lados',
+              ),
+              _InlineInfo(
+                label: 'Calidad C',
+                value: '${_formatDecimal(item.cantidadLadosC)} lados',
+              ),
+              _InlineInfo(
+                label: 'Merma',
+                value: '${_formatDecimal(item.cantidadLadosMerma)} lados',
               ),
             ],
           ),
@@ -2475,6 +2616,14 @@ String _formatDecimal(double value) {
   return value.toStringAsFixed(2);
 }
 
+String _formatResponsable(String? nombre, String? cargo) {
+  final nombreLimpio = nombre?.trim();
+  final cargoLimpio = cargo?.trim();
+  if (nombreLimpio == null || nombreLimpio.isEmpty) return 'Sin asignar';
+  if (cargoLimpio == null || cargoLimpio.isEmpty) return nombreLimpio;
+  return '$nombreLimpio · $cargoLimpio';
+}
+
 String _formatSignedDecimal(double value) {
   final prefix = value > 0 ? '+' : '';
   return '$prefix${_formatDecimal(value)}';
@@ -2488,9 +2637,8 @@ String _humanizeStatus(String value) => value
     .toLowerCase()
     .split('_')
     .map(
-      (word) => word.isEmpty
-          ? word
-          : '${word[0].toUpperCase()}${word.substring(1)}',
+      (word) =>
+          word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}',
     )
     .join(' ');
 
@@ -2533,4 +2681,3 @@ String _formatOptionalDateTime(DateTime? value) {
   }
   return _formatDateTime(value);
 }
-

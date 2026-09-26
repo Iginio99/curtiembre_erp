@@ -11,6 +11,8 @@ public sealed class OrdenProduccionProcesoWriteModel
     public int Secuencia { get; set; }
 
     public long? ResponsableUsuarioId { get; set; }
+    public string? ResponsableNombre { get; set; }
+    public string? ResponsableCargo { get; set; }
 
     public decimal? PesoBaseKg { get; set; }
 

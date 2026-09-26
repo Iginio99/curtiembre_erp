@@ -839,7 +839,7 @@ class _StockTable extends StatelessWidget {
                     _StockTableHeaderCell('Actual', alignEnd: true),
                     _StockTableHeaderCell('Mín.', alignEnd: true),
                     _StockTableHeaderCell('Costo', alignEnd: true),
-                    _StockTableHeaderCell('Estado', centered: true),
+                    _StockTableHeaderCell('Nivel', centered: true),
                   ],
                 ),
               ],
@@ -873,11 +873,11 @@ class _StockTable extends StatelessWidget {
                     ),
                     _StockTableCell(_tipoBienLabel(item.tipoBien)),
                     _StockTableCell(
-                      '${item.cantidadActual.toStringAsFixed(2)} ${item.unidadMedidaCodigo}',
+                      item.cantidadActual.toStringAsFixed(2),
                       alignEnd: true,
                     ),
                     _StockTableCell(
-                      '${item.stockMinimo.toStringAsFixed(2)} ${item.unidadMedidaCodigo}',
+                      item.stockMinimo.toStringAsFixed(2),
                       alignEnd: true,
                     ),
                     _StockTableCell(
@@ -977,27 +977,27 @@ class _StockStateCell extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Center(
         child: Tooltip(
-          message: item.activo ? 'Activo' : 'Inactivo',
+          message: item.stockBajo ? 'Stock bajo' : 'Nivel disponible',
           child: Semantics(
-            label: item.activo ? 'Estado: activo' : 'Estado: inactivo',
+            label: item.stockBajo ? 'Nivel: stock bajo' : 'Nivel: disponible',
             child: Container(
               width: 32,
               height: 32,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: item.activo
-                    ? colors.primaryContainer
-                    : colors.surfaceContainerHighest,
+                color: item.stockBajo
+                    ? colors.errorContainer
+                    : colors.primaryContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                item.activo
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.block_rounded,
+                item.stockBajo
+                    ? Icons.warning_amber_rounded
+                    : Icons.check_circle_outline_rounded,
                 size: 19,
-                color: item.activo
-                    ? colors.onPrimaryContainer
-                    : colors.onSurfaceVariant,
+                color: item.stockBajo
+                    ? colors.onErrorContainer
+                    : colors.onPrimaryContainer,
               ),
             ),
           ),
@@ -1141,7 +1141,7 @@ class _StockDetailPanelV2 extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const Gap(AppSpacing.xl),
+                    const Gap(AppSpacing.lg),
                     _StockDetailSection(
                       title: 'Existencias',
                       icon: Icons.inventory_2_outlined,
@@ -1149,14 +1149,12 @@ class _StockDetailPanelV2 extends StatelessWidget {
                         builder: (context, constraints) {
                           final current = _StockDetailMetric(
                             label: 'Stock actual',
-                            value:
-                                '${detail.cantidadActual.toStringAsFixed(2)} ${detail.unidadMedidaCodigo}',
+                            value: detail.cantidadActual.toStringAsFixed(2),
                             emphasize: true,
                           );
                           final minimum = _StockDetailMetric(
                             label: 'Stock minimo',
-                            value:
-                                '${detail.stockMinimo.toStringAsFixed(2)} ${detail.unidadMedidaCodigo}',
+                            value: detail.stockMinimo.toStringAsFixed(2),
                           );
                           if (constraints.maxWidth < 300) {
                             return Column(
@@ -1179,14 +1177,10 @@ class _StockDetailPanelV2 extends StatelessWidget {
                     ),
                     const Gap(AppSpacing.lg),
                     _StockDetailSection(
-                      title: 'Clasificación y costos',
-                      icon: Icons.category_outlined,
+                      title: 'Costo y actualización',
+                      icon: Icons.payments_outlined,
                       child: Column(
                         children: [
-                          _StockDetailAttribute(
-                            label: 'Tipo de bien',
-                            value: _tipoBienLabel(detail.tipoBien),
-                          ),
                           _StockDetailAttribute(
                             label: 'Unidad de medida',
                             value:
@@ -1195,7 +1189,7 @@ class _StockDetailPanelV2 extends StatelessWidget {
                           _StockDetailAttribute(
                             label: 'Costo promedio',
                             value:
-                                'S/ ${detail.costoPromedioActual.toStringAsFixed(2)} / ${detail.unidadMedidaCodigo}',
+                                'S/ ${detail.costoPromedioActual.toStringAsFixed(2)}',
                           ),
                           _StockDetailAttribute(
                             label: 'Última actualización',

@@ -66,6 +66,7 @@ import 'package:erp_curtiembre_fronted/features/production/lotes/presentation/cu
 import 'package:erp_curtiembre_fronted/features/production/lotes/presentation/pages/lotes_page.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/pages/ordenes_produccion_page.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/pages/personal_empresa_page.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/pages/produccion_reportes_page.dart';
 import 'package:erp_curtiembre_fronted/features/production/solicitudes_insumos/presentation/cubit/solicitudes_insumos_cubit.dart';
@@ -345,6 +346,10 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: _produccionPersonalPath,
+            builder: (context, state) => const PersonalEmpresaPage(),
+          ),
+          GoRoute(
             path: _produccionProductosTerminadosPath,
             builder: (context, state) => BlocProvider<ProductosTerminadosCubit>(
               create: (_) => getIt<ProductosTerminadosCubit>()..initialize(),
@@ -404,6 +409,7 @@ class AppRouter {
   static const String _produccionClientesPath = '/produccion/clientes';
   static const String _produccionLotesPath = '/produccion/lotes';
   static const String _produccionOrdenesPath = '/produccion/ordenes';
+  static const String _produccionPersonalPath = '/produccion/personal';
   static const String _produccionProductosTerminadosPath =
       '/produccion/productos-terminados';
   static const String _produccionReportesPath = '/produccion/reportes';

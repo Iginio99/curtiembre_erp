@@ -11,6 +11,7 @@ class OrdenProcesoRecordModel {
     required this.estado,
     this.responsableUsuarioId,
     this.responsableNombre,
+    this.responsableCargo,
     this.pesoBaseKg,
     this.fechaFinEstimada,
     this.fechaInicio,
@@ -27,6 +28,7 @@ class OrdenProcesoRecordModel {
   final int secuencia;
   final int? responsableUsuarioId;
   final String? responsableNombre;
+  final String? responsableCargo;
   final double? pesoBaseKg;
   final DateTime? fechaFinEstimada;
   final DateTime? fechaInicio;
@@ -45,6 +47,7 @@ class OrdenProcesoRecordModel {
       secuencia: (json['secuencia'] as num).toInt(),
       responsableUsuarioId: _parseOptionalInt(json['responsableUsuarioId']),
       responsableNombre: json['responsableNombre'] as String?,
+      responsableCargo: json['responsableCargo'] as String?,
       pesoBaseKg: _parseOptionalDouble(json['pesoBaseKg']),
       fechaFinEstimada: _parseOptionalDate(json['fechaFinEstimada']),
       fechaInicio: _parseOptionalDate(json['fechaInicio']),
@@ -65,6 +68,7 @@ class OrdenProcesoRecordModel {
       secuencia: secuencia,
       responsableUsuarioId: responsableUsuarioId,
       responsableNombre: responsableNombre,
+      responsableCargo: responsableCargo,
       pesoBaseKg: pesoBaseKg,
       fechaFinEstimada: fechaFinEstimada,
       fechaInicio: fechaInicio,

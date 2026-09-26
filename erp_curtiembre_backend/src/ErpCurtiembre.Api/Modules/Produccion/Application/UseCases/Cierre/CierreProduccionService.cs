@@ -108,6 +108,29 @@ public sealed class CierreProduccionService(
                 "La calidad final del MVP solo permite los codigos A, B o C.");
         }
 
+        var cantidades = new[]
+        {
+            request.CantidadLadosA,
+            request.CantidadLadosB,
+            request.CantidadLadosC,
+            request.CantidadLadosMerma
+        };
+        if (cantidades.Any(x => x < 0 || x != decimal.Truncate(x)))
+        {
+            return UseCaseResult<ControlCalidadDto>.Fail(
+                ProduccionErrorCodes.Validation,
+                "Las cantidades A, B, C y merma deben ser numeros enteros de lados y no pueden ser negativas.");
+        }
+
+        var ladosEsperados = order.CantidadPieles * 2m;
+        var ladosClasificados = cantidades.Sum();
+        if (ladosClasificados != ladosEsperados)
+        {
+            return UseCaseResult<ControlCalidadDto>.Fail(
+                ProduccionErrorCodes.Validation,
+                $"La suma de A, B, C y merma debe ser exactamente {ladosEsperados:0.##} lados.");
+        }
+
         var resultado = string.IsNullOrWhiteSpace(request.Resultado) ? "APROBADO" : request.Resultado.Trim().ToUpperInvariant();
         if (resultado is not ("APROBADO" or "OBSERVADO" or "RECHAZADO"))
         {
@@ -121,6 +144,10 @@ public sealed class CierreProduccionService(
             {
                 OrdenProduccionId = orderId,
                 CalidadProductoId = calidad.Id,
+                CantidadLadosA = request.CantidadLadosA,
+                CantidadLadosB = request.CantidadLadosB,
+                CantidadLadosC = request.CantidadLadosC,
+                CantidadLadosMerma = request.CantidadLadosMerma,
                 Resultado = resultado,
                 Observacion = NormalizeNullable(request.Observacion),
                 EvaluadoEn = dateTimeProvider.Now,
@@ -176,20 +203,6 @@ public sealed class CierreProduccionService(
                 "La orden ya se encuentra finalizada.");
         }
 
-        if (request.CantidadLados < 0)
-        {
-            return UseCaseResult<ProductoTerminadoDetailDto>.Fail(
-                ProduccionErrorCodes.Validation,
-                "La cantidad de lados no puede ser negativa.");
-        }
-
-        if (request.CantidadLados > order.CantidadPieles * 2m)
-        {
-            return UseCaseResult<ProductoTerminadoDetailDto>.Fail(
-                ProduccionErrorCodes.Validation,
-                "La cantidad de lados no puede superar los lados procesados por la orden.");
-        }
-
         var processes = await ordenProduccionRepository.ListProcessesAsync(orderId, cancellationToken);
         if (processes.Count == 0 || processes.Any(x => x.Estado != "FINALIZADO"))
         {
@@ -212,6 +225,11 @@ public sealed class CierreProduccionService(
                 ProduccionErrorCodes.Conflict,
                 "Solo se puede finalizar una orden con control de calidad APROBADO.");
         }
+
+
+        var cantidadLadosTerminados = latestQuality.CantidadLadosA
+            + latestQuality.CantidadLadosB
+            + latestQuality.CantidadLadosC;
 
         if (await cierreProduccionRepository.FindProductoTerminadoByOrderIdAsync(orderId, cancellationToken) is not null)
         {
@@ -237,7 +255,11 @@ public sealed class CierreProduccionService(
                 ControlCalidadId = latestQuality.Id,
                 CalidadProductoId = latestQuality.CalidadProductoId,
                 ProductoTerminadoCodigo = codigo,
-                CantidadLados = decimal.Round(request.CantidadLados, 2),
+                CantidadLados = cantidadLadosTerminados,
+                CantidadLadosA = latestQuality.CantidadLadosA,
+                CantidadLadosB = latestQuality.CantidadLadosB,
+                CantidadLadosC = latestQuality.CantidadLadosC,
+                CantidadLadosMerma = latestQuality.CantidadLadosMerma,
                 Observacion = NormalizeNullable(request.Observacion),
                 ActorId = actorId,
                 Timestamp = dateTimeProvider.Now
@@ -276,6 +298,10 @@ public sealed class CierreProduccionService(
             item.CalidadProductoId,
             item.CalidadCodigo,
             item.CalidadNombre,
+            item.CantidadLadosA,
+            item.CantidadLadosB,
+            item.CantidadLadosC,
+            item.CantidadLadosMerma,
             item.Resultado,
             item.Observacion,
             item.EvaluadoEn,
@@ -294,6 +320,10 @@ public sealed class CierreProduccionService(
             item.FechaIngreso,
             item.CantidadPielesBuenas,
             item.CantidadLadosCalculada,
+            item.CantidadLadosA,
+            item.CantidadLadosB,
+            item.CantidadLadosC,
+            item.CantidadLadosMerma,
             item.Estado,
             item.Observacion);
 
@@ -309,6 +339,10 @@ public sealed class CierreProduccionService(
             item.FechaIngreso,
             item.CantidadPielesBuenas,
             item.CantidadLadosCalculada,
+            item.CantidadLadosA,
+            item.CantidadLadosB,
+            item.CantidadLadosC,
+            item.CantidadLadosMerma,
             item.Estado,
             item.Observacion);
 }

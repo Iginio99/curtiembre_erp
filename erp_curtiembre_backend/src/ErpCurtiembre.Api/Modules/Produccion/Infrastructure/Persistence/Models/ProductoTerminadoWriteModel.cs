@@ -16,6 +16,14 @@ public sealed class ProductoTerminadoWriteModel
 
     public decimal CantidadLados { get; set; }
 
+    public decimal CantidadLadosA { get; set; }
+
+    public decimal CantidadLadosB { get; set; }
+
+    public decimal CantidadLadosC { get; set; }
+
+    public decimal CantidadLadosMerma { get; set; }
+
     public string Estado { get; set; } = string.Empty;
 
     public string? Observacion { get; set; }

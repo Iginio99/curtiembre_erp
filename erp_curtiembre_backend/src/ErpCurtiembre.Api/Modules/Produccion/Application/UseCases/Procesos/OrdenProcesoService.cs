@@ -8,6 +8,7 @@ namespace ErpCurtiembre.Modules.Produccion.Application.UseCases.Procesos;
 
 public sealed class OrdenProcesoService(
     IOrdenProduccionRepository ordenProduccionRepository,
+    ISolicitudInsumoRepository solicitudInsumoRepository,
     IUsuarioLookupRepository usuarioLookupRepository,
     IDateTimeProvider dateTimeProvider)
 {
@@ -46,6 +47,12 @@ public sealed class OrdenProcesoService(
 
         if (process.Estado == "LISTA_PARA_INICIAR")
         {
+            if (process.FechaInicio.HasValue)
+            {
+                return UseCaseResult<OrdenProcesoListItemDto>.Fail(
+                    ProduccionErrorCodes.Conflict,
+                    "El proceso ya fue iniciado y no puede iniciarse nuevamente.");
+            }
             return await ExecuteAsync(processId, cancellationToken);
         }
 
@@ -71,14 +78,6 @@ public sealed class OrdenProcesoService(
                 "No se puede iniciar el proceso mientras existan procesos previos sin finalizar.");
         }
 
-        if (request.ResponsableUsuarioId.HasValue &&
-            await usuarioLookupRepository.FindActiveByIdAsync(request.ResponsableUsuarioId.Value, cancellationToken) is null)
-        {
-            return UseCaseResult<OrdenProcesoListItemDto>.Fail(
-                ProduccionErrorCodes.Validation,
-                "No se encontro el responsable seleccionado o se encuentra inactivo.");
-        }
-
         if (request.PesoBaseKg <= 0)
         {
             return UseCaseResult<OrdenProcesoListItemDto>.Fail(
@@ -95,7 +94,8 @@ public sealed class OrdenProcesoService(
 
         await ordenProduccionRepository.StartProcessAsync(
             processId,
-            request.ResponsableUsuarioId,
+            request.ResponsableNombre.Trim(),
+            request.ResponsableCargo.Trim(),
             decimal.Round(request.PesoBaseKg, 2),
             request.FechaFinEstimada.Date,
             NormalizeNullable(request.Observacion),
@@ -146,6 +146,13 @@ public sealed class OrdenProcesoService(
             return UseCaseResult<OrdenProcesoListItemDto>.Fail(
                 ProduccionErrorCodes.Conflict,
                 "Solo se pueden finalizar procesos en estado EN_PROCESO.");
+        }
+
+        if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(processId, cancellationToken))
+        {
+            return UseCaseResult<OrdenProcesoListItemDto>.Fail(
+                ProduccionErrorCodes.Conflict,
+                "No puedes finalizar el proceso mientras tenga solicitudes de insumos pendientes. Logistica debe atenderlas primero.");
         }
 
         await ordenProduccionRepository.FinishProcessAsync(
@@ -202,6 +209,7 @@ public sealed class OrdenProcesoService(
             process.Secuencia,
             process.ResponsableUsuarioId,
             process.ResponsableNombre,
+            process.ResponsableCargo,
             process.PesoBaseKg,
             process.FechaFinEstimada,
             process.FechaInicio,

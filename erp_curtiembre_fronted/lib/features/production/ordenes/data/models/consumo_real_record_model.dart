@@ -43,7 +43,9 @@ class ConsumoRealRecordModel {
       procesoProductivoId: (json['procesoProductivoId'] as num).toInt(),
       procesoCodigo: json['procesoCodigo'] as String,
       procesoNombre: json['procesoNombre'] as String,
-      salidaInventarioDetalleId: _parseOptionalInt(json['salidaInventarioDetalleId']),
+      salidaInventarioDetalleId: _parseOptionalInt(
+        json['salidaInventarioDetalleId'],
+      ),
       insumoId: (json['insumoId'] as num).toInt(),
       insumoCodigo: json['insumoCodigo'] as String,
       insumoNombre: json['insumoNombre'] as String,

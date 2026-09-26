@@ -11,6 +11,7 @@ class OrdenProcesoRecord extends Equatable {
     required this.estado,
     this.responsableUsuarioId,
     this.responsableNombre,
+    this.responsableCargo,
     this.pesoBaseKg,
     this.fechaFinEstimada,
     this.fechaInicio,
@@ -27,6 +28,7 @@ class OrdenProcesoRecord extends Equatable {
   final int secuencia;
   final int? responsableUsuarioId;
   final String? responsableNombre;
+  final String? responsableCargo;
   final double? pesoBaseKg;
   final DateTime? fechaFinEstimada;
   final DateTime? fechaInicio;
@@ -35,8 +37,10 @@ class OrdenProcesoRecord extends Equatable {
   final String estado;
   final String? observacion;
 
-  bool get canStart => estado == 'PENDIENTE' || estado == 'LISTA_PARA_INICIAR';
-  bool get canFinish => estado == 'EN_PROCESO';
+  bool get canStart => estado == 'PENDIENTE' && fechaInicio == null;
+  bool get canFinish =>
+      estado == 'EN_PROCESO' ||
+      (estado == 'LISTA_PARA_INICIAR' && fechaInicio != null);
 
   @override
   List<Object?> get props => [
@@ -48,6 +52,7 @@ class OrdenProcesoRecord extends Equatable {
     secuencia,
     responsableUsuarioId,
     responsableNombre,
+    responsableCargo,
     pesoBaseKg,
     fechaFinEstimada,
     fechaInicio,

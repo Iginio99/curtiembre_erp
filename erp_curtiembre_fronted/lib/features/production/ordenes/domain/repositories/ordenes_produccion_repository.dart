@@ -9,6 +9,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 
 class SolicitarConsumoProduccionDetalleInput {
   const SolicitarConsumoProduccionDetalleInput({
@@ -37,11 +38,19 @@ class RegistrarMermaProcesoInput {
 class RegistrarCalidadFinalInput {
   const RegistrarCalidadFinalInput({
     required this.calidadProductoId,
+    required this.cantidadLadosA,
+    required this.cantidadLadosB,
+    required this.cantidadLadosC,
+    required this.cantidadLadosMerma,
     required this.resultado,
     this.observacion,
   });
 
   final int calidadProductoId;
+  final double cantidadLadosA;
+  final double cantidadLadosB;
+  final double cantidadLadosC;
+  final double cantidadLadosMerma;
   final String resultado;
   final String? observacion;
 }
@@ -57,6 +66,12 @@ class FinalizarOrdenProduccionInput {
 }
 
 abstract class OrdenesProduccionRepository {
+  Future<List<PersonalEmpresaOption>> listPersonal();
+
+  Future<PersonalEmpresaOption> createPersonal({
+    required String nombre,
+    required String cargo,
+  });
   Future<List<OrdenProduccionRecord>> listOrdenes({
     String? texto,
     int? clienteId,
@@ -120,7 +135,8 @@ abstract class OrdenesProduccionRepository {
     required double cantidadPieles,
     DateTime? fechaInicioPlanificada,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   });
 
@@ -128,7 +144,8 @@ abstract class OrdenesProduccionRepository {
     required int id,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   });
 
@@ -141,7 +158,8 @@ abstract class OrdenesProduccionRepository {
     required int id,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   });
 

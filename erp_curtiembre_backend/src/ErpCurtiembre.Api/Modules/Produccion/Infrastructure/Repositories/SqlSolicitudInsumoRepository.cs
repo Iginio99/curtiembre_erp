@@ -120,7 +120,7 @@ public sealed class SqlSolicitudInsumoRepository(
     public Task<bool> HasOpenRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken) =>
         dbContext.SolicitudesInsumo.AnyAsync(
             x => x.OrdenProcesoId == ordenProcesoId &&
-                (x.Estado == "SOLICITADA" || x.Estado == "APROBADA" || x.Estado == "PARCIAL"),
+                (x.Estado == "SOLICITADA" || x.Estado == "PARCIAL" || x.Estado == "ENTREGANDO"),
             cancellationToken);
 
     public async Task<bool> TryStartDeliveryAsync(long id, CancellationToken cancellationToken)

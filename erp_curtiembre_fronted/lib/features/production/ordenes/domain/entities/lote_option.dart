@@ -22,11 +22,11 @@ class LoteOption extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        codigo,
-        clienteId,
-        clienteRazonSocial,
-        cantidadPielesDisponible,
-        estado,
-      ];
+    id,
+    codigo,
+    clienteId,
+    clienteRazonSocial,
+    cantidadPielesDisponible,
+    estado,
+  ];
 }

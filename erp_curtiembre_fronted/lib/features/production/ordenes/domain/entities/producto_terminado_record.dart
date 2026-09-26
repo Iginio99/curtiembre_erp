@@ -12,6 +12,10 @@ class ProductoTerminadoRecord extends Equatable {
     required this.fechaIngreso,
     required this.cantidadPielesBuenas,
     required this.cantidadLadosCalculada,
+    required this.cantidadLadosA,
+    required this.cantidadLadosB,
+    required this.cantidadLadosC,
+    required this.cantidadLadosMerma,
     required this.estado,
     this.observacion,
   });
@@ -26,22 +30,30 @@ class ProductoTerminadoRecord extends Equatable {
   final DateTime fechaIngreso;
   final double cantidadPielesBuenas;
   final double cantidadLadosCalculada;
+  final double cantidadLadosA;
+  final double cantidadLadosB;
+  final double cantidadLadosC;
+  final double cantidadLadosMerma;
   final String estado;
   final String? observacion;
 
   @override
   List<Object?> get props => [
-        id,
-        codigo,
-        ordenProduccionId,
-        ordenCodigo,
-        calidadProductoId,
-        calidadCodigo,
-        calidadNombre,
-        fechaIngreso,
-        cantidadPielesBuenas,
-        cantidadLadosCalculada,
-        estado,
-        observacion,
-      ];
+    id,
+    codigo,
+    ordenProduccionId,
+    ordenCodigo,
+    calidadProductoId,
+    calidadCodigo,
+    calidadNombre,
+    fechaIngreso,
+    cantidadPielesBuenas,
+    cantidadLadosCalculada,
+    cantidadLadosA,
+    cantidadLadosB,
+    cantidadLadosC,
+    cantidadLadosMerma,
+    estado,
+    observacion,
+  ];
 }

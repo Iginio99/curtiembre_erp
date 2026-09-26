@@ -11,6 +11,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -19,6 +20,16 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
 
   final OrdenesProduccionRemoteDataSource _remoteDataSource;
   final Talker _talker;
+
+  @override
+  Future<List<PersonalEmpresaOption>> listPersonal() =>
+      _remoteDataSource.listPersonal();
+
+  @override
+  Future<PersonalEmpresaOption> createPersonal({
+    required String nombre,
+    required String cargo,
+  }) => _remoteDataSource.createPersonal(nombre: nombre, cargo: cargo);
 
   @override
   Future<List<OrdenProduccionRecord>> listOrdenes({
@@ -187,6 +198,10 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
     final item = await _remoteDataSource.registerCalidadFinal(
       ordenId: ordenId,
       calidadProductoId: input.calidadProductoId,
+      cantidadLadosA: input.cantidadLadosA,
+      cantidadLadosB: input.cantidadLadosB,
+      cantidadLadosC: input.cantidadLadosC,
+      cantidadLadosMerma: input.cantidadLadosMerma,
       resultado: input.resultado,
       observacion: input.observacion,
     );
@@ -293,7 +308,8 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
     required double cantidadPieles,
     DateTime? fechaInicioPlanificada,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     _talker.repository(
@@ -305,7 +321,8 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
       cantidadPieles: cantidadPieles,
       fechaInicioPlanificada: fechaInicioPlanificada,
       fechaFinEstimada: fechaFinEstimada,
-      responsableUsuarioId: responsableUsuarioId,
+      responsableNombre: responsableNombre,
+      responsableCargo: responsableCargo,
       observacion: observacion,
     );
     _talker.repository(
@@ -319,7 +336,8 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
     required int id,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     _talker.repository('Iniciando orden de produccion $id.');
@@ -327,7 +345,8 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
       id: id,
       pesoBaseKg: pesoBaseKg,
       fechaFinEstimada: fechaFinEstimada,
-      responsableUsuarioId: responsableUsuarioId,
+      responsableNombre: responsableNombre,
+      responsableCargo: responsableCargo,
       observacion: observacion,
     );
     _talker.repository('Orden de produccion $id iniciada correctamente.');
@@ -356,7 +375,8 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
     required int id,
     required double pesoBaseKg,
     required DateTime fechaFinEstimada,
-    int? responsableUsuarioId,
+    required String responsableNombre,
+    required String responsableCargo,
     String? observacion,
   }) async {
     _talker.repository('Iniciando proceso de produccion $id.');
@@ -364,7 +384,8 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
       id: id,
       pesoBaseKg: pesoBaseKg,
       fechaFinEstimada: fechaFinEstimada,
-      responsableUsuarioId: responsableUsuarioId,
+      responsableNombre: responsableNombre,
+      responsableCargo: responsableCargo,
       observacion: observacion,
     );
     _talker.repository('Proceso de produccion $id iniciado correctamente.');

@@ -22,6 +22,14 @@ public sealed class ProductoTerminado
 
     public decimal CantidadLadosCalculada { get; init; }
 
+    public decimal CantidadLadosA { get; init; }
+
+    public decimal CantidadLadosB { get; init; }
+
+    public decimal CantidadLadosC { get; init; }
+
+    public decimal CantidadLadosMerma { get; init; }
+
     public string Estado { get; init; } = string.Empty;
 
     public string? Observacion { get; init; }

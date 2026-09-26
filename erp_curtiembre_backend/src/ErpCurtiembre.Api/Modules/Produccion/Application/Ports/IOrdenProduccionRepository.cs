@@ -24,7 +24,8 @@ public interface IOrdenProduccionRepository
 
     Task StartOrderAsync(
         long orderId,
-        long? responsableUsuarioId,
+        string responsableNombre,
+        string responsableCargo,
         decimal pesoBaseKg,
         DateTime fechaFinEstimada,
         string? observacion,
@@ -40,7 +41,8 @@ public interface IOrdenProduccionRepository
 
     Task StartProcessAsync(
         long processId,
-        long? responsableUsuarioId,
+        string responsableNombre,
+        string responsableCargo,
         decimal pesoBaseKg,
         DateTime fechaFinEstimada,
         string? observacion,

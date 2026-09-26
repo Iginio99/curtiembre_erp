@@ -14,7 +14,7 @@ class ProductosTerminadosState extends Equatable {
   });
 
   const ProductosTerminadosState.loading()
-      : this(status: ProductosTerminadosStatus.loading);
+    : this(status: ProductosTerminadosStatus.loading);
 
   final ProductosTerminadosStatus status;
   final List<ProductoTerminadoRecord> items;
@@ -44,11 +44,11 @@ class ProductosTerminadosState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        filteredItems,
-        selectedItem,
-        searchTerm,
-        errorMessage,
-      ];
+    status,
+    items,
+    filteredItems,
+    selectedItem,
+    searchTerm,
+    errorMessage,
+  ];
 }

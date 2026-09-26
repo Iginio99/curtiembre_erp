@@ -10,12 +10,9 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 
-enum OrdenesProduccionStatus {
-  loading,
-  success,
-  error,
-}
+enum OrdenesProduccionStatus { loading, success, error }
 
 class OrdenesProduccionState extends Equatable {
   static const Object _sentinel = Object();
@@ -26,6 +23,7 @@ class OrdenesProduccionState extends Equatable {
     this.clienteOptions = const [],
     this.loteOptions = const [],
     this.insumoOptions = const [],
+    this.personalOptions = const [],
     this.selectedOrdenId,
     this.selectedOrden,
     this.selectedProcesos = const [],
@@ -46,13 +44,14 @@ class OrdenesProduccionState extends Equatable {
   });
 
   const OrdenesProduccionState.loading()
-      : this(status: OrdenesProduccionStatus.loading);
+    : this(status: OrdenesProduccionStatus.loading);
 
   final OrdenesProduccionStatus status;
   final List<OrdenProduccionRecord> items;
   final List<ClienteOption> clienteOptions;
   final List<LoteOption> loteOptions;
   final List<InsumoLookup> insumoOptions;
+  final List<PersonalEmpresaOption> personalOptions;
   final int? selectedOrdenId;
   final OrdenProduccionRecord? selectedOrden;
   final List<OrdenProcesoRecord> selectedProcesos;
@@ -77,6 +76,7 @@ class OrdenesProduccionState extends Equatable {
     List<ClienteOption>? clienteOptions,
     List<LoteOption>? loteOptions,
     List<InsumoLookup>? insumoOptions,
+    List<PersonalEmpresaOption>? personalOptions,
     Object? selectedOrdenId = _sentinel,
     OrdenProduccionRecord? selectedOrden,
     List<OrdenProcesoRecord>? selectedProcesos,
@@ -105,30 +105,40 @@ class OrdenesProduccionState extends Equatable {
       clienteOptions: clienteOptions ?? this.clienteOptions,
       loteOptions: loteOptions ?? this.loteOptions,
       insumoOptions: insumoOptions ?? this.insumoOptions,
+      personalOptions: personalOptions ?? this.personalOptions,
       selectedOrdenId: identical(selectedOrdenId, _sentinel)
           ? this.selectedOrdenId
           : selectedOrdenId as int?,
-      selectedOrden: clearSelectedOrden ? null : selectedOrden ?? this.selectedOrden,
-      selectedProcesos:
-          clearSelectedProcesos ? const [] : selectedProcesos ?? this.selectedProcesos,
-      consumoPlanificado:
-          clearSelectedProcesos ? const [] : consumoPlanificado ?? this.consumoPlanificado,
-      consumoReal: clearSelectedProcesos ? const [] : consumoReal ?? this.consumoReal,
-      desviaciones: clearSelectedProcesos ? const [] : desviaciones ?? this.desviaciones,
+      selectedOrden: clearSelectedOrden
+          ? null
+          : selectedOrden ?? this.selectedOrden,
+      selectedProcesos: clearSelectedProcesos
+          ? const []
+          : selectedProcesos ?? this.selectedProcesos,
+      consumoPlanificado: clearSelectedProcesos
+          ? const []
+          : consumoPlanificado ?? this.consumoPlanificado,
+      consumoReal: clearSelectedProcesos
+          ? const []
+          : consumoReal ?? this.consumoReal,
+      desviaciones: clearSelectedProcesos
+          ? const []
+          : desviaciones ?? this.desviaciones,
       mermas: clearSelectedProcesos ? const [] : mermas ?? this.mermas,
       controlCalidad: clearSelectedProcesos
           ? null
           : identical(controlCalidad, _sentinel)
-              ? this.controlCalidad
-              : controlCalidad as ControlCalidadRecord?,
+          ? this.controlCalidad
+          : controlCalidad as ControlCalidadRecord?,
       productoTerminado: clearSelectedProcesos
           ? null
           : identical(productoTerminado, _sentinel)
-              ? this.productoTerminado
-              : productoTerminado as ProductoTerminadoRecord?,
+          ? this.productoTerminado
+          : productoTerminado as ProductoTerminadoRecord?,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      detailErrorMessage:
-          clearDetailError ? null : detailErrorMessage ?? this.detailErrorMessage,
+      detailErrorMessage: clearDetailError
+          ? null
+          : detailErrorMessage ?? this.detailErrorMessage,
       isDetailLoading: isDetailLoading ?? this.isDetailLoading,
       isSubmittingAction: isSubmittingAction ?? this.isSubmittingAction,
       searchTerm: searchTerm ?? this.searchTerm,
@@ -146,27 +156,28 @@ class OrdenesProduccionState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        clienteOptions,
-        loteOptions,
-        insumoOptions,
-        selectedOrdenId,
-        selectedOrden,
-        selectedProcesos,
-        consumoPlanificado,
-        consumoReal,
-        desviaciones,
-        mermas,
-        controlCalidad,
-        productoTerminado,
-        errorMessage,
-        detailErrorMessage,
-        isDetailLoading,
-        isSubmittingAction,
-        searchTerm,
-        selectedClienteId,
-        selectedLoteId,
-        estadoFilter,
-      ];
+    status,
+    items,
+    clienteOptions,
+    loteOptions,
+    insumoOptions,
+    personalOptions,
+    selectedOrdenId,
+    selectedOrden,
+    selectedProcesos,
+    consumoPlanificado,
+    consumoReal,
+    desviaciones,
+    mermas,
+    controlCalidad,
+    productoTerminado,
+    errorMessage,
+    detailErrorMessage,
+    isDetailLoading,
+    isSubmittingAction,
+    searchTerm,
+    selectedClienteId,
+    selectedLoteId,
+    estadoFilter,
+  ];
 }

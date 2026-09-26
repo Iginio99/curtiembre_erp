@@ -70,11 +70,11 @@ public sealed class SolicitudInsumoService(
                 "La etapa indicada no pertenece a la orden seleccionada.");
         }
 
-        if (process.Estado != "ESPERANDO_MATERIALES")
+        if (process.Estado is not ("ESPERANDO_MATERIALES" or "EN_PROCESO"))
         {
             return UseCaseResult<SolicitudInsumoDetailDto>.Fail(
                 ProduccionErrorCodes.Conflict,
-                "La solicitud se puede crear solo para una etapa esperando materiales.");
+                "La solicitud se puede crear solo para una etapa iniciada.");
         }
 
         if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(procesoId, cancellationToken))

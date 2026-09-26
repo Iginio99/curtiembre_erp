@@ -9,6 +9,10 @@ public sealed record RegistrarMermaProcesoRequestDto(
 
 public sealed record RegistrarCalidadFinalRequestDto(
     [property: Range(1, long.MaxValue)] long CalidadProductoId,
+    [property: Range(typeof(decimal), "0", "999999999999999")] decimal CantidadLadosA,
+    [property: Range(typeof(decimal), "0", "999999999999999")] decimal CantidadLadosB,
+    [property: Range(typeof(decimal), "0", "999999999999999")] decimal CantidadLadosC,
+    [property: Range(typeof(decimal), "0", "999999999999999")] decimal CantidadLadosMerma,
     [property: StringLength(30)] string? Resultado,
     [property: StringLength(800)] string? Observacion);
 
@@ -37,6 +41,10 @@ public sealed record ControlCalidadDto(
     long CalidadProductoId,
     string CalidadCodigo,
     string CalidadNombre,
+    decimal CantidadLadosA,
+    decimal CantidadLadosB,
+    decimal CantidadLadosC,
+    decimal CantidadLadosMerma,
     string Resultado,
     string? Observacion,
     DateTime EvaluadoEn,
@@ -54,6 +62,10 @@ public sealed record ProductoTerminadoListItemDto(
     DateTime FechaIngreso,
     decimal CantidadPielesBuenas,
     decimal CantidadLadosCalculada,
+    decimal CantidadLadosA,
+    decimal CantidadLadosB,
+    decimal CantidadLadosC,
+    decimal CantidadLadosMerma,
     string Estado,
     string? Observacion);
 
@@ -68,5 +80,9 @@ public sealed record ProductoTerminadoDetailDto(
     DateTime FechaIngreso,
     decimal CantidadPielesBuenas,
     decimal CantidadLadosCalculada,
+    decimal CantidadLadosA,
+    decimal CantidadLadosB,
+    decimal CantidadLadosC,
+    decimal CantidadLadosMerma,
     string Estado,
     string? Observacion);
