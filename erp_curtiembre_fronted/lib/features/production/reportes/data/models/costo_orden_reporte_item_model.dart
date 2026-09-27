@@ -8,6 +8,8 @@ class CostoOrdenReporteItemModel {
     required this.codigoLote,
     required this.cantidadPieles,
     required this.cantidadLados,
+    required this.clienteTraeLote,
+    required this.costoPieles,
     required this.costoMaterialesReal,
     required this.costoMaterialesPorPiel,
     required this.costoMaterialesPorLado,
@@ -19,6 +21,8 @@ class CostoOrdenReporteItemModel {
   final String codigoLote;
   final double cantidadPieles;
   final double cantidadLados;
+  final bool clienteTraeLote;
+  final double costoPieles;
   final double costoMaterialesReal;
   final double costoMaterialesPorPiel;
   final double costoMaterialesPorLado;
@@ -32,6 +36,8 @@ class CostoOrdenReporteItemModel {
     codigoLote: json['codigoLote'] as String,
     cantidadPieles: (json['cantidadPieles'] as num).toDouble(),
     cantidadLados: (json['cantidadLados'] as num).toDouble(),
+    clienteTraeLote: json['clienteTraeLote'] as bool,
+    costoPieles: (json['costoPieles'] as num).toDouble(),
     costoMaterialesReal: (json['costoMaterialesReal'] as num).toDouble(),
     costoMaterialesPorPiel: (json['costoMaterialesPorPiel'] as num).toDouble(),
     costoMaterialesPorLado: (json['costoMaterialesPorLado'] as num).toDouble(),
@@ -44,6 +50,8 @@ class CostoOrdenReporteItemModel {
     codigoLote: codigoLote,
     cantidadPieles: cantidadPieles,
     cantidadLados: cantidadLados,
+    clienteTraeLote: clienteTraeLote,
+    costoPieles: costoPieles,
     costoMaterialesReal: costoMaterialesReal,
     costoMaterialesPorPiel: costoMaterialesPorPiel,
     costoMaterialesPorLado: costoMaterialesPorLado,

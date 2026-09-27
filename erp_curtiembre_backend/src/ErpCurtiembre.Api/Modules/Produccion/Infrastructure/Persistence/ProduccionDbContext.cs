@@ -203,7 +203,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.CantidadLados)
                 .HasColumnName("cantidad_lados_calculada")
                 .HasPrecision(18, 4)
-                .HasComputedColumnSql();
+                .HasComputedColumnSql("CONVERT(decimal(18,4), [cantidad_pieles_buenas] * (2.0))");
             entity.Property(x => x.CantidadLadosA).HasColumnName("cantidad_lados_a").HasPrecision(18, 2);
             entity.Property(x => x.CantidadLadosB).HasColumnName("cantidad_lados_b").HasPrecision(18, 2);
             entity.Property(x => x.CantidadLadosC).HasColumnName("cantidad_lados_c").HasPrecision(18, 2);
@@ -234,6 +234,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.SolicitudInsumoId).HasColumnName("solicitud_insumo_id");
             entity.Property(x => x.InsumoId).HasColumnName("insumo_id");
             entity.Property(x => x.CantidadSolicitada).HasColumnName("cantidad_solicitada").HasPrecision(18, 2);
+            entity.Property(x => x.Porcentaje).HasColumnName("porcentaje").HasPrecision(9, 4);
             entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(300);
         });
     }

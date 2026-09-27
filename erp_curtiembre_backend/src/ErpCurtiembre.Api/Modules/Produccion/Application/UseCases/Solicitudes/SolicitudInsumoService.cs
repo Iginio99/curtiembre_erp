@@ -106,6 +106,7 @@ public sealed class SolicitudInsumoService(
             details.Add(new SolicitudInsumoDetalle
             {
                 InsumoId = detail.InsumoId,
+                Porcentaje = decimal.Round(detail.Porcentaje, 4),
                 CantidadSolicitada = quantity,
                 Observacion = NormalizeNullable(detail.Observacion)
             });
@@ -253,5 +254,5 @@ public sealed class SolicitudInsumoService(
             details.Select(x => new SolicitudInsumoDetalleDto(
                 x.Id, x.InsumoId, x.InsumoCodigo, x.InsumoNombre,
                 x.UnidadMedidaCodigo, x.UnidadMedidaNombre,
-                x.CantidadSolicitada, x.Observacion)).ToArray());
+                x.Porcentaje, x.CantidadSolicitada, x.Observacion)).ToArray());
 }

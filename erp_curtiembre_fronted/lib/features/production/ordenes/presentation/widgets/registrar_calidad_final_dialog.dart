@@ -41,11 +41,21 @@ class _RegistrarCalidadFinalDialogState
   void initState() {
     super.initState();
     final value = widget.initialValue;
-    _aController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosA));
-    _bController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosB));
-    _cController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosC));
-    _mermaController = TextEditingController(text: value == null ? '' : _number(value.cantidadLadosMerma));
-    _observacionController = TextEditingController(text: value?.observacion ?? '');
+    _aController = TextEditingController(
+      text: value == null ? '' : _number(value.cantidadLadosA),
+    );
+    _bController = TextEditingController(
+      text: value == null ? '' : _number(value.cantidadLadosB),
+    );
+    _cController = TextEditingController(
+      text: value == null ? '' : _number(value.cantidadLadosC),
+    );
+    _mermaController = TextEditingController(
+      text: value == null ? '' : _number(value.cantidadLadosMerma),
+    );
+    _observacionController = TextEditingController(
+      text: value?.observacion ?? '',
+    );
   }
 
   double _value(TextEditingController controller) =>

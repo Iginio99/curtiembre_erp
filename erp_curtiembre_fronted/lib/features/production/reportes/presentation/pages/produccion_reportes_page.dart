@@ -8,6 +8,8 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_state.dart';
+import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/consumo_proceso_reporte_item.dart';
+import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/tiempo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
@@ -320,7 +322,7 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
                             );
                       },
                     ),
-                    _CostosOrdenTab(
+                    _CostosOrdenTabV2(
                       state: state,
                       onApply: (ordenProduccionId) {
                         return context
@@ -349,6 +351,11 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
                   child: TabBar(
                     controller: _tabController,
                     isScrollable: true,
+                    onTap: (_) {
+                      context.read<ProduccionReportesCubit>().ensureTabLoaded(
+                        _currentTab,
+                      );
+                    },
                     tabs: const [
                       Tab(text: 'Ordenes activas'),
                       Tab(text: 'Ordenes por cliente'),
@@ -519,23 +526,16 @@ class _OrdenesClienteTab extends StatelessWidget {
           runSpacing: AppSpacing.lg,
           children: [
             SizedBox(
-              width: 320,
-              child: DropdownButtonFormField<int?>(
-                initialValue: state.ordenesClienteClienteId,
-                decoration: const InputDecoration(labelText: 'Cliente'),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
-                  ...state.clienteOptions.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(item.label),
-                    ),
-                  ),
-                ],
-                onChanged: (value) => onApply(
+              width: 520,
+              child: _SearchableReportFilter<int>(
+                key: ValueKey('cliente-${state.ordenesClienteClienteId}'),
+                label: 'Buscar cliente',
+                hint: 'Escribe nombre o documento',
+                selectedValue: state.ordenesClienteClienteId,
+                options: state.clienteOptions
+                    .map((item) => _SearchOption(item.id, item.label))
+                    .toList(growable: false),
+                onSelected: (value) => onApply(
                   clienteId: value,
                   estado: state.ordenesClienteEstado,
                   fechaDesde: state.ordenesClienteFechaDesde,
@@ -673,24 +673,17 @@ class _ConsumoProcesoTab extends StatelessWidget {
           children: [
             SizedBox(
               width: 360,
-              child: DropdownButtonFormField<int?>(
-                initialValue: state.consumoOrdenProduccionId,
-                decoration: const InputDecoration(
-                  labelText: 'Orden de produccion',
-                ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todas'),
-                  ),
-                  ...state.ordenOptions.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(_ordenOptionLabel(item)),
-                    ),
-                  ),
-                ],
-                onChanged: (value) =>
+              child: _SearchableReportFilter<int>(
+                key: ValueKey(state.consumoOrdenProduccionId),
+                label: 'Buscar orden de produccion',
+                hint: 'Escribe codigo, cliente o estado',
+                selectedValue: state.consumoOrdenProduccionId,
+                options: state.ordenOptions
+                    .map(
+                      (item) => _SearchOption(item.id, _ordenOptionLabel(item)),
+                    )
+                    .toList(growable: false),
+                onSelected: (value) =>
                     onApply(ordenProduccionId: value, ordenProcesoId: null),
               ),
             ),
@@ -742,29 +735,9 @@ class _ConsumoProcesoTab extends StatelessWidget {
         emptyTitle: 'Sin consumo visible',
         emptyMessage:
             'No encontramos consumos para el cruce actual de orden y proceso.',
-        child: ListView.separated(
-          itemCount: state.consumoProceso.length,
-          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-          itemBuilder: (context, index) {
-            final item = state.consumoProceso[index];
-            return _ReportItemCard(
-              title: '${item.codigoOrden} · ${item.procesoCodigo}',
-              subtitle: '${item.insumoCodigo} · ${item.insumoNombre}',
-              chips: [
-                _cardChip(context, item.procesoNombre),
-                _cardChip(
-                  context,
-                  'Costo S/ ${item.costoTotal.toStringAsFixed(2)}',
-                ),
-              ],
-              lines: [
-                'Planificado: ${_formatDecimal(item.cantidadPlanificada)}',
-                'Real: ${_formatDecimal(item.cantidadReal)}',
-                'Desviacion: ${_formatSignedDecimal(item.cantidadDesviacion)}',
-                'Costo unitario: ${item.costoUnitario == null ? 'No definido' : 'S/ ${item.costoUnitario!.toStringAsFixed(2)}'}',
-              ],
-            );
-          },
+        child: _ConsumptionGroupedList(
+          items: state.consumoProceso,
+          orders: state.ordenOptions,
         ),
       ),
     );
@@ -975,24 +948,17 @@ class _TiemposProcesoTab extends StatelessWidget {
           children: [
             SizedBox(
               width: 360,
-              child: DropdownButtonFormField<int?>(
-                initialValue: state.tiemposOrdenProduccionId,
-                decoration: const InputDecoration(
-                  labelText: 'Orden de produccion',
-                ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todas'),
-                  ),
-                  ...state.ordenOptions.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(_ordenOptionLabel(item)),
-                    ),
-                  ),
-                ],
-                onChanged: (value) => onApply(
+              child: _SearchableReportFilter<int>(
+                key: ValueKey('tiempo-orden-${state.tiemposOrdenProduccionId}'),
+                label: 'Orden o cliente',
+                hint: 'Escribe codigo o nombre del cliente',
+                selectedValue: state.tiemposOrdenProduccionId,
+                options: state.ordenOptions
+                    .map(
+                      (item) => _SearchOption(item.id, _ordenOptionLabel(item)),
+                    )
+                    .toList(growable: false),
+                onSelected: (value) => onApply(
                   ordenProduccionId: value,
                   ordenProcesoId: null,
                   estado: state.tiemposEstado,
@@ -1077,28 +1043,159 @@ class _TiemposProcesoTab extends StatelessWidget {
         ),
         emptyTitle: 'Sin tiempos visibles',
         emptyMessage: 'No encontramos procesos para el filtro actual.',
-        child: ListView.separated(
-          itemCount: state.tiemposProceso.length,
-          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-          itemBuilder: (context, index) {
-            final item = state.tiemposProceso[index];
-            return _ReportItemCard(
-              title: '${item.codigoOrden} · ${item.procesoCodigo}',
-              subtitle: item.procesoNombre,
-              chips: [
-                _cardChip(context, item.estado),
-                if (item.diasReales != null)
-                  _cardChip(context, '${item.diasReales} dia(s)'),
-              ],
-              lines: [
-                'Inicio: ${_formatOptionalDateTime(item.fechaInicio)}',
-                'Fin: ${_formatOptionalDateTime(item.fechaFin)}',
-                'Responsable: ${(item.responsable ?? 'Sin responsable').trim()}',
-              ],
-            );
-          },
+        child: _TimesGroupedList(
+          items: state.tiemposProceso,
+          orders: state.ordenOptions,
         ),
       ),
+    );
+  }
+}
+
+class _TimesGroupedList extends StatelessWidget {
+  const _TimesGroupedList({required this.items, required this.orders});
+
+  final List<TiempoProcesoReporteItem> items;
+  final List<OrdenProduccionRecord> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <int, List<TiempoProcesoReporteItem>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.ordenProduccionId, () => []).add(item);
+    }
+    return ListView(
+      children: grouped.entries
+          .map((entry) {
+            final rows = entry.value;
+            OrdenProduccionRecord? order;
+            for (final candidate in orders) {
+              if (candidate.id == entry.key) {
+                order = candidate;
+                break;
+              }
+            }
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: ExpansionTile(
+                initiallyExpanded: grouped.length == 1,
+                title: Text(
+                  '${rows.first.codigoOrden} · ${order?.clienteRazonSocial ?? 'Cliente no disponible'}',
+                ),
+                subtitle: Text('${rows.length} etapas productivas'),
+                children: rows
+                    .map(
+                      (item) => ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          child: Text(item.procesoCodigo.substring(0, 1)),
+                        ),
+                        title: Text(
+                          '${item.procesoCodigo} · ${item.procesoNombre}',
+                        ),
+                        subtitle: Text(
+                          'Inicio: ${_formatOptionalDateTime(item.fechaInicio)}  |  Fin: ${_formatOptionalDateTime(item.fechaFin)}  |  ${(item.responsable ?? 'Sin responsable').trim()}',
+                        ),
+                        trailing: _cardChip(
+                          context,
+                          item.diasReales == null
+                              ? item.estado
+                              : '${item.diasReales} dias',
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            );
+          })
+          .toList(growable: false),
+    );
+  }
+}
+
+class _ConsumptionGroupedList extends StatelessWidget {
+  const _ConsumptionGroupedList({required this.items, required this.orders});
+
+  final List<ConsumoProcesoReporteItem> items;
+  final List<OrdenProduccionRecord> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <int, List<ConsumoProcesoReporteItem>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.ordenProduccionId, () => []).add(item);
+    }
+
+    return ListView(
+      children: grouped.entries
+          .map((entry) {
+            final rows = entry.value;
+            OrdenProduccionRecord? order;
+            for (final candidate in orders) {
+              if (candidate.id == entry.key) {
+                order = candidate;
+                break;
+              }
+            }
+            final total = rows.fold<double>(
+              0,
+              (sum, item) => sum + item.costoTotal,
+            );
+            final byProcess = <String, List<ConsumoProcesoReporteItem>>{};
+            for (final item in rows) {
+              byProcess.putIfAbsent(item.procesoNombre, () => []).add(item);
+            }
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              clipBehavior: Clip.antiAlias,
+              child: ExpansionTile(
+                initiallyExpanded: grouped.length == 1,
+                title: Text(
+                  '${rows.first.codigoOrden} · ${order?.clienteRazonSocial ?? 'Cliente no disponible'}',
+                ),
+                subtitle: Text(
+                  '${byProcess.length} procesos · ${rows.length} insumos · S/ ${total.toStringAsFixed(2)}',
+                ),
+                children: byProcess.entries
+                    .map((process) {
+                      final processTotal = process.value.fold<double>(
+                        0,
+                        (sum, item) => sum + item.costoTotal,
+                      );
+                      return ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        title: Text(process.key),
+                        subtitle: Text(
+                          '${process.value.length} insumos · S/ ${processTotal.toStringAsFixed(2)}',
+                        ),
+                        children: process.value
+                            .map(
+                              (item) => ListTile(
+                                dense: true,
+                                title: Text(
+                                  '${item.insumoCodigo} · ${item.insumoNombre}',
+                                ),
+                                subtitle: Text(
+                                  'Plan ${_formatDecimal(item.cantidadPlanificada)}  |  Real ${_formatDecimal(item.cantidadReal)}  |  Desv. ${_formatSignedDecimal(item.cantidadDesviacion)}',
+                                ),
+                                trailing: Text(
+                                  'S/ ${item.costoTotal.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(growable: false),
+                      );
+                    })
+                    .toList(growable: false),
+              ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
@@ -1150,29 +1247,30 @@ class _SurfaceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compactTheme = theme.copyWith(
+      inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 12,
+        ),
+      ),
+    );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          child,
-        ],
+      child: Semantics(
+        label: '$title. $subtitle',
+        child: Theme(data: compactTheme, child: child),
       ),
     );
   }
@@ -1262,11 +1360,32 @@ class _ResultsCard extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: theme.textTheme.titleLarge),
+            Row(
+              children: [
+                Expanded(child: Text(title, style: theme.textTheme.titleLarge)),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$itemCount resultados',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const Gap(AppSpacing.xs),
             Text(
               subtitle,
@@ -1315,7 +1434,7 @@ class _ReportItemCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
@@ -1340,20 +1459,128 @@ class _ReportItemCard extends StatelessWidget {
               children: chips,
             ),
           ],
-          const Gap(AppSpacing.md),
-          ...lines.map(
-            (line) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: Text(
-                line,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
+          const Gap(AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.xl,
+            runSpacing: AppSpacing.xs,
+            children: lines
+                .map(
+                  (line) => Text(
+                    line,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SearchOption<T> {
+  const _SearchOption(this.value, this.label);
+
+  final T value;
+  final String label;
+}
+
+class _SearchableReportFilter<T> extends StatelessWidget {
+  const _SearchableReportFilter({
+    super.key,
+    required this.label,
+    required this.hint,
+    required this.options,
+    required this.selectedValue,
+    required this.onSelected,
+    this.enabled = true,
+  });
+
+  final String label;
+  final String hint;
+  final List<_SearchOption<T>> options;
+  final T? selectedValue;
+  final ValueChanged<T?> onSelected;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    _SearchOption<T>? selected;
+    for (final option in options) {
+      if (option.value == selectedValue) {
+        selected = option;
+        break;
+      }
+    }
+
+    return Autocomplete<_SearchOption<T>>(
+      initialValue: TextEditingValue(text: selected?.label ?? ''),
+      displayStringForOption: (option) => option.label,
+      optionsBuilder: (value) {
+        final query = value.text.trim().toLowerCase();
+        if (query.isEmpty) return options;
+        return options.where(
+          (option) => option.label.toLowerCase().contains(query),
+        );
+      },
+      onSelected: (option) => onSelected(option.value),
+      fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          enabled: enabled,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: controller.text.isEmpty
+                ? const Icon(Icons.expand_more_rounded)
+                : IconButton(
+                    tooltip: 'Limpiar filtro',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      controller.clear();
+                      onSelected(null);
+                    },
+                  ),
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelectedOption, matches) {
+        final values = matches.toList(growable: false);
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 12,
+            borderRadius: BorderRadius.circular(14),
+            clipBehavior: Clip.antiAlias,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480, maxHeight: 320),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                shrinkWrap: true,
+                itemCount: values.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final option = values[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.manage_search_rounded),
+                    title: Text(
+                      option.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => onSelectedOption(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1402,6 +1629,452 @@ class _CenteredMessage extends StatelessWidget {
   }
 }
 
+class _CostosOrdenTabV2 extends StatelessWidget {
+  const _CostosOrdenTabV2({
+    required this.state,
+    required this.onApply,
+    required this.onClear,
+  });
+
+  final ProduccionReportesState state;
+  final Future<void> Function(int? ordenProduccionId) onApply;
+  final Future<void> Function() onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final money = NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ');
+    final selectedOrderId = state.costosOrdenProduccionId;
+    final visibleOrders = selectedOrderId == null
+        ? state.costosOrden.take(0).toList(growable: false)
+        : state.costosOrden
+              .where((item) => item.ordenProduccionId == selectedOrderId)
+              .toList(growable: false);
+    final visibleProcesses = selectedOrderId == null
+        ? state.costosProceso.take(0).toList(growable: false)
+        : state.costosProceso
+              .where((item) => item.ordenProduccionId == selectedOrderId)
+              .toList(growable: false);
+    final total = visibleOrders.fold<double>(
+      0,
+      (sum, item) => sum + item.costoMaterialesReal + item.costoPieles,
+    );
+    final ordersWithCost = visibleOrders
+        .where((item) => item.costoMaterialesReal > 0)
+        .length;
+
+    return _ReportTabScaffold(
+      filterCard: _SurfaceCard(
+        title: 'Costos reales de produccion',
+        subtitle:
+            'Resumen consolidado de materiales consumidos en las etapas productivas.',
+        child: Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SizedBox(
+              width: 620,
+              child: _SearchableReportFilter<int>(
+                key: ValueKey('costo-${state.costosOrdenProduccionId}'),
+                label: 'Orden o cliente',
+                hint: 'Escribe codigo de orden o nombre del cliente',
+                selectedValue: state.costosOrdenProduccionId,
+                options: state.ordenOptions
+                    .map(
+                      (item) => _SearchOption(item.id, _ordenOptionLabel(item)),
+                    )
+                    .toList(growable: false),
+                onSelected: onApply,
+              ),
+            ),
+            AppButton.secondary(
+              label: 'Limpiar',
+              icon: Icons.filter_alt_off_outlined,
+              onPressed: onClear,
+            ),
+            if (selectedOrderId != null) ...[
+              _SummaryMetric(
+                label: 'Costo total de la ficha',
+                value: money.format(total),
+                icon: Icons.payments_outlined,
+              ),
+              _SummaryMetric(
+                label: 'Orden seleccionada',
+                value: ordersWithCost == 0 ? 'Sin consumo' : 'Con consumo',
+                icon: Icons.assignment_turned_in_outlined,
+              ),
+            ],
+          ],
+        ),
+      ),
+      resultsCard: _ResultsCard(
+        title: 'Resumen por orden y cinco procesos',
+        subtitle: selectedOrderId == null
+            ? 'Selecciona una orden para generar su ficha.'
+            : '${visibleProcesses.map((item) => item.ordenProcesoId).toSet().length} procesos en la ficha.',
+        itemCount: visibleOrders.length,
+        isLoading: state.loadingCostosOrden,
+        errorMessage: state.costosOrdenErrorMessage,
+        onRetry: () => onApply(state.costosOrdenProduccionId),
+        emptyTitle: selectedOrderId == null
+            ? 'Selecciona una orden'
+            : 'Sin consumos reales',
+        emptyMessage: selectedOrderId == null
+            ? 'Busca por codigo de orden o cliente y elige una coincidencia. Solo se mostrara esa ficha.'
+            : 'Todavia no existen salidas de materiales asociadas a la orden seleccionada.',
+        child: ListView.builder(
+          itemCount: visibleOrders.length,
+          itemBuilder: (context, index) {
+            final order = visibleOrders[index];
+            final stages = visibleProcesses
+                .where(
+                  (item) => item.ordenProduccionId == order.ordenProduccionId,
+                )
+                .toList(growable: false);
+            final stagesGrouped = <int, List<dynamic>>{};
+            for (final stage in stages) {
+              stagesGrouped
+                  .putIfAbsent(stage.ordenProcesoId, () => [])
+                  .add(stage);
+            }
+            final orderTotal = order.costoMaterialesReal + order.costoPieles;
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ExpansionTile(
+                initiallyExpanded: true,
+                title: Text('${order.codigoOrden} · ${order.cliente}'),
+                subtitle: Text(
+                  '${order.codigoLote} · Pieles ${order.clienteTraeLote ? 'traidas por cliente' : money.format(order.costoPieles)} · Materiales ${money.format(order.costoMaterialesReal)}',
+                ),
+                trailing: Text(
+                  money.format(orderTotal),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                children: [
+                  _OrderCostSummary(
+                    groups: stagesGrouped.values.toList(growable: false),
+                    skins: order.cantidadPieles,
+                    sides: order.cantidadLados,
+                    total: orderTotal,
+                    costPerSkin: order.costoMaterialesPorPiel,
+                    costPerSide: order.costoMaterialesPorLado,
+                    money: money,
+                  ),
+                  _CostProcessTimeline(
+                    groups: stagesGrouped.values.toList(growable: false),
+                    money: money,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderCostSummary extends StatelessWidget {
+  const _OrderCostSummary({
+    required this.groups,
+    required this.skins,
+    required this.sides,
+    required this.total,
+    required this.costPerSkin,
+    required this.costPerSide,
+    required this.money,
+  });
+
+  final List<List<dynamic>> groups;
+  final double skins;
+  final double sides;
+  final double total;
+  final double costPerSkin;
+  final double costPerSide;
+  final NumberFormat money;
+
+  @override
+  Widget build(BuildContext context) {
+    final first = groups.isEmpty ? null : groups.first.first;
+    final last = groups.isEmpty ? null : groups.last.first;
+    final kilos = first?.pesoBaseKg as double?;
+    final cells = [
+      ('INICIO', _formatOptionalDate(first?.fechaInicio as DateTime?)),
+      ('FIN ESTIMADO', _formatOptionalDate(last?.fechaFin as DateTime?)),
+      (
+        'PIELES / KILOS',
+        '${_formatDecimal(skins)} · ${kilos == null ? '-' : '${_formatDecimal(kilos)} kg'}',
+      ),
+      ('COSTO POR PIEL', money.format(costPerSkin)),
+      ('COSTO POR LADO', money.format(costPerSide)),
+      ('COSTO TOTAL ORDEN', money.format(total)),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = constraints.maxWidth >= 1180
+              ? 6
+              : constraints.maxWidth >= 700
+              ? 3
+              : 1;
+          final cellWidth = constraints.maxWidth / columns;
+          return Wrap(
+            children: cells
+                .map(
+                  (cell) => SizedBox(
+                    width: cellWidth,
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          width: .5,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            cell.$1,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelSmall?.copyWith(letterSpacing: 1),
+                          ),
+                          const Gap(AppSpacing.sm),
+                          Text(
+                            cell.$2,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: cell.$1.startsWith('COSTO')
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CostProcessTimeline extends StatefulWidget {
+  const _CostProcessTimeline({required this.groups, required this.money});
+  final List<List<dynamic>> groups;
+  final NumberFormat money;
+
+  @override
+  State<_CostProcessTimeline> createState() => _CostProcessTimelineState();
+}
+
+class _CostProcessTimelineState extends State<_CostProcessTimeline> {
+  int selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.groups.isEmpty) return const SizedBox.shrink();
+    if (selectedIndex >= widget.groups.length) selectedIndex = 0;
+    final rows = widget.groups[selectedIndex];
+    final stage = rows.first;
+    final total = rows.fold<double>(
+      0,
+      (sum, item) => sum + item.costoMaterialesReal,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: List.generate(widget.groups.length, (index) {
+              final current = widget.groups[index].first;
+              final active = index == selectedIndex;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => selectedIndex = index),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 17,
+                        backgroundColor: active
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
+                        foregroundColor: active
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        child: Text('${index + 1}'),
+                      ),
+                      const Gap(AppSpacing.xs),
+                      Text(
+                        current.procesoNombre as String,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: active
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: active
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+          const Gap(AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLowest,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            stage.procesoNombre as String,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const Gap(AppSpacing.xs),
+                          Text(
+                            'Inicio ${_formatOptionalDate(stage.fechaInicio as DateTime?)}   Fin ${_formatOptionalDate(stage.fechaFin as DateTime?)}   Pieles ${_formatDecimal(stage.cantidadPieles as double)}   Kilos ${stage.pesoBaseKg == null ? '-' : _formatDecimal(stage.pesoBaseKg as double)}',
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text('COSTO PROCESO'),
+                        Text(
+                          widget.money.format(total),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Divider(height: AppSpacing.xl),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.sm,
+                  ),
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  child: const Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Text(
+                          'INSUMO',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'PORCENTAJE',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'PESO',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'COSTO',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...rows
+                    .where((item) => item.insumoId != null)
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 4,
+                              child: Text(
+                                '${_normalizeInsumoCode(item.insumoCodigo as String?)} · ${item.insumoNombre}',
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                item.porcentaje == null
+                                    ? '-'
+                                    : '${_formatDecimal(item.porcentaje as double)}%',
+                                textAlign: TextAlign.right,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                _formatDecimal(
+                                  item.cantidadConsumida as double,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                widget.money.format(item.costoMaterialesReal),
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CostosOrdenTab extends StatefulWidget {
   const _CostosOrdenTab({
     required this.state,
@@ -1430,6 +2103,13 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
   Widget build(BuildContext context) {
     final money = NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ');
     final theme = Theme.of(context);
+    final totalGeneral = widget.state.costosOrden.fold<double>(
+      0,
+      (sum, item) => sum + item.costoMaterialesReal,
+    );
+    final etapasConCosto = widget.state.costosProceso
+        .where((item) => item.costoMaterialesReal > 0)
+        .length;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1444,7 +2124,7 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<int>(
+                child: DropdownButtonFormField<int?>(
                   key: ValueKey(_selectedOrderId),
                   initialValue: _selectedOrderId,
                   isExpanded: true,
@@ -1452,12 +2132,12 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
                     labelText: 'Orden de producción',
                   ),
                   items: [
-                    const DropdownMenuItem<int>(
+                    const DropdownMenuItem<int?>(
                       value: null,
                       child: Text('Todas las órdenes'),
                     ),
                     ...widget.state.ordenOptions.map(
-                      (item) => DropdownMenuItem<int>(
+                      (item) => DropdownMenuItem<int?>(
                         value: item.id,
                         child: Text(_ordenOptionLabel(item)),
                       ),
@@ -1482,6 +2162,32 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
             ],
           ),
           const Gap(AppSpacing.lg),
+          if (!widget.state.loadingCostosOrden &&
+              widget.state.costosOrdenErrorMessage == null) ...[
+            Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.md,
+              children: [
+                _SummaryMetric(
+                  label: 'Gasto total en materiales',
+                  value: money.format(totalGeneral),
+                  icon: Icons.payments_outlined,
+                ),
+                _SummaryMetric(
+                  label: 'Ordenes consideradas',
+                  value: '${widget.state.costosOrden.length}',
+                  icon: Icons.assignment_outlined,
+                ),
+                _SummaryMetric(
+                  label: 'Etapas con consumo',
+                  value:
+                      '$etapasConCosto / ${widget.state.costosProceso.length}',
+                  icon: Icons.account_tree_outlined,
+                ),
+              ],
+            ),
+            const Gap(AppSpacing.lg),
+          ],
           if (widget.state.costosOrdenErrorMessage != null)
             AppMessageCard.error(
               title: 'No pudimos cargar los costos',
@@ -1609,8 +2315,58 @@ Widget _cardChip(BuildContext context, String label) {
   );
 }
 
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: theme.colorScheme.primary),
+          const Gap(AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.labelMedium),
+                const Gap(AppSpacing.xs),
+                Text(value, style: theme.textTheme.titleLarge),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _ordenOptionLabel(OrdenProduccionRecord item) {
   return '${item.codigo} · ${item.clienteRazonSocial}';
+}
+
+String _normalizeInsumoCode(String? value) {
+  final code = (value ?? '').trim().toUpperCase();
+  final match = RegExp(r'^INS-?(\d+)$').firstMatch(code);
+  if (match == null) return code;
+  final number = int.tryParse(match.group(1)!);
+  return number == null ? code : 'INS-${number.toString().padLeft(3, '0')}';
 }
 
 List<String> _availableOrderStates(List<OrdenProduccionRecord> items) {
@@ -1631,6 +2387,13 @@ String _formatOptionalDateTime(DateTime? value) {
     return 'Sin registro';
   }
   return _formatDateTime(value);
+}
+
+String _formatOptionalDate(DateTime? value) {
+  if (value == null) {
+    return 'Sin registro';
+  }
+  return DateFormat('dd/MM/yyyy').format(value.toLocal());
 }
 
 String _formatDecimal(double value) {

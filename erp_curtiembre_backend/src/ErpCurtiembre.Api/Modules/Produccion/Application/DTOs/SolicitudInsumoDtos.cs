@@ -4,6 +4,7 @@ namespace ErpCurtiembre.Modules.Produccion.Application.DTOs;
 
 public sealed record CrearSolicitudInsumoDetalleRequestDto(
     [property: Range(1, long.MaxValue)] long InsumoId,
+    [property: Range(typeof(decimal), "0.0001", "99999.9999")] decimal Porcentaje,
     [property: Range(typeof(decimal), "0.01", "999999999999999.99")] decimal Cantidad,
     [property: StringLength(300)] string? Observacion = null);
 
@@ -53,5 +54,6 @@ public sealed record SolicitudInsumoDetalleDto(
     string InsumoNombre,
     string UnidadMedidaCodigo,
     string UnidadMedidaNombre,
+    decimal? Porcentaje,
     decimal CantidadSolicitada,
     string? Observacion);

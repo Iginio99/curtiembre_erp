@@ -18,5 +18,6 @@ public sealed class SolicitudInsumoDetalleWriteModel
     public long SolicitudInsumoId { get; set; }
     public long InsumoId { get; set; }
     public decimal CantidadSolicitada { get; set; }
+    public decimal? Porcentaje { get; set; }
     public string? Observacion { get; set; }
 }

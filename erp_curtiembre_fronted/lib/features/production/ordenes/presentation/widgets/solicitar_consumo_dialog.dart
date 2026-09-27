@@ -78,14 +78,22 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
       final cantidad = double.tryParse(
         draft.cantidadController.text.trim().replaceAll(',', '.'),
       );
+      final porcentaje = double.tryParse(
+        draft.porcentajeController.text.trim().replaceAll(',', '.'),
+      );
 
-      if (insumoId == null || cantidad == null || cantidad <= 0) {
+      if (insumoId == null ||
+          porcentaje == null ||
+          porcentaje <= 0 ||
+          cantidad == null ||
+          cantidad <= 0) {
         continue;
       }
 
       details.add(
         SolicitarConsumoProduccionDetalleInput(
           insumoId: insumoId,
+          porcentaje: porcentaje,
           cantidad: cantidad,
           observacion: draft.observacionController.text.trim().isEmpty
               ? null

@@ -14,11 +14,13 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 class SolicitarConsumoProduccionDetalleInput {
   const SolicitarConsumoProduccionDetalleInput({
     required this.insumoId,
+    required this.porcentaje,
     required this.cantidad,
     this.observacion,
   });
 
   final int insumoId;
+  final double porcentaje;
   final double cantidad;
   final String? observacion;
 }

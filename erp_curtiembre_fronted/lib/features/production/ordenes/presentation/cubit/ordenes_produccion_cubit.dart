@@ -725,10 +725,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     emit(state.copyWith(isSubmittingAction: true));
     try {
       final controlCalidad = update
-          ? await _repository.updateCalidadFinal(
-              ordenId: ordenId,
-              input: input,
-            )
+          ? await _repository.updateCalidadFinal(ordenId: ordenId, input: input)
           : await _repository.registerCalidadFinal(
               ordenId: ordenId,
               input: input,

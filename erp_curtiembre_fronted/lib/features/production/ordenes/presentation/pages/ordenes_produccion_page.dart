@@ -2341,7 +2341,8 @@ class _CalidadFinalCard extends StatelessWidget {
               Expanded(
                 child: _InlineInfo(
                   label: 'Producto terminado',
-                  value: item.productoTerminadoId?.toString() ?? 'Aun no generado',
+                  value:
+                      item.productoTerminadoId?.toString() ?? 'Aun no generado',
                 ),
               ),
             ],
@@ -2352,25 +2353,29 @@ class _CalidadFinalCard extends StatelessWidget {
               Expanded(
                 child: _InlineInfo(
                   label: 'Calidad A',
-                  value: '${_formatDecimal(item.cantidadLadosA)} lados / ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+                  value:
+                      '${_formatDecimal(item.cantidadLadosA)} lados / ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
                 ),
               ),
               Expanded(
                 child: _InlineInfo(
                   label: 'Calidad B',
-                  value: '${_formatDecimal(item.cantidadLadosB)} lados / ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+                  value:
+                      '${_formatDecimal(item.cantidadLadosB)} lados / ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
                 ),
               ),
               Expanded(
                 child: _InlineInfo(
                   label: 'Calidad C',
-                  value: '${_formatDecimal(item.cantidadLadosC)} lados / ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+                  value:
+                      '${_formatDecimal(item.cantidadLadosC)} lados / ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
                 ),
               ),
               Expanded(
                 child: _InlineInfo(
                   label: 'Merma final',
-                  value: '${_formatDecimal(item.cantidadLadosMerma)} lados / ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+                  value:
+                      '${_formatDecimal(item.cantidadLadosMerma)} lados / ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
                 ),
               ),
             ],

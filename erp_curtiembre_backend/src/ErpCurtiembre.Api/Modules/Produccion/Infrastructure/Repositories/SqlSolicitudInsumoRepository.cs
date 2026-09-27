@@ -38,6 +38,7 @@ public sealed class SqlSolicitudInsumoRepository(
             {
                 SolicitudInsumoId = header.Id,
                 InsumoId = detail.InsumoId,
+                Porcentaje = detail.Porcentaje,
                 CantidadSolicitada = detail.CantidadSolicitada,
                 Observacion = detail.Observacion
             });
@@ -103,6 +104,7 @@ public sealed class SqlSolicitudInsumoRepository(
                 d.id AS Id, d.solicitud_insumo_id AS SolicitudInsumoId, d.insumo_id AS InsumoId,
                 i.codigo AS InsumoCodigo, i.nombre AS InsumoNombre,
                 um.codigo AS UnidadMedidaCodigo, um.nombre AS UnidadMedidaNombre,
+                d.porcentaje AS Porcentaje,
                 d.cantidad_solicitada AS CantidadSolicitada, d.observacion AS Observacion
             FROM produccion.solicitud_insumo_detalle d
             INNER JOIN inventario.insumo i ON i.id = d.insumo_id

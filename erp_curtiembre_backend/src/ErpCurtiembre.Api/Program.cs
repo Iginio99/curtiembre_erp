@@ -2,6 +2,11 @@ using ErpCurtiembre.Shared.Composition;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Evita que Windows Event Log convierta un error de aplicacion en otro fallo
+// cuando el proceso se ejecuta sin permisos para escribir en el registro.
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDevelopment", policy =>

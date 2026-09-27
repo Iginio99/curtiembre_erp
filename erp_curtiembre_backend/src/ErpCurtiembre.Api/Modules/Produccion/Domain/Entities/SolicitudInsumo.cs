@@ -45,5 +45,7 @@ public sealed class SolicitudInsumoDetalle
 
     public decimal CantidadSolicitada { get; init; }
 
+    public decimal? Porcentaje { get; init; }
+
     public string? Observacion { get; init; }
 }

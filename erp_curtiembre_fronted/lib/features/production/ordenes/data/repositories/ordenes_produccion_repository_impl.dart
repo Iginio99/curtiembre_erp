@@ -313,6 +313,7 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
           .map(
             (item) => {
               'insumoId': item.insumoId,
+              'porcentaje': item.porcentaje,
               'cantidad': item.cantidad,
               'observacion': item.observacion,
             },

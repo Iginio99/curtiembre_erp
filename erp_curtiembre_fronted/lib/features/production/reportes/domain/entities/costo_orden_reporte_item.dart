@@ -8,6 +8,8 @@ class CostoOrdenReporteItem extends Equatable {
     required this.codigoLote,
     required this.cantidadPieles,
     required this.cantidadLados,
+    required this.clienteTraeLote,
+    required this.costoPieles,
     required this.costoMaterialesReal,
     required this.costoMaterialesPorPiel,
     required this.costoMaterialesPorLado,
@@ -19,6 +21,8 @@ class CostoOrdenReporteItem extends Equatable {
   final String codigoLote;
   final double cantidadPieles;
   final double cantidadLados;
+  final bool clienteTraeLote;
+  final double costoPieles;
   final double costoMaterialesReal;
   final double costoMaterialesPorPiel;
   final double costoMaterialesPorLado;
@@ -31,6 +35,8 @@ class CostoOrdenReporteItem extends Equatable {
     codigoLote,
     cantidadPieles,
     cantidadLados,
+    clienteTraeLote,
+    costoPieles,
     costoMaterialesReal,
     costoMaterialesPorPiel,
     costoMaterialesPorLado,

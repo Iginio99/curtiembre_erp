@@ -91,6 +91,8 @@ public sealed record CostosOrdenReporteItemDto(
     string CodigoLote,
     decimal CantidadPieles,
     decimal CantidadLados,
+    bool ClienteTraeLote,
+    decimal CostoPieles,
     decimal CostoMaterialesReal,
     decimal CostoMaterialesPorPiel,
     decimal CostoMaterialesPorLado);
@@ -101,4 +103,14 @@ public sealed record CostosProcesoReporteItemDto(
     long OrdenProcesoId,
     string ProcesoCodigo,
     string ProcesoNombre,
+    DateTime? FechaInicio,
+    DateTime? FechaFin,
+    decimal CantidadPieles,
+    decimal? PesoBaseKg,
+    long? InsumoId,
+    string? InsumoCodigo,
+    string? InsumoNombre,
+    decimal? Porcentaje,
+    decimal CantidadConsumida,
+    decimal? CostoUnitario,
     decimal CostoMaterialesReal);

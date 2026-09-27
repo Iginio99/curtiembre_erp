@@ -256,15 +256,17 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                 l.codigo AS CodigoLote,
                 op.cantidad_pieles AS CantidadPieles,
                 CAST(op.cantidad_pieles * 2.0 AS DECIMAL(18,2)) AS CantidadLados,
+                l.cliente_trae_lote AS ClienteTraeLote,
+                CASE WHEN l.cliente_trae_lote = 1 THEN 0 ELSE ISNULL(l.costo_pieles_total, 0) END AS CostoPieles,
                 ISNULL(SUM(ocr.costo_total), 0) AS CostoMaterialesReal,
-                CAST(ISNULL(SUM(ocr.costo_total), 0) / NULLIF(op.cantidad_pieles, 0) AS DECIMAL(18,2)) AS CostoMaterialesPorPiel,
-                CAST(ISNULL(SUM(ocr.costo_total), 0) / NULLIF(op.cantidad_pieles * 2.0, 0) AS DECIMAL(18,2)) AS CostoMaterialesPorLado
+                CAST((ISNULL(SUM(ocr.costo_total), 0) + CASE WHEN l.cliente_trae_lote = 1 THEN 0 ELSE ISNULL(l.costo_pieles_total, 0) END) / NULLIF(op.cantidad_pieles, 0) AS DECIMAL(18,2)) AS CostoMaterialesPorPiel,
+                CAST((ISNULL(SUM(ocr.costo_total), 0) + CASE WHEN l.cliente_trae_lote = 1 THEN 0 ELSE ISNULL(l.costo_pieles_total, 0) END) / NULLIF(op.cantidad_pieles * 2.0, 0) AS DECIMAL(18,2)) AS CostoMaterialesPorLado
             FROM produccion.orden_produccion op
             INNER JOIN produccion.cliente c ON c.id = op.cliente_id
             INNER JOIN produccion.lote l ON l.id = op.lote_id
             LEFT JOIN produccion.orden_consumo_real ocr ON ocr.orden_produccion_id = op.id
             WHERE (@OrdenProduccionId IS NULL OR op.id = @OrdenProduccionId)
-            GROUP BY op.id, op.codigo, c.razon_social, l.codigo, op.cantidad_pieles
+            GROUP BY op.id, op.codigo, c.razon_social, l.codigo, op.cantidad_pieles, l.cliente_trae_lote, l.costo_pieles_total
             ORDER BY op.id DESC;
             """;
 
@@ -286,15 +288,46 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                 opp.id AS OrdenProcesoId,
                 pp.codigo AS ProcesoCodigo,
                 pp.nombre AS ProcesoNombre,
+                opp.fecha_inicio AS FechaInicio,
+                opp.fecha_fin AS FechaFin,
+                op.cantidad_pieles AS CantidadPieles,
+                opp.peso_base_kg AS PesoBaseKg,
+                i.id AS InsumoId,
+                i.codigo AS InsumoCodigo,
+                i.nombre AS InsumoNombre,
+                COALESCE(MAX(ocp.porcentaje), MAX(requested.porcentaje)) AS Porcentaje,
+                ISNULL(SUM(ocr.cantidad_consumida), 0) AS CantidadConsumida,
+                MAX(ocr.costo_unitario) AS CostoUnitario,
                 ISNULL(SUM(ocr.costo_total), 0) AS CostoMaterialesReal
             FROM produccion.orden_produccion op
             INNER JOIN produccion.orden_produccion_proceso opp ON opp.orden_produccion_id = op.id
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = opp.proceso_productivo_id
             LEFT JOIN produccion.orden_consumo_real ocr ON ocr.orden_produccion_id = op.id
                 AND ocr.orden_proceso_id = opp.id
+            LEFT JOIN inventario.insumo i ON i.id = ocr.insumo_id
+            LEFT JOIN produccion.orden_consumo_planificado ocp
+                ON ocp.orden_produccion_id = op.id
+                AND ocp.orden_proceso_id = opp.id
+                AND ocp.insumo_id = ocr.insumo_id
+            OUTER APPLY (
+                SELECT TOP 1
+                    COALESCE(
+                        sd.porcentaje,
+                        CAST(sd.cantidad_solicitada / NULLIF(opp.peso_base_kg, 0) AS decimal(9,4))
+                    ) AS porcentaje
+                FROM produccion.solicitud_insumo s
+                INNER JOIN produccion.solicitud_insumo_detalle sd
+                    ON sd.solicitud_insumo_id = s.id
+                    AND sd.insumo_id = ocr.insumo_id
+                WHERE s.orden_produccion_id = op.id
+                  AND s.orden_proceso_id = opp.id
+                ORDER BY s.solicitado_en DESC, s.id DESC
+            ) requested
             WHERE (@OrdenProduccionId IS NULL OR op.id = @OrdenProduccionId)
-            GROUP BY op.id, op.codigo, opp.id, pp.codigo, pp.nombre, opp.secuencia
-            ORDER BY op.id DESC, opp.secuencia;
+            GROUP BY op.id, op.codigo, opp.id, pp.codigo, pp.nombre, opp.secuencia,
+                opp.fecha_inicio, opp.fecha_fin, op.cantidad_pieles, opp.peso_base_kg,
+                i.id, i.codigo, i.nombre
+            ORDER BY op.id DESC, opp.secuencia, i.nombre;
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
