@@ -18,7 +18,6 @@ IF COL_LENGTH('produccion.producto_terminado', 'cantidad_lados_c') IS NULL
     ALTER TABLE produccion.producto_terminado ADD cantidad_lados_c decimal(18,2) NOT NULL CONSTRAINT DF_producto_terminado_lados_c DEFAULT (0);
 IF COL_LENGTH('produccion.producto_terminado', 'cantidad_lados_merma') IS NULL
     ALTER TABLE produccion.producto_terminado ADD cantidad_lados_merma decimal(18,2) NOT NULL CONSTRAINT DF_producto_terminado_lados_merma DEFAULT (0);
-
 -- Una piel terminada produce dos lados. La formula anterior dividia entre dos.
 IF EXISTS (
     SELECT 1

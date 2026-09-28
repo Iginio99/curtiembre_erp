@@ -228,6 +228,7 @@ class _UserUpsertDialogState extends State<UserUpsertDialog> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
+                          isExpanded: true,
                           initialValue: _selectedRolId,
                           decoration: const InputDecoration(labelText: 'Rol'),
                           items: widget.roles
@@ -249,6 +250,7 @@ class _UserUpsertDialogState extends State<UserUpsertDialog> {
                       const Gap(AppSpacing.lg),
                       Expanded(
                         child: DropdownButtonFormField<int>(
+                          isExpanded: true,
                           initialValue: _selectedAreaId,
                           decoration: const InputDecoration(labelText: 'Area'),
                           items: widget.areas

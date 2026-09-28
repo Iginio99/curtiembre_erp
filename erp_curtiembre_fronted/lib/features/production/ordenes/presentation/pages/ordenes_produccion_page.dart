@@ -122,8 +122,9 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
     if (accepted != true ||
         nombre.text.trim().isEmpty ||
         cargo.text.trim().isEmpty ||
-        !mounted)
+        !mounted) {
       return null;
+    }
     return context.read<OrdenesProduccionCubit>().createPersonal(
       nombre: nombre.text.trim(),
       cargo: cargo.text.trim(),
@@ -839,7 +840,7 @@ class _OrdenesFiltersCard extends StatelessWidget {
               Expanded(
                 flex: 5,
                 child: DropdownButtonFormField<int?>(
-                  isExpanded: true,
+                 isExpanded: true,
                   initialValue: state.selectedClienteId,
                   decoration: const InputDecoration(labelText: 'Cliente'),
                   items: [
@@ -865,7 +866,7 @@ class _OrdenesFiltersCard extends StatelessWidget {
               Expanded(
                 flex: 5,
                 child: DropdownButtonFormField<int?>(
-                  isExpanded: true,
+                 isExpanded: true,
                   initialValue: state.selectedLoteId,
                   decoration: const InputDecoration(labelText: 'Lote'),
                   items: [
@@ -903,8 +904,8 @@ class _OrdenesFiltersCard extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: DropdownButtonFormField<DateTime>(
-                  initialValue: selectedMonth,
                   isExpanded: true,
+                  initialValue: selectedMonth,
                   decoration: const InputDecoration(
                     labelText: 'Mes',
                     prefixIcon: Icon(Icons.calendar_month_outlined),

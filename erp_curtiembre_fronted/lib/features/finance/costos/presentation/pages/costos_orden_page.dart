@@ -327,6 +327,7 @@ class _CostosOrdenFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 360,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.ordenProduccionIdFilter,
                   decoration: const InputDecoration(
                     labelText: 'Orden de produccion',
@@ -351,6 +352,7 @@ class _CostosOrdenFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.periodoCostoIdFilter,
                   decoration: const InputDecoration(
                     labelText: 'Periodo de costo',
@@ -373,6 +375,7 @@ class _CostosOrdenFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: state.estadoFilter,
                   decoration: const InputDecoration(labelText: 'Estado'),
                   items: const [

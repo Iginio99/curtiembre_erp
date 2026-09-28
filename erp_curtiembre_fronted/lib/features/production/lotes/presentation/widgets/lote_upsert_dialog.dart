@@ -157,6 +157,7 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _selectedClienteId,
                   items: widget.clienteOptions
                       .map(
@@ -175,6 +176,7 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
                 ),
                 const Gap(AppSpacing.md),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _selectedTipoPielId,
                   items: widget.tipoPielOptions
                       .map(

@@ -1,5 +1,6 @@
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
+import 'package:erp_curtiembre_fronted/core/theme/app_colors.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_radius.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/core/theme/theme_mode_controller.dart';
@@ -18,6 +19,7 @@ class AppShell extends StatelessWidget {
     this.breadcrumbs = const [],
     this.alertCount,
     this.accessibleRoutes = const {},
+    this.showTopbar = true,
   });
 
   final Widget child;
@@ -29,13 +31,14 @@ class AppShell extends StatelessWidget {
   final List<String> breadcrumbs;
   final int? alertCount;
   final Set<String> accessibleRoutes;
+  final bool showTopbar;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth <= AppBreakpoints.tablet;
-        final compactSidebar = constraints.maxWidth < 1180;
+        const compactSidebar = false;
 
         return Scaffold(
           drawer: isMobile
@@ -56,7 +59,7 @@ class AppShell extends StatelessWidget {
               children: [
                 if (!isMobile)
                   SizedBox(
-                    width: compactSidebar ? 76 : 252,
+                    width: 250,
                     child: _Sidebar(
                       currentPath: currentPath,
                       compact: compactSidebar,
@@ -67,15 +70,16 @@ class AppShell extends StatelessWidget {
                 Expanded(
                   child: Column(
                     children: [
-                      _Topbar(
-                        title: title,
-                        breadcrumbs: breadcrumbs,
-                        compact: isMobile,
-                        userName: userName,
-                        roleName: roleName,
-                        alertCount: alertCount,
-                        onSignOut: onSignOut,
-                      ),
+                      if (showTopbar)
+                        _Topbar(
+                          title: title,
+                          breadcrumbs: breadcrumbs,
+                          compact: isMobile,
+                          userName: userName,
+                          roleName: roleName,
+                          alertCount: alertCount,
+                          onSignOut: onSignOut,
+                        ),
                       Expanded(child: child),
                     ],
                   ),
@@ -110,92 +114,115 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final baseTheme = Theme.of(context);
+    final sidebarColors = const ColorScheme.dark(
+      primary: AppColors.primary,
+      onPrimary: Colors.white,
+      primaryContainer: AppColors.primary,
+      onPrimaryContainer: Colors.white,
+      surface: Color(0xFF2A2A2C),
+      onSurface: Color(0xFFEFEFF1),
+      onSurfaceVariant: Color(0xFFB8B8BC),
+      outlineVariant: Color(0xFF444448),
+    );
+    final sidebarTheme = baseTheme.copyWith(
+      colorScheme: sidebarColors,
+      dividerColor: const Color(0xFF444448),
+      expansionTileTheme: const ExpansionTileThemeData(
+        iconColor: Color(0xFFEFEFF1),
+        collapsedIconColor: Color(0xFFB8B8BC),
+        textColor: Color(0xFFEFEFF1),
+        collapsedTextColor: Color(0xFFEFEFF1),
+      ),
+    );
 
-    return Material(
-      color: colors.surfaceContainerLow,
-      child: Column(
-        crossAxisAlignment: compact
-            ? CrossAxisAlignment.center
-            : CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              compact ? AppSpacing.md : AppSpacing.lg,
-              AppSpacing.lg,
-              compact ? AppSpacing.md : AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: compact
-                ? const Tooltip(
-                    message: 'CITEccal Trujillo',
-                    child: _BrandMark(),
-                  )
-                : const _BrandLockup(),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? AppSpacing.sm : AppSpacing.md,
+    return Theme(
+      data: sidebarTheme,
+      child: Material(
+        color: const Color(0xFF2A2A2C),
+        child: Column(
+          crossAxisAlignment: compact
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? AppSpacing.md : AppSpacing.lg,
+                AppSpacing.lg,
+                compact ? AppSpacing.md : AppSpacing.lg,
+                AppSpacing.lg,
               ),
-              children: [
-                for (final item in _navigationItems.where(
-                  (item) =>
-                      !item.route.startsWith('/inventario/') &&
-                      !item.route.startsWith('/seguridad/') &&
-                      !item.route.startsWith('/configuracion/') &&
-                      !item.route.startsWith('/produccion/') &&
-                      !item.route.startsWith('/finanzas/') &&
-                      accessibleRoutes.contains(item.route),
-                ))
-                  _SidebarItem(
-                    item: item,
-                    selected: item.matches(currentPath),
-                    compact: compact,
-                  ),
-                _InventoryNavigationGroup(
-                  currentPath: currentPath,
-                  compact: compact,
-                  accessibleRoutes: accessibleRoutes,
+              child: compact
+                  ? const Tooltip(
+                      message: 'CITEccal Trujillo ERP',
+                      child: _BrandMark(),
+                    )
+                  : const _BrandLockup(),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? AppSpacing.sm : AppSpacing.md,
                 ),
-                for (final group in _moduleNavigationGroups)
-                  _ModuleNavigationGroup(
-                    group: group,
+                children: [
+                  for (final item in _navigationItems.where(
+                    (item) =>
+                        !item.route.startsWith('/inventario/') &&
+                        !item.route.startsWith('/seguridad/') &&
+                        !item.route.startsWith('/configuracion/') &&
+                        !item.route.startsWith('/produccion/') &&
+                        !item.route.startsWith('/finanzas/') &&
+                        accessibleRoutes.contains(item.route),
+                  ))
+                    _SidebarItem(
+                      item: item,
+                      selected: item.matches(currentPath),
+                      compact: compact,
+                    ),
+                  _InventoryNavigationGroup(
                     currentPath: currentPath,
                     compact: compact,
                     accessibleRoutes: accessibleRoutes,
                   ),
-              ],
+                  for (final group in _moduleNavigationGroups)
+                    _ModuleNavigationGroup(
+                      group: group,
+                      currentPath: currentPath,
+                      compact: compact,
+                      accessibleRoutes: accessibleRoutes,
+                    ),
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: EdgeInsets.all(compact ? AppSpacing.sm : AppSpacing.md),
-            child: Column(
-              children: [
-                _SidebarItem(
-                  item: const _NavigationItem(
-                    label: 'Ayuda',
-                    icon: Icons.help_outline_rounded,
-                    route: '/home',
+            const Divider(height: 1),
+            Padding(
+              padding: EdgeInsets.all(compact ? AppSpacing.sm : AppSpacing.md),
+              child: Column(
+                children: [
+                  _SidebarItem(
+                    item: const _NavigationItem(
+                      label: 'Ayuda',
+                      icon: Icons.help_outline_rounded,
+                      route: '/home',
+                    ),
+                    selected: false,
+                    compact: compact,
                   ),
-                  selected: false,
-                  compact: compact,
-                ),
-                _SidebarItem(
-                  item: const _NavigationItem(
-                    label: 'Cerrar sesión',
-                    icon: Icons.logout_rounded,
-                    route: '',
+                  _SidebarItem(
+                    item: const _NavigationItem(
+                      label: 'Cerrar sesión',
+                      icon: Icons.logout_rounded,
+                      route: '',
+                    ),
+                    selected: false,
+                    compact: compact,
+                    onTap: onSignOut,
                   ),
-                  selected: false,
-                  compact: compact,
-                  onTap: onSignOut,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -266,7 +293,7 @@ class _BrandMark extends StatelessWidget {
       height: 38,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(AppRadius.input),
       ),
       child: Icon(
@@ -284,22 +311,32 @@ class _BrandLockup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _BrandMark(),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Text.rich(
+          TextSpan(
             children: [
-              Text('CITEccal Trujillo', style: theme.textTheme.titleSmall),
-              Text(
-                'ERP Curtiembre',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              const TextSpan(text: 'CITEccal Trujillo'),
+              TextSpan(
+                text: ' ERP',
+                style: TextStyle(color: theme.colorScheme.primary),
               ),
             ],
+          ),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontStyle: FontStyle.italic,
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'GESTIÓN DE CURTIEMBRE',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: const Color(0xFF9B9BA1),
+            letterSpacing: 1.1,
           ),
         ),
       ],
@@ -381,11 +418,11 @@ class _SidebarItem extends StatelessWidget {
       minLeadingWidth: 22,
       leading: Icon(item.icon, size: 20),
       title: compact ? null : Text(item.label),
-      iconColor: selected ? colors.primary : colors.onSurfaceVariant,
-      textColor: selected ? colors.primary : colors.onSurface,
+      iconColor: selected ? Colors.white : colors.onSurfaceVariant,
+      textColor: selected ? Colors.white : colors.onSurface,
       selected: selected,
-      selectedTileColor: colors.primaryContainer.withValues(alpha: 0.45),
-      selectedColor: colors.primary,
+      selectedTileColor: colors.primary,
+      selectedColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.input),
       ),
@@ -430,8 +467,8 @@ class _Topbar extends StatelessWidget {
         : userName.trim().substring(0, 1).toUpperCase();
 
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      height: 70,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border(bottom: BorderSide(color: colors.outlineVariant)),
@@ -505,11 +542,37 @@ class _Topbar extends StatelessWidget {
                 ),
               ),
             ],
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: colors.primaryContainer,
-              foregroundColor: colors.onPrimaryContainer,
-              child: Text(initials, style: theme.textTheme.labelLarge),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  child: Text(initials, style: theme.textTheme.labelLarge),
+                ),
+                if (!compact) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(userName, style: theme.textTheme.labelLarge),
+                      Text(
+                        roleName,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -806,11 +869,6 @@ const _navigationItems = [
     label: 'Inicio',
     icon: Icons.grid_view_rounded,
     route: '/home',
-  ),
-  _NavigationItem(
-    label: 'Alertas',
-    icon: Icons.warning_amber_rounded,
-    route: '/alertas',
   ),
   _NavigationItem(
     label: 'Seguridad',

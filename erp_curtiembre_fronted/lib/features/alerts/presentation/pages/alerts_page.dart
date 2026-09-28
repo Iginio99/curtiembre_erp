@@ -18,7 +18,8 @@ class AlertsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<AlertsCubit, AlertsState>(
       listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage && current.errorMessage != null,
+          previous.errorMessage != current.errorMessage &&
+          current.errorMessage != null,
       listener: (context, state) {
         final message = state.errorMessage;
         if (message == null) {
@@ -54,21 +55,24 @@ class AlertsPage extends StatelessWidget {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    if (state.status == AlertsStatus.error && state.summary == null) {
+                    if (state.status == AlertsStatus.error &&
+                        state.summary == null) {
                       return _CenteredContent(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             AppMessageCard.error(
                               title: 'No pudimos cargar alertas',
-                              message: state.errorMessage ??
+                              message:
+                                  state.errorMessage ??
                                   'Intenta nuevamente para consultar la bandeja.',
                             ),
                             const Gap(AppSpacing.lg),
                             AppButton.secondary(
                               label: 'Reintentar',
                               icon: Icons.refresh_rounded,
-                              onPressed: () => context.read<AlertsCubit>().initialize(),
+                              onPressed: () =>
+                                  context.read<AlertsCubit>().initialize(),
                             ),
                           ],
                         ),
@@ -78,7 +82,8 @@ class AlertsPage extends StatelessWidget {
                     final summary = state.summary;
                     return LayoutBuilder(
                       builder: (context, constraints) {
-                        final isWide = constraints.maxWidth >= AppBreakpoints.desktop;
+                        final isWide =
+                            constraints.maxWidth >= AppBreakpoints.desktop;
                         final compactHeight = constraints.maxHeight < 920;
 
                         final content = Column(
@@ -88,25 +93,28 @@ class AlertsPage extends StatelessWidget {
                             const Gap(AppSpacing.xl),
                             _AlertsFilterCard(
                               state: state,
-                              onApply: ({
-                                String? estado,
-                                String? severidad,
-                                String? tipoAlerta,
-                                String? moduloOrigen,
-                              }) =>
-                                  context.read<AlertsCubit>().applyFilters(
+                              onApply:
+                                  ({
+                                    String? estado,
+                                    String? severidad,
+                                    String? tipoAlerta,
+                                    String? moduloOrigen,
+                                  }) =>
+                                      context.read<AlertsCubit>().applyFilters(
                                         estado: estado,
                                         severidad: severidad,
                                         tipoAlerta: tipoAlerta,
                                         moduloOrigen: moduloOrigen,
                                       ),
-                              onClear: () => context.read<AlertsCubit>().clearFilters(),
+                              onClear: () =>
+                                  context.read<AlertsCubit>().clearFilters(),
                             ),
                             const Gap(AppSpacing.xl),
                             Expanded(
                               child: isWide
                                   ? Row(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         Expanded(
                                           flex: 9,
@@ -121,9 +129,13 @@ class AlertsPage extends StatelessWidget {
                                     )
                                   : Column(
                                       children: [
-                                        Expanded(child: _AlertsListCard(state: state)),
+                                        Expanded(
+                                          child: _AlertsListCard(state: state),
+                                        ),
                                         const Gap(AppSpacing.xl),
-                                        Expanded(child: _AlertDetailCard(state: state)),
+                                        Expanded(
+                                          child: _AlertDetailCard(state: state),
+                                        ),
                                       ],
                                     ),
                             ),
@@ -143,26 +155,31 @@ class AlertsPage extends StatelessWidget {
                                 const Gap(AppSpacing.xl),
                                 _AlertsFilterCard(
                                   state: state,
-                                  onApply: ({
-                                    String? estado,
-                                    String? severidad,
-                                    String? tipoAlerta,
-                                    String? moduloOrigen,
-                                  }) =>
-                                      context.read<AlertsCubit>().applyFilters(
+                                  onApply:
+                                      ({
+                                        String? estado,
+                                        String? severidad,
+                                        String? tipoAlerta,
+                                        String? moduloOrigen,
+                                      }) => context
+                                          .read<AlertsCubit>()
+                                          .applyFilters(
                                             estado: estado,
                                             severidad: severidad,
                                             tipoAlerta: tipoAlerta,
                                             moduloOrigen: moduloOrigen,
                                           ),
-                                  onClear: () => context.read<AlertsCubit>().clearFilters(),
+                                  onClear: () => context
+                                      .read<AlertsCubit>()
+                                      .clearFilters(),
                                 ),
                                 const Gap(AppSpacing.xl),
                                 if (isWide)
                                   SizedBox(
                                     height: panelHeight,
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         Expanded(
                                           flex: 9,
@@ -213,6 +230,11 @@ class _AlertsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Resumen de alertas: ${summary?.totalPendientes ?? 0}',
+      child: const SizedBox.shrink(),
+    );
+    /*
     final theme = Theme.of(context);
 
     return Container(
@@ -264,9 +286,11 @@ class _AlertsHero extends StatelessWidget {
         ],
       ),
     );
+    */
   }
 }
 
+// ignore: unused_element
 class _HeroMetric extends StatelessWidget {
   const _HeroMetric({required this.label, required this.value});
 
@@ -316,7 +340,8 @@ class _AlertsFilterCard extends StatefulWidget {
     String? severidad,
     String? tipoAlerta,
     String? moduloOrigen,
-  }) onApply;
+  })
+  onApply;
   final VoidCallback onClear;
 
   @override
@@ -374,7 +399,11 @@ class _AlertsFilterCardState extends State<_AlertsFilterCard> {
           _DropdownField(
             label: 'Tipo',
             value: _tipo,
-            options: const ['STOCK_BAJO', 'ORDEN_RETRASADA', 'COMPRA_PENDIENTE_APROBACION'],
+            options: const [
+              'STOCK_BAJO',
+              'ORDEN_RETRASADA',
+              'COMPRA_PENDIENTE_APROBACION',
+            ],
             onChanged: (value) => setState(() => _tipo = value),
           ),
           _DropdownField(
@@ -437,8 +466,8 @@ class _DropdownField extends StatelessWidget {
     return SizedBox(
       width: 220,
       child: DropdownButtonFormField<String>(
-        initialValue: options.contains(value) ? value : null,
         isExpanded: true,
+        initialValue: options.contains(value) ? value : null,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
@@ -446,18 +475,12 @@ class _DropdownField extends StatelessWidget {
         items: [
           const DropdownMenuItem<String>(
             value: null,
-            child: Text(
-              'Todos',
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text('Todos', overflow: TextOverflow.ellipsis),
           ),
           ...options.map(
             (option) => DropdownMenuItem<String>(
               value: option,
-              child: Text(
-                option,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(option, overflow: TextOverflow.ellipsis),
             ),
           ),
         ],
@@ -481,77 +504,85 @@ class _AlertsListCard extends StatelessWidget {
         child: state.loadingList
             ? const Center(child: CircularProgressIndicator())
             : state.alerts.isEmpty
-                ? const _CenteredContent(
-                    child: AppMessageCard.info(
-                      title: 'Sin alertas visibles',
-                      message: 'No encontramos alertas para los filtros actuales.',
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: state.alerts.length,
-                    separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                    itemBuilder: (context, index) {
-                      final item = state.alerts[index];
-                      final selected = state.selectedAlert?.id == item.id;
-                      return InkWell(
+            ? const _CenteredContent(
+                child: AppMessageCard.info(
+                  title: 'Sin alertas visibles',
+                  message: 'No encontramos alertas para los filtros actuales.',
+                ),
+              )
+            : ListView.separated(
+                itemCount: state.alerts.length,
+                separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                itemBuilder: (context, index) {
+                  final item = state.alerts[index];
+                  final selected = state.selectedAlert?.id == item.id;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () =>
+                        context.read<AlertsCubit>().selectAlert(item.id),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? Theme.of(context).colorScheme.primaryContainer
+                                  .withValues(alpha: 0.55)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(20),
-                        onTap: () => context.read<AlertsCubit>().selectAlert(item.id),
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                    .withValues(alpha: 0.55)
-                                : Theme.of(context).colorScheme.surfaceContainerLowest,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: selected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        border: Border.all(
+                          color: selected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      item.titulo,
-                                      style: Theme.of(context).textTheme.titleMedium,
-                                    ),
-                                  ),
-                                  _SeverityChip(severidad: item.severidad),
-                                ],
+                              Expanded(
+                                child: Text(
+                                  item.titulo,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
+                                ),
                               ),
-                              const Gap(AppSpacing.xs),
-                              Text(
-                                item.mensaje,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                              const Gap(AppSpacing.md),
-                              Wrap(
-                                spacing: AppSpacing.sm,
-                                runSpacing: AppSpacing.sm,
-                                children: [
-                                  _MiniChip(label: item.estado),
-                                  _MiniChip(label: item.moduloOrigen),
-                                  _MiniChip(label: item.tipoAlerta),
-                                  _MiniChip(label: _formatDateTime(item.generadaEn)),
-                                ],
+                              _SeverityChip(severidad: item.severidad),
+                            ],
+                          ),
+                          const Gap(AppSpacing.xs),
+                          Text(
+                            item.mensaje,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                          const Gap(AppSpacing.md),
+                          Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: [
+                              _MiniChip(label: item.estado),
+                              _MiniChip(label: item.moduloOrigen),
+                              _MiniChip(label: item.tipoAlerta),
+                              _MiniChip(
+                                label: _formatDateTime(item.generadaEn),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -575,149 +606,170 @@ class _AlertDetailCard extends StatelessWidget {
         child: state.loadingDetail
             ? const Center(child: CircularProgressIndicator())
             : detail == null
-                ? const _CenteredContent(
-                    child: AppMessageCard.info(
-                      title: 'Sin seleccion',
-                      message: 'Escoge una alerta de la bandeja para revisar su detalle.',
-                    ),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Wrap(
-                              spacing: AppSpacing.sm,
-                              runSpacing: AppSpacing.sm,
-                              children: [
-                                _SeverityChip(severidad: detail.severidad),
-                                _MiniChip(label: detail.estado),
-                                if ((detail.entidadOrigen ?? '').isNotEmpty)
-                                  _MiniChip(label: detail.entidadOrigen!),
-                                if (detail.entidadOrigenId != null)
-                                  _MiniChip(label: 'ID ${detail.entidadOrigenId}'),
-                              ],
-                            ),
-                          ),
-                          Wrap(
-                            spacing: AppSpacing.md,
-                            runSpacing: AppSpacing.md,
+            ? const _CenteredContent(
+                child: AppMessageCard.info(
+                  title: 'Sin seleccion',
+                  message:
+                      'Escoge una alerta de la bandeja para revisar su detalle.',
+                ),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: [
-                              AppButton.secondary(
-                                label: 'Marcar leida',
-                                icon: Icons.mark_email_read_outlined,
-                                isLoading: state.loadingAction,
-                                onPressed: detail.estado.toUpperCase() == 'PENDIENTE'
-                                    ? () => context.read<AlertsCubit>().markSelectedAsRead()
-                                    : null,
-                              ),
-                              AppButton.secondary(
-                                label: 'Cerrar alerta',
-                                icon: Icons.task_alt_outlined,
-                                isLoading: state.loadingAction,
-                                onPressed: detail.estado.toUpperCase() == 'CERRADA'
-                                    ? null
-                                    : () => _showCloseDialog(context),
-                              ),
+                              _SeverityChip(severidad: detail.severidad),
+                              _MiniChip(label: detail.estado),
+                              if ((detail.entidadOrigen ?? '').isNotEmpty)
+                                _MiniChip(label: detail.entidadOrigen!),
+                              if (detail.entidadOrigenId != null)
+                                _MiniChip(
+                                  label: 'ID ${detail.entidadOrigenId}',
+                                ),
                             ],
                           ),
-                        ],
-                      ),
-                      const Gap(AppSpacing.lg),
-                      Text(
-                        detail.titulo,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const Gap(AppSpacing.sm),
-                      Text(
-                        detail.mensaje,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              height: 1.45,
+                        ),
+                        Wrap(
+                          spacing: AppSpacing.md,
+                          runSpacing: AppSpacing.md,
+                          children: [
+                            AppButton.secondary(
+                              label: 'Marcar leida',
+                              icon: Icons.mark_email_read_outlined,
+                              isLoading: state.loadingAction,
+                              onPressed:
+                                  detail.estado.toUpperCase() == 'PENDIENTE'
+                                  ? () => context
+                                        .read<AlertsCubit>()
+                                        .markSelectedAsRead()
+                                  : null,
                             ),
+                            AppButton.secondary(
+                              label: 'Cerrar alerta',
+                              icon: Icons.task_alt_outlined,
+                              isLoading: state.loadingAction,
+                              onPressed:
+                                  detail.estado.toUpperCase() == 'CERRADA'
+                                  ? null
+                                  : () => _showCloseDialog(context),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Gap(AppSpacing.lg),
+                    Text(
+                      detail.titulo,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Gap(AppSpacing.sm),
+                    Text(
+                      detail.mensaje,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.45,
                       ),
-                      const Gap(AppSpacing.lg),
-                      Wrap(
-                        spacing: AppSpacing.md,
-                        runSpacing: AppSpacing.md,
-                        children: [
-                          _DetailStat(label: 'Generada', value: _formatDateTime(detail.generadaEn)),
-                          _DetailStat(
-                            label: 'Leida',
-                            value: detail.leidaEn == null
-                                ? 'Pendiente'
-                                : _formatDateTime(detail.leidaEn!),
-                          ),
-                          _DetailStat(
-                            label: 'Cerrada',
-                            value: detail.cerradaEn == null
-                                ? 'Abierta'
-                                : _formatDateTime(detail.cerradaEn!),
-                          ),
-                        ],
-                      ),
-                      const Gap(AppSpacing.xl),
-                      Text(
-                        'Historial',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const Gap(AppSpacing.md),
-                      state.history.isEmpty
-                            ? const _CenteredContent(
-                                child: AppMessageCard.info(
-                                  title: 'Sin historial',
-                                  message: 'Todavia no hay cambios registrados para esta alerta.',
+                    ),
+                    const Gap(AppSpacing.lg),
+                    Wrap(
+                      spacing: AppSpacing.md,
+                      runSpacing: AppSpacing.md,
+                      children: [
+                        _DetailStat(
+                          label: 'Generada',
+                          value: _formatDateTime(detail.generadaEn),
+                        ),
+                        _DetailStat(
+                          label: 'Leida',
+                          value: detail.leidaEn == null
+                              ? 'Pendiente'
+                              : _formatDateTime(detail.leidaEn!),
+                        ),
+                        _DetailStat(
+                          label: 'Cerrada',
+                          value: detail.cerradaEn == null
+                              ? 'Abierta'
+                              : _formatDateTime(detail.cerradaEn!),
+                        ),
+                      ],
+                    ),
+                    const Gap(AppSpacing.xl),
+                    Text(
+                      'Historial',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Gap(AppSpacing.md),
+                    state.history.isEmpty
+                        ? const _CenteredContent(
+                            child: AppMessageCard.info(
+                              title: 'Sin historial',
+                              message:
+                                  'Todavia no hay cambios registrados para esta alerta.',
+                            ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: state.history.length,
+                            separatorBuilder: (_, _) =>
+                                const Gap(AppSpacing.md),
+                            itemBuilder: (context, index) {
+                              final item = state.history[index];
+                              return Container(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLowest,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outlineVariant,
+                                  ),
                                 ),
-                              )
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: state.history.length,
-                                separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                                itemBuilder: (context, index) {
-                                  final item = state.history[index];
-                                  return Container(
-                                    padding: const EdgeInsets.all(AppSpacing.lg),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surfaceContainerLowest,
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                        color: Theme.of(context).colorScheme.outlineVariant,
-                                      ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${item.estadoAnterior ?? 'Sin estado'} -> ${item.estadoNuevo}',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall,
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${item.estadoAnterior ?? 'Sin estado'} -> ${item.estadoNuevo}',
-                                          style: Theme.of(context).textTheme.titleSmall,
-                                        ),
-                                        const Gap(AppSpacing.xs),
-                                        Text(
-                                          item.comentario ?? 'Sin comentario.',
-                                          style: Theme.of(context).textTheme.bodyMedium,
-                                        ),
-                                        const Gap(AppSpacing.sm),
-                                        Text(
-                                          '${item.cambiadoPorNombre ?? 'Sistema'} · ${_formatDateTime(item.cambiadoEn)}',
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                        ),
-                                      ],
+                                    const Gap(AppSpacing.xs),
+                                    Text(
+                                      item.comentario ?? 'Sin comentario.',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
                                     ),
-                                  );
-                                },
-                              ),
-                    ],
-                  ),
-                  ),
+                                    const Gap(AppSpacing.sm),
+                                    Text(
+                                      '${item.cambiadoPorNombre ?? 'Sistema'} · ${_formatDateTime(item.cambiadoEn)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -755,8 +807,8 @@ class _AlertDetailCard extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       await context.read<AlertsCubit>().closeSelected(
-            comentario: controller.text,
-          );
+        comentario: controller.text,
+      );
     }
   }
 }
@@ -883,8 +935,8 @@ class _SurfaceCard extends StatelessWidget {
           Text(
             subtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const Gap(AppSpacing.lg),
           child,

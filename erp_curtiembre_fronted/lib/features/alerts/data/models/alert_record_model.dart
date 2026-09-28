@@ -58,8 +58,12 @@ class AlertDetailModel extends AlertDetail {
       entidadOrigen: json['entidadOrigen'] as String?,
       entidadOrigenId: (json['entidadOrigenId'] as num?)?.toInt(),
       generadaEn: DateTime.parse(json['generadaEn'] as String),
-      leidaEn: json['leidaEn'] == null ? null : DateTime.parse(json['leidaEn'] as String),
-      cerradaEn: json['cerradaEn'] == null ? null : DateTime.parse(json['cerradaEn'] as String),
+      leidaEn: json['leidaEn'] == null
+          ? null
+          : DateTime.parse(json['leidaEn'] as String),
+      cerradaEn: json['cerradaEn'] == null
+          ? null
+          : DateTime.parse(json['cerradaEn'] as String),
     );
   }
 }
@@ -95,6 +99,11 @@ class AlertsSummaryModel extends AlertsSummary {
     required super.totalAlta,
     required super.totalMedia,
     required super.totalBaja,
+    required super.stockBajo,
+    required super.ordenesActivas,
+    required super.comprasPendientes,
+    required super.ordenesRetrasadas,
+    required super.costoPromedioOrden,
     required super.recientes,
   });
 
@@ -109,6 +118,11 @@ class AlertsSummaryModel extends AlertsSummary {
       totalAlta: (json['totalAlta'] as num?)?.toInt() ?? 0,
       totalMedia: (json['totalMedia'] as num?)?.toInt() ?? 0,
       totalBaja: (json['totalBaja'] as num?)?.toInt() ?? 0,
+      stockBajo: (json['stockBajo'] as num?)?.toInt() ?? 0,
+      ordenesActivas: (json['ordenesActivas'] as num?)?.toInt() ?? 0,
+      comprasPendientes: (json['comprasPendientes'] as num?)?.toInt() ?? 0,
+      ordenesRetrasadas: (json['ordenesRetrasadas'] as num?)?.toInt() ?? 0,
+      costoPromedioOrden: (json['costoPromedioOrden'] as num?)?.toDouble() ?? 0,
       recientes: recientes,
     );
   }

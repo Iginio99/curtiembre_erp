@@ -219,6 +219,7 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
                 ),
                 const Gap(AppSpacing.md),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _tipoBien,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de bien',
@@ -241,6 +242,7 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
                 ),
                 const Gap(AppSpacing.md),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _unidadMedidaId,
                   decoration: const InputDecoration(
                     labelText: 'Unidad de medida',

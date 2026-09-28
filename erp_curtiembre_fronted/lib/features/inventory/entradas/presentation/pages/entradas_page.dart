@@ -587,6 +587,7 @@ class _RecepcionCompraPanel extends StatelessWidget {
           ),
           const Gap(AppSpacing.lg),
           DropdownButtonFormField<int?>(
+            isExpanded: true,
             initialValue: state.selectedReceivableOrderId,
             decoration: const InputDecoration(labelText: 'Orden de compra'),
             items: [
@@ -793,6 +794,7 @@ class _StockDraftCardState extends State<_StockDraftCard> {
           ),
           const Gap(AppSpacing.md),
           DropdownButtonFormField<int>(
+            isExpanded: true,
             initialValue: widget.draft.insumoId,
             decoration: const InputDecoration(labelText: 'Insumo'),
             items: widget.insumos

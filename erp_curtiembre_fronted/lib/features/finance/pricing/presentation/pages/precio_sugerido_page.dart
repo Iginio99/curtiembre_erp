@@ -186,6 +186,7 @@ class _PrecioSugeridoPageState extends State<PrecioSugeridoPage> {
                                 SizedBox(
                                   width: 420,
                                   child: DropdownButtonFormField<int?>(
+                                    isExpanded: true,
                                     initialValue: state.selectedOrderId,
                                     decoration: const InputDecoration(
                                       labelText: 'Orden de produccion',

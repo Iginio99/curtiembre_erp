@@ -115,13 +115,8 @@ class _KardexPageState extends State<KardexPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Consulta la trazabilidad de cada insumo, sus movimientos y el costo histórico asociado.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Gap(AppSpacing.xl),
+                    _KardexSummary(items: state.items),
+                    const Gap(AppSpacing.lg),
                     _KardexFiltersCard(
                       state: state,
                       usuarioResponsableController:
@@ -201,6 +196,77 @@ class _KardexPageState extends State<KardexPage> {
   }
 }
 
+class _KardexSummary extends StatelessWidget {
+  const _KardexSummary({required this.items});
+
+  final List<KardexRecord> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = items.fold<double>(0, (sum, item) => sum + item.entrada);
+    final exits = items.fold<double>(0, (sum, item) => sum + item.salida);
+    final value = items.fold<double>(0, (sum, item) => sum + item.costoTotal);
+    final products = items.map((item) => item.insumoId).toSet().length;
+    final metrics = [
+      ('Movimientos', '${items.length}', Icons.swap_vert_rounded),
+      ('Insumos', '$products', Icons.inventory_2_outlined),
+      ('Entradas', _formatQuantity(entries), Icons.south_west_rounded),
+      ('Salidas', _formatQuantity(exits), Icons.north_east_rounded),
+      ('Valor movido', _formatMoney(value), Icons.payments_outlined),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth >= 1000
+            ? (constraints.maxWidth - AppSpacing.md * 4) / 5
+            : 210.0;
+        return Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          children: metrics
+              .map(
+                (metric) => SizedBox(
+                  width: width,
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(metric.$3, color: Theme.of(context).colorScheme.primary),
+                        ),
+                        const Gap(AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(metric.$1, style: Theme.of(context).textTheme.labelMedium),
+                              Text(metric.$2, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
 class _KardexFiltersCard extends StatelessWidget {
   const _KardexFiltersCard({
     required this.state,
@@ -265,8 +331,8 @@ class _KardexFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 280,
                 child: DropdownButtonFormField<int?>(
-                  initialValue: state.selectedInsumoId,
                   isExpanded: true,
+                  initialValue: state.selectedInsumoId,
                   decoration: const InputDecoration(labelText: 'Insumo'),
                   items: [
                     const DropdownMenuItem<int?>(
@@ -289,8 +355,8 @@ class _KardexFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<String?>(
-                  initialValue: state.tipoMovimientoFilter,
                   isExpanded: true,
+                  initialValue: state.tipoMovimientoFilter,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de movimiento',
                   ),
@@ -314,8 +380,8 @@ class _KardexFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<String?>(
-                  initialValue: state.documentoTipoFilter,
                   isExpanded: true,
+                  initialValue: state.documentoTipoFilter,
                   decoration: const InputDecoration(
                     labelText: 'Documento tipo',
                   ),
@@ -400,15 +466,24 @@ class _KardexFiltersCard extends StatelessWidget {
   }
 }
 
-class _KardexListPanel extends StatelessWidget {
+class _KardexListPanel extends StatefulWidget {
   const _KardexListPanel({required this.state, required this.onRetry});
 
   final KardexState state;
   final VoidCallback onRetry;
 
   @override
+  State<_KardexListPanel> createState() => _KardexListPanelState();
+}
+
+class _KardexListPanelState extends State<_KardexListPanel> {
+  int? selectedId;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final state = widget.state;
+    final selected = state.items.where((item) => item.id == selectedId).firstOrNull;
 
     return AppSurfaceCard(
       padding: EdgeInsets.zero,
@@ -456,7 +531,7 @@ class _KardexListPanel extends StatelessWidget {
                       AppButton.secondary(
                         label: 'Reintentar',
                         icon: Icons.refresh_rounded,
-                        onPressed: onRetry,
+                        onPressed: widget.onRetry,
                       ),
                     ],
                   ),
@@ -474,18 +549,25 @@ class _KardexListPanel extends StatelessWidget {
                           ),
                         ),
                       )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md,
-                          AppSpacing.xs,
-                          AppSpacing.md,
-                          AppSpacing.md,
-                        ),
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _KardexTile(item: item);
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wide = constraints.maxWidth >= 980;
+                          final table = _KardexMovementsTable(
+                            items: state.items,
+                            selectedId: selectedId,
+                            onSelected: (item) => setState(() => selectedId = item.id),
+                          );
+                          if (!wide) return table;
+                          return Row(
+                            children: [
+                              Expanded(flex: 7, child: table),
+                              const VerticalDivider(width: 1),
+                              SizedBox(
+                                width: 350,
+                                child: _KardexDetailPanel(item: selected),
+                              ),
+                            ],
+                          );
                         },
                       ),
             },
@@ -496,8 +578,109 @@ class _KardexListPanel extends StatelessWidget {
   }
 }
 
-class _KardexTile extends StatelessWidget {
-  const _KardexTile({required this.item});
+class _KardexMovementsTable extends StatelessWidget {
+  const _KardexMovementsTable({required this.items, required this.selectedId, required this.onSelected});
+
+  final List<KardexRecord> items;
+  final int? selectedId;
+  final ValueChanged<KardexRecord> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Table(
+          columnWidths: const {
+            0: FlexColumnWidth(2.6),
+            1: FlexColumnWidth(1.25),
+            2: FlexColumnWidth(1.25),
+            3: FlexColumnWidth(1.05),
+            4: FlexColumnWidth(1.05),
+            5: FlexColumnWidth(1.05),
+            6: FlexColumnWidth(1.25),
+          },
+          children: [
+            const TableRow(
+              decoration: BoxDecoration(color: Color(0xFF343437)),
+              children: [
+                _KardexHeaderCell('INSUMO'),
+                _KardexHeaderCell('FECHA'),
+                _KardexHeaderCell('MOVIMIENTO'),
+                _KardexHeaderCell('ENTRADA', end: true),
+                _KardexHeaderCell('SALIDA', end: true),
+                _KardexHeaderCell('STOCK', end: true),
+                _KardexHeaderCell('COSTO TOTAL', end: true),
+              ],
+            ),
+            ...items.map(
+              (item) => TableRow(
+                decoration: BoxDecoration(
+                  color: item.id == selectedId
+                      ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: .55)
+                      : Theme.of(context).colorScheme.surface,
+                ),
+                children: [
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.insumoCodigo, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(item.insumoNombre, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                  _KardexDataCell(onTap: () => onSelected(item), child: Text(DateFormat('dd/MM/yyyy').format(item.fechaMovimiento.toLocal()))),
+                  _KardexDataCell(onTap: () => onSelected(item), child: _MovementBadge(item: item)),
+                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatQuantity(item.entrada))),
+                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatQuantity(item.salida))),
+                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatQuantity(item.stockActual), style: const TextStyle(fontWeight: FontWeight.w800))),
+                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatMoney(item.costoTotal), style: const TextStyle(fontWeight: FontWeight.w700))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KardexHeaderCell extends StatelessWidget {
+  const _KardexHeaderCell(this.text, {this.end = false});
+  final String text;
+  final bool end;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+    child: Text(text, textAlign: end ? TextAlign.right : TextAlign.left, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+  );
+}
+
+class _KardexDataCell extends StatelessWidget {
+  const _KardexDataCell({required this.child, required this.onTap, this.end = false});
+  final Widget child;
+  final VoidCallback onTap;
+  final bool end;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Container(
+      alignment: end ? Alignment.centerRight : Alignment.centerLeft,
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+      child: child,
+    ),
+  );
+}
+
+class _MovementBadge extends StatelessWidget {
+  const _MovementBadge({required this.item});
 
   final KardexRecord item;
 
@@ -512,87 +695,66 @@ class _KardexTile extends StatelessWidget {
         : const Color(0xFF8A2F22);
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(999),
       ),
+      child: Text(item.tipoMovimiento, style: theme.textTheme.labelSmall?.copyWith(color: badgeForeground, fontWeight: FontWeight.w800)),
+    );
+  }
+}
+
+class _KardexDetailPanel extends StatelessWidget {
+  const _KardexDetailPanel({required this.item});
+  final KardexRecord? item;
+
+  @override
+  Widget build(BuildContext context) {
+    if (item == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.touch_app_outlined, size: 36),
+              Gap(AppSpacing.md),
+              Text('Selecciona un movimiento', style: TextStyle(fontWeight: FontWeight.w800)),
+              Gap(AppSpacing.xs),
+              Text('Haz clic en una fila para ampliar su trazabilidad.', textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
+    }
+    final record = item!;
+    final fields = [
+      ('Documento', record.documentoTipo ?? 'Sin documento'),
+      ('Documento ID', record.documentoId?.toString() ?? '-'),
+      ('Fecha y hora', DateFormat('dd/MM/yyyy hh:mm a').format(record.fechaMovimiento.toLocal())),
+      ('Entrada', _formatQuantity(record.entrada)),
+      ('Salida', _formatQuantity(record.salida)),
+      ('Stock resultante', _formatQuantity(record.stockActual)),
+      ('Costo unitario', _formatMoney(record.costoUnitario)),
+      ('Costo total', _formatMoney(record.costoTotal)),
+      ('Responsable', record.usuarioResponsable ?? 'Sin responsable'),
+      ('Observacion', record.observacion ?? 'Sin observacion'),
+    ];
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                '${item.insumoCodigo} · ${item.insumoNombre}',
-                style: theme.textTheme.titleMedium,
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  item.tipoMovimiento,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: badgeForeground,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.sm),
-          Text(
-            '${DateFormat('dd/MM/yyyy hh:mm a').format(item.fechaMovimiento.toLocal())} · Documento: ${item.documentoTipo ?? 'Sin documento'}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _InlineInfo(
-                label: 'Entrada',
-                value: item.entrada.toStringAsFixed(2),
-              ),
-              _InlineInfo(
-                label: 'Salida',
-                value: item.salida.toStringAsFixed(2),
-              ),
-              _InlineInfo(
-                label: 'Stock',
-                value: item.stockActual.toStringAsFixed(2),
-              ),
-              _InlineInfo(
-                label: 'Costo unitario',
-                value: 'S/ ${item.costoUnitario.toStringAsFixed(2)}',
-              ),
-              _InlineInfo(
-                label: 'Costo total',
-                value: 'S/ ${item.costoTotal.toStringAsFixed(2)}',
-              ),
-            ],
-          ),
-          if (item.usuarioResponsable?.isNotEmpty == true ||
-              item.observacion?.isNotEmpty == true) ...[
-            const Gap(AppSpacing.md),
-            Text(
-              'Responsable: ${item.usuarioResponsable ?? 'Sin responsable'} · Observacion: ${item.observacion ?? 'Sin observacion'}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+          Row(children: [Expanded(child: Text(record.insumoCodigo, style: Theme.of(context).textTheme.headlineSmall)), _MovementBadge(item: record)]),
+          const Gap(AppSpacing.xs),
+          Text(record.insumoNombre, style: Theme.of(context).textTheme.titleMedium),
+          const Gap(AppSpacing.lg),
+          ...fields.map((field) => Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+            child: Row(children: [Expanded(child: Text(field.$1, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), const Gap(AppSpacing.md), Flexible(child: Text(field.$2, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w700)))]),
+          )),
         ],
       ),
     );
@@ -627,3 +789,9 @@ class _InlineInfo extends StatelessWidget {
     );
   }
 }
+
+String _formatQuantity(double value) =>
+    NumberFormat('#,##0.##', 'es_PE').format(value);
+
+String _formatMoney(double value) =>
+    NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ').format(value);

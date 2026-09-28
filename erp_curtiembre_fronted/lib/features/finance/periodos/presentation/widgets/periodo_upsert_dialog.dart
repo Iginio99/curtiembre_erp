@@ -107,6 +107,7 @@ class _PeriodoUpsertDialogState extends State<PeriodoUpsertDialog> {
                 ),
                 const Gap(AppSpacing.lg),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _mes,
                   decoration: const InputDecoration(labelText: 'Mes'),
                   items: List.generate(

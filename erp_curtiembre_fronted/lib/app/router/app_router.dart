@@ -10,6 +10,7 @@ import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_sta
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_state.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/change_password_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/pages/change_password_page.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/pages/login_page.dart';
@@ -153,7 +154,11 @@ class AppRouter {
             path: _alertsPath,
             builder: (context, state) => BlocProvider<AlertsCubit>(
               create: (_) => getIt<AlertsCubit>()..initialize(),
-              child: const AlertsPage(),
+              child: _withAppShell(
+                context,
+                path: _alertsPath,
+                child: const AlertsPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -167,28 +172,44 @@ class AppRouter {
             path: _areasPath,
             builder: (context, state) => BlocProvider<AreasCubit>(
               create: (_) => getIt<AreasCubit>()..initialize(),
-              child: const AreasPage(),
+              child: _withAppShell(
+                context,
+                path: _areasPath,
+                child: const AreasPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _systemParametersPath,
             builder: (context, state) => BlocProvider<SystemParametersCubit>(
               create: (_) => getIt<SystemParametersCubit>()..initialize(),
-              child: const SystemParametersPage(),
+              child: _withAppShell(
+                context,
+                path: _systemParametersPath,
+                child: const SystemParametersPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _unitsPath,
             builder: (context, state) => BlocProvider<UnitsCubit>(
               create: (_) => getIt<UnitsCubit>()..initialize(),
-              child: const UnitsPage(),
+              child: _withAppShell(
+                context,
+                path: _unitsPath,
+                child: const UnitsPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _skinTypesPath,
             builder: (context, state) => BlocProvider<SkinTypesCubit>(
               create: (_) => getIt<SkinTypesCubit>()..initialize(),
-              child: const SkinTypesPage(),
+              child: _withAppShell(
+                context,
+                path: _skinTypesPath,
+                child: const SkinTypesPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -230,70 +251,110 @@ class AppRouter {
             path: _finanzasPeriodosPath,
             builder: (context, state) => BlocProvider<PeriodosCubit>(
               create: (_) => getIt<PeriodosCubit>()..initialize(),
-              child: const PeriodosPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasPeriodosPath,
+                child: const PeriodosPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasIndirectosPath,
             builder: (context, state) => BlocProvider<IndirectosCubit>(
               create: (_) => getIt<IndirectosCubit>()..initialize(),
-              child: const IndirectosPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasIndirectosPath,
+                child: const IndirectosPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasManoObraPath,
             builder: (context, state) => BlocProvider<ManoObraCubit>(
               create: (_) => getIt<ManoObraCubit>()..initialize(),
-              child: const ManoObraPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasManoObraPath,
+                child: const ManoObraPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasActivosPath,
             builder: (context, state) => BlocProvider<ActivosCubit>(
               create: (_) => getIt<ActivosCubit>()..initialize(),
-              child: const ActivosPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasActivosPath,
+                child: const ActivosPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasDepreciacionesPath,
             builder: (context, state) => BlocProvider<DepreciacionesCubit>(
               create: (_) => getIt<DepreciacionesCubit>()..initialize(),
-              child: const DepreciacionesPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasDepreciacionesPath,
+                child: const DepreciacionesPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasCostosProcesoPath,
             builder: (context, state) => BlocProvider<CostosProcesoCubit>(
               create: (_) => getIt<CostosProcesoCubit>()..initialize(),
-              child: const CostosProcesoPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasCostosProcesoPath,
+                child: const CostosProcesoPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasCostosOrdenPath,
             builder: (context, state) => BlocProvider<CostosOrdenCubit>(
               create: (_) => getIt<CostosOrdenCubit>()..initialize(),
-              child: const CostosOrdenPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasCostosOrdenPath,
+                child: const CostosOrdenPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasPreciosPath,
             builder: (context, state) => BlocProvider<PrecioSugeridoCubit>(
               create: (_) => getIt<PrecioSugeridoCubit>()..initialize(),
-              child: const PrecioSugeridoPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasPreciosPath,
+                child: const PrecioSugeridoPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasRentabilidadPath,
             builder: (context, state) => BlocProvider<RentabilidadCubit>(
               create: (_) => getIt<RentabilidadCubit>()..initialize(),
-              child: const RentabilidadPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasRentabilidadPath,
+                child: const RentabilidadPage(),
+              ),
             ),
           ),
           GoRoute(
             path: _finanzasReportesPath,
             builder: (context, state) => BlocProvider<FinanzasReportesCubit>(
               create: (_) => getIt<FinanzasReportesCubit>()..initialize(),
-              child: const FinanzasReportesPage(),
+              child: _withAppShell(
+                context,
+                path: _finanzasReportesPath,
+                child: const FinanzasReportesPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -376,6 +437,44 @@ class AppRouter {
           ),
         ],
       );
+
+  static Widget _withAppShell(
+    BuildContext context, {
+    required String path,
+    required Widget child,
+  }) {
+    final session = context.read<AuthCubit>().state.session;
+    final permissionCodes =
+        context
+            .read<SecurityAccessCubit>()
+            .state
+            .snapshot
+            ?.userPermissionCodes
+            .toSet() ??
+        const <String>{};
+
+    if (session == null) return child;
+
+    return AppShell(
+      title: '',
+      currentPath: path,
+      userName: session.nombreCompleto,
+      roleName: session.rolNombre,
+      accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
+      showTopbar: false,
+      onSignOut: () => context.read<AuthCubit>().signOut(),
+      child: Builder(
+        builder: (context) => Theme(
+          data: Theme.of(context).copyWith(
+            appBarTheme: Theme.of(
+              context,
+            ).appBarTheme.copyWith(toolbarHeight: 0),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 
   static const String _splashPath = '/splash';
   static const String _loginPath = '/login';

@@ -79,8 +79,9 @@ class _PersonalEmpresaPageState extends State<PersonalEmpresaPage> {
     );
     if (accepted != true ||
         nombre.text.trim().isEmpty ||
-        cargo.text.trim().isEmpty)
+        cargo.text.trim().isEmpty) {
       return;
+    }
     await _dio.post(
       '/api/produccion/personal',
       data: {'nombre': nombre.text.trim(), 'cargo': cargo.text.trim()},
@@ -98,8 +99,9 @@ class _PersonalEmpresaPageState extends State<PersonalEmpresaPage> {
       (SecurityAccessCubit cubit) =>
           cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
     );
-    if (session == null)
+    if (session == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return AppShell(
       title: 'Personal de empresa',
       currentPath: '/produccion/personal',

@@ -204,6 +204,7 @@ class _FormulaVersionDialogState extends State<FormulaVersionDialog> {
                 if (!_isEditing && widget.cloneOptions.isNotEmpty) ...[
                   const Gap(AppSpacing.lg),
                   DropdownButtonFormField<int?>(
+                    isExpanded: true,
                     initialValue: _clonarDesdeVersionId,
                     decoration: const InputDecoration(
                       labelText: 'Clonar detalles desde',

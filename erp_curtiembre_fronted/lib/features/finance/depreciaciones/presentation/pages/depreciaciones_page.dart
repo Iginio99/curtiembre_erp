@@ -318,6 +318,7 @@ class _DepreciacionesFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.periodoCostoIdFilter,
                   decoration: const InputDecoration(labelText: 'Periodo'),
                   items: [
@@ -338,6 +339,7 @@ class _DepreciacionesFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 320,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.activoDepreciableIdFilter,
                   decoration: const InputDecoration(labelText: 'Activo'),
                   items: [

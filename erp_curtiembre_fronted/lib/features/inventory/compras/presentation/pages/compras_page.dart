@@ -508,8 +508,8 @@ class _ComprasFilterControls {
   Widget get proveedor => SizedBox(
     width: 280,
     child: DropdownButtonFormField<int?>(
-      initialValue: state.proveedorIdFilter,
       isExpanded: true,
+      initialValue: state.proveedorIdFilter,
       decoration: const InputDecoration(labelText: 'Proveedor'),
       items: [
         const DropdownMenuItem<int?>(value: null, child: Text('Todos')),
@@ -527,8 +527,8 @@ class _ComprasFilterControls {
   Widget get estado => SizedBox(
     width: 220,
     child: DropdownButtonFormField<String?>(
-      initialValue: state.estadoFilter,
       isExpanded: true,
+      initialValue: state.estadoFilter,
       decoration: const InputDecoration(labelText: 'Estado'),
       items: const [
         DropdownMenuItem<String?>(value: null, child: Text('Todos')),

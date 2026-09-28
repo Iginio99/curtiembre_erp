@@ -185,6 +185,7 @@ class _RentabilidadPageState extends State<RentabilidadPage> {
                                 SizedBox(
                                   width: 420,
                                   child: DropdownButtonFormField<int?>(
+                                    isExpanded: true,
                                     initialValue: state.selectedOrderId,
                                     decoration: const InputDecoration(
                                       labelText: 'Orden de produccion',

@@ -329,6 +329,7 @@ class _ManoObraFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 360,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.ordenProduccionIdFilter,
                   decoration: const InputDecoration(
                     labelText: 'Orden de produccion',
@@ -353,6 +354,7 @@ class _ManoObraFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 320,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.ordenProcesoIdFilter,
                   decoration: const InputDecoration(labelText: 'Proceso'),
                   items: [

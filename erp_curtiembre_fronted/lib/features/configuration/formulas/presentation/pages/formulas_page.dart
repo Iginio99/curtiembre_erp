@@ -495,6 +495,7 @@ class _FormulasFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 320,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.processFilterId,
                   decoration: const InputDecoration(labelText: 'Proceso'),
                   items: [

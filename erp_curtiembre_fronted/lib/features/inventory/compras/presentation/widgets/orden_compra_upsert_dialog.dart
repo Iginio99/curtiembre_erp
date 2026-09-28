@@ -131,6 +131,7 @@ class _OrdenCompraUpsertDialogState extends State<OrdenCompraUpsertDialog> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<int>(
+                        isExpanded: true,
                         initialValue: _proveedorId,
                         decoration: const InputDecoration(
                           labelText: 'Proveedor',
@@ -293,6 +294,7 @@ class _OrdenCompraDetalleCardState extends State<_OrdenCompraDetalleCard> {
           ),
           const Gap(AppSpacing.md),
           DropdownButtonFormField<int>(
+            isExpanded: true,
             initialValue: widget.draft.insumoId,
             decoration: const InputDecoration(labelText: 'Insumo'),
             items: widget.insumos

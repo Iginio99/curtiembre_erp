@@ -153,6 +153,7 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
+                          isExpanded: true,
                           initialValue: _selectedPersonalId,
                           decoration: const InputDecoration(
                             labelText: 'Responsable',

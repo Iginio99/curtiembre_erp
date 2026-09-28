@@ -541,8 +541,8 @@ class _InsumosFilterControls {
   Widget get typeFilter => SizedBox(
     width: 190,
     child: DropdownButtonFormField<String?>(
-      initialValue: state.tipoBienFilter,
       isExpanded: true,
+      initialValue: state.tipoBienFilter,
       decoration: const InputDecoration(
         isDense: true,
         hintText: 'Tipo de bien',

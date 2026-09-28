@@ -40,38 +40,59 @@ class AppMetricCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: colors.outlineVariant),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label.toUpperCase(),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    letterSpacing: 0.55,
-                    fontWeight: FontWeight.w800,
-                    color: colors.onSurfaceVariant,
-                  ),
+          Positioned(
+            left: -AppSpacing.lg,
+            right: -AppSpacing.lg,
+            top: -AppSpacing.lg,
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: tone == AppMetricTone.neutral
+                    ? const Color(0xFF3B3B3D)
+                    : accent,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.card),
                 ),
               ),
-              Icon(icon, size: 19, color: accent),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        letterSpacing: 0.55,
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Icon(icon, size: 19, color: accent),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(value, style: Theme.of(context).textTheme.headlineSmall),
+              if (detail != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  detail!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: accent),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(value, style: Theme.of(context).textTheme.headlineSmall),
-          if (detail != null) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              detail!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: accent),
-            ),
-          ],
         ],
       ),
     );

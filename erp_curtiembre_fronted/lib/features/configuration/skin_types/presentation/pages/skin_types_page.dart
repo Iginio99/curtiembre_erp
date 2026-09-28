@@ -31,7 +31,9 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
 
   void _applySearch() {
     FocusScope.of(context).unfocus();
-    context.read<SkinTypesCubit>().load(searchTerm: _searchController.text.trim());
+    context.read<SkinTypesCubit>().load(
+      searchTerm: _searchController.text.trim(),
+    );
   }
 
   Future<void> _openCreateDialog(SkinTypesState state) async {
@@ -49,10 +51,10 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
     }
 
     final result = await context.read<SkinTypesCubit>().createSkinType(
-          codigo: payload.codigo,
-          nombre: payload.nombre,
-          descripcion: payload.descripcion,
-        );
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      descripcion: payload.descripcion,
+    );
 
     if (!mounted) {
       return;
@@ -80,10 +82,10 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
     }
 
     final result = await context.read<SkinTypesCubit>().updateSelectedSkinType(
-          codigo: payload.codigo,
-          nombre: payload.nombre,
-          descripcion: payload.descripcion,
-        );
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      descripcion: payload.descripcion,
+    );
 
     if (!mounted) {
       return;
@@ -93,8 +95,9 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
   }
 
   Future<void> _toggleState(SkinTypeRecord item) async {
-    final result =
-        await context.read<SkinTypesCubit>().setSelectedSkinTypeActive(!item.activo);
+    final result = await context
+        .read<SkinTypesCubit>()
+        .setSelectedSkinTypeActive(!item.activo);
     if (!mounted) {
       return;
     }
@@ -143,7 +146,8 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
                   child: BlocBuilder<SkinTypesCubit, SkinTypesState>(
                     builder: (context, state) {
                       final isWide =
-                          MediaQuery.sizeOf(context).width >= AppBreakpoints.tablet;
+                          MediaQuery.sizeOf(context).width >=
+                          AppBreakpoints.tablet;
                       final compactHeight = constraints.maxHeight < 860;
 
                       if (_searchController.text != state.searchTerm) {
@@ -157,17 +161,23 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
 
                       final listPanel = _SkinTypesListPanel(
                         state: state,
-                        onRetry: () => context.read<SkinTypesCubit>().initialize(),
-                        onSelectItem: (itemId) =>
-                            context.read<SkinTypesCubit>().selectSkinType(itemId),
+                        onRetry: () =>
+                            context.read<SkinTypesCubit>().initialize(),
+                        onSelectItem: (itemId) => context
+                            .read<SkinTypesCubit>()
+                            .selectSkinType(itemId),
                       );
 
                       final detailPanel = _SkinTypeDetailPanel(
                         state: state,
-                        onRetry: () => context.read<SkinTypesCubit>().retryDetail(),
+                        onRetry: () =>
+                            context.read<SkinTypesCubit>().retryDetail(),
                         onEdit: state.selectedSkinType == null
                             ? null
-                            : () => _openEditDialog(state, state.selectedSkinType!),
+                            : () => _openEditDialog(
+                                state,
+                                state.selectedSkinType!,
+                              ),
                         onToggleState: state.selectedSkinType == null
                             ? null
                             : () => _toggleState(state.selectedSkinType!),
@@ -186,8 +196,9 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
                           isSubmittingAction: state.isSubmittingAction,
                           onSearch: _applySearch,
                           onCreateItem: () => _openCreateDialog(state),
-                          onFilterChanged: (filter) =>
-                              context.read<SkinTypesCubit>().load(filter: filter),
+                          onFilterChanged: (filter) => context
+                              .read<SkinTypesCubit>()
+                              .load(filter: filter),
                         ),
                         const Gap(AppSpacing.xl),
                       ];
@@ -219,15 +230,9 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ...headerAndFilters,
-                              SizedBox(
-                                height: 520,
-                                child: listPanel,
-                              ),
+                              SizedBox(height: 520, child: listPanel),
                               const Gap(AppSpacing.xl),
-                              SizedBox(
-                                height: 560,
-                                child: detailPanel,
-                              ),
+                              SizedBox(height: 560, child: detailPanel),
                             ],
                           ),
                         );
@@ -269,16 +274,18 @@ class _SkinTypesPageState extends State<SkinTypesPage> {
 }
 
 class _SkinTypesHeader extends StatelessWidget {
-  const _SkinTypesHeader({
-    required this.userName,
-    required this.itemCount,
-  });
+  const _SkinTypesHeader({required this.userName, required this.itemCount});
 
   final String? userName;
   final int itemCount;
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Tipos de piel visibles: $itemCount. ${userName ?? ''}',
+      child: const SizedBox.shrink(),
+    );
+    /*
     final theme = Theme.of(context);
 
     return Container(
@@ -335,6 +342,7 @@ class _SkinTypesHeader extends StatelessWidget {
         ],
       ),
     );
+    */
   }
 }
 
@@ -485,45 +493,49 @@ class _SkinTypesListPanel extends StatelessWidget {
             const Gap(AppSpacing.lg),
             Expanded(
               child: switch (state.status) {
-                SkinTypesStatus.loading => const Center(child: CircularProgressIndicator()),
+                SkinTypesStatus.loading => const Center(
+                  child: CircularProgressIndicator(),
+                ),
                 SkinTypesStatus.error => _SkinTypesCenteredMessage(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppMessageCard.error(
-                          title: 'No pudimos cargar los tipos de piel',
-                          message: state.errorMessage ??
-                              'Intenta nuevamente para consultar la configuracion.',
-                        ),
-                        const Gap(AppSpacing.lg),
-                        AppButton.secondary(
-                          label: 'Reintentar',
-                          icon: Icons.refresh_rounded,
-                          onPressed: onRetry,
-                        ),
-                      ],
-                    ),
-                  ),
-                SkinTypesStatus.success => state.items.isEmpty
-                    ? const _SkinTypesCenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message:
-                              'No encontramos tipos de piel con los filtros actuales.',
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _SkinTypeListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedSkinTypeId,
-                            onTap: () => onSelectItem(item.id),
-                          );
-                        },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppMessageCard.error(
+                        title: 'No pudimos cargar los tipos de piel',
+                        message:
+                            state.errorMessage ??
+                            'Intenta nuevamente para consultar la configuracion.',
                       ),
+                      const Gap(AppSpacing.lg),
+                      AppButton.secondary(
+                        label: 'Reintentar',
+                        icon: Icons.refresh_rounded,
+                        onPressed: onRetry,
+                      ),
+                    ],
+                  ),
+                ),
+                SkinTypesStatus.success =>
+                  state.items.isEmpty
+                      ? const _SkinTypesCenteredMessage(
+                          child: AppMessageCard.info(
+                            title: 'Sin resultados',
+                            message:
+                                'No encontramos tipos de piel con los filtros actuales.',
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: state.items.length,
+                          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                          itemBuilder: (context, index) {
+                            final item = state.items[index];
+                            return _SkinTypeListTileCard(
+                              item: item,
+                              isSelected: item.id == state.selectedSkinTypeId,
+                              onTap: () => onSelectItem(item.id),
+                            );
+                          },
+                        ),
               },
             ),
           ],
@@ -654,8 +666,9 @@ class _SkinTypeDetailPanel extends StatelessWidget {
                               onPressed: onEdit,
                             ),
                             AppButton.secondary(
-                              label:
-                                  item.activo ? 'Inactivar tipo' : 'Activar tipo',
+                              label: item.activo
+                                  ? 'Inactivar tipo'
+                                  : 'Activar tipo',
                               icon: item.activo
                                   ? Icons.block_outlined
                                   : Icons.check_circle_outline,
@@ -786,10 +799,7 @@ class _SkinTypeListTileCard extends StatelessWidget {
 }
 
 class _SkinTypeDetailCard extends StatelessWidget {
-  const _SkinTypeDetailCard({
-    required this.title,
-    required this.lines,
-  });
+  const _SkinTypeDetailCard({required this.title, required this.lines});
 
   final String title;
   final List<String> lines;
@@ -852,9 +862,9 @@ class _SkinTypeStatusBadge extends StatelessWidget {
           const Gap(AppSpacing.sm),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: foreground,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: foreground),
           ),
         ],
       ),
@@ -886,19 +896,17 @@ class _SkinTypeMiniPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: foreground,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: foreground),
       ),
     );
   }
 }
 
+// ignore: unused_element
 class _SkinTypesSummaryBadge extends StatelessWidget {
-  const _SkinTypesSummaryBadge({
-    required this.label,
-    required this.value,
-  });
+  const _SkinTypesSummaryBadge({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -925,9 +933,7 @@ class _SkinTypesSummaryBadge extends StatelessWidget {
           const Gap(AppSpacing.xs),
           Text(
             value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-            ),
+            style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
           ),
         ],
       ),

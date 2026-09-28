@@ -100,6 +100,7 @@ class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
                 ),
                 const Gap(AppSpacing.xl),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _periodoCostoId,
                   decoration: const InputDecoration(labelText: 'Periodo de costo'),
                   items: openPeriods

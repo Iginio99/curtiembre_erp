@@ -411,8 +411,8 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
   }
 
   Widget _buildInsumoField() => DropdownButtonFormField<int?>(
-    initialValue: draft.insumoId,
     isExpanded: true,
+    initialValue: draft.insumoId,
     decoration: InputDecoration(
       labelText: 'Insumo',
       isDense: true,

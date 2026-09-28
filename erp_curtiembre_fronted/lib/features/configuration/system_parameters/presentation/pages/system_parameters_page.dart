@@ -31,8 +31,8 @@ class _SystemParametersPageState extends State<SystemParametersPage> {
   void _applySearch() {
     FocusScope.of(context).unfocus();
     context.read<SystemParametersCubit>().applyFilters(
-          searchTerm: _searchController.text.trim(),
-        );
+      searchTerm: _searchController.text.trim(),
+    );
   }
 
   @override
@@ -61,115 +61,123 @@ class _SystemParametersPageState extends State<SystemParametersPage> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1440),
-                  child: BlocBuilder<SystemParametersCubit, SystemParametersState>(
-                    builder: (context, state) {
-                      final isWide =
-                          MediaQuery.sizeOf(context).width >= AppBreakpoints.tablet;
-                      final compactHeight = constraints.maxHeight < 860;
+                  child:
+                      BlocBuilder<SystemParametersCubit, SystemParametersState>(
+                        builder: (context, state) {
+                          final isWide =
+                              MediaQuery.sizeOf(context).width >=
+                              AppBreakpoints.tablet;
+                          final compactHeight = constraints.maxHeight < 860;
 
-                      if (_searchController.text != state.searchTerm) {
-                        _searchController.value = TextEditingValue(
-                          text: state.searchTerm,
-                          selection: TextSelection.collapsed(
-                            offset: state.searchTerm.length,
-                          ),
-                        );
-                      }
+                          if (_searchController.text != state.searchTerm) {
+                            _searchController.value = TextEditingValue(
+                              text: state.searchTerm,
+                              selection: TextSelection.collapsed(
+                                offset: state.searchTerm.length,
+                              ),
+                            );
+                          }
 
-                      final listPanel = _SystemParametersListPanel(
-                        state: state,
-                        onRetry: () => context.read<SystemParametersCubit>().initialize(),
-                        onSelect: (id) =>
-                            context.read<SystemParametersCubit>().selectParameter(id),
-                      );
-
-                      final detailPanel = _SystemParametersDetailPanel(state: state);
-
-                      final headerAndFilters = <Widget>[
-                        _SystemParametersHeader(
-                          userName: session?.userName,
-                          itemCount: state.visibleItems.length,
-                          editableCount:
-                              state.allItems.where((item) => item.editable).length,
-                        ),
-                        const Gap(AppSpacing.xl),
-                        _SystemParametersFiltersCard(
-                          controller: _searchController,
-                          state: state,
-                          isLoading: state.status == SystemParametersStatus.loading,
-                          onSearch: _applySearch,
-                          onEditabilityChanged: (filter) =>
-                              context.read<SystemParametersCubit>().applyFilters(
-                                    editabilityFilter: filter,
-                                  ),
-                          onTypeChanged: (value) =>
-                              context.read<SystemParametersCubit>().applyFilters(
-                                    typeFilter: value ?? '',
-                                  ),
-                        ),
-                        const Gap(AppSpacing.xl),
-                      ];
-
-                      if (compactHeight) {
-                        if (isWide) {
-                          return SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...headerAndFilters,
-                                SizedBox(
-                                  height: 620,
-                                  child: Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                          final listPanel = _SystemParametersListPanel(
+                            state: state,
+                            onRetry: () => context
+                                .read<SystemParametersCubit>()
+                                .initialize(),
+                            onSelect: (id) => context
+                                .read<SystemParametersCubit>()
+                                .selectParameter(id),
                           );
-                        }
 
-                        return SingleChildScrollView(
-                          child: Column(
+                          final detailPanel = _SystemParametersDetailPanel(
+                            state: state,
+                          );
+
+                          final headerAndFilters = <Widget>[
+                            _SystemParametersHeader(
+                              userName: session?.userName,
+                              itemCount: state.visibleItems.length,
+                              editableCount: state.allItems
+                                  .where((item) => item.editable)
+                                  .length,
+                            ),
+                            const Gap(AppSpacing.xl),
+                            _SystemParametersFiltersCard(
+                              controller: _searchController,
+                              state: state,
+                              isLoading:
+                                  state.status ==
+                                  SystemParametersStatus.loading,
+                              onSearch: _applySearch,
+                              onEditabilityChanged: (filter) => context
+                                  .read<SystemParametersCubit>()
+                                  .applyFilters(editabilityFilter: filter),
+                              onTypeChanged: (value) => context
+                                  .read<SystemParametersCubit>()
+                                  .applyFilters(typeFilter: value ?? ''),
+                            ),
+                            const Gap(AppSpacing.xl),
+                          ];
+
+                          if (compactHeight) {
+                            if (isWide) {
+                              return SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ...headerAndFilters,
+                                    SizedBox(
+                                      height: 620,
+                                      child: Row(
+                                        children: [
+                                          Expanded(flex: 9, child: listPanel),
+                                          const Gap(AppSpacing.xl),
+                                          Expanded(flex: 8, child: detailPanel),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ...headerAndFilters,
+                                  SizedBox(height: 520, child: listPanel),
+                                  const Gap(AppSpacing.xl),
+                                  SizedBox(height: 560, child: detailPanel),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ...headerAndFilters,
-                              SizedBox(height: 520, child: listPanel),
-                              const Gap(AppSpacing.xl),
-                              SizedBox(height: 560, child: detailPanel),
+                              Expanded(
+                                child: isWide
+                                    ? Row(
+                                        children: [
+                                          Expanded(flex: 9, child: listPanel),
+                                          const Gap(AppSpacing.xl),
+                                          Expanded(flex: 8, child: detailPanel),
+                                        ],
+                                      )
+                                    : Column(
+                                        children: [
+                                          Expanded(child: listPanel),
+                                          const Gap(AppSpacing.xl),
+                                          Expanded(child: detailPanel),
+                                        ],
+                                      ),
+                              ),
                             ],
-                          ),
-                        );
-                      }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...headerAndFilters,
-                          Expanded(
-                            child: isWide
-                                ? Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  )
-                                : Column(
-                                    children: [
-                                      Expanded(child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(child: detailPanel),
-                                    ],
-                                  ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
                 ),
               ),
             );
@@ -193,6 +201,12 @@ class _SystemParametersHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          'Parámetros visibles: $itemCount. Editables: $editableCount. ${userName ?? ''}',
+      child: const SizedBox.shrink(),
+    );
+    /*
     final theme = Theme.of(context);
 
     return Container(
@@ -253,6 +267,7 @@ class _SystemParametersHeader extends StatelessWidget {
         ],
       ),
     );
+    */
   }
 }
 
@@ -288,7 +303,10 @@ class _SystemParametersFiltersCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Busqueda y lectura operativa', style: theme.textTheme.titleLarge),
+          Text(
+            'Busqueda y lectura operativa',
+            style: theme.textTheme.titleLarge,
+          ),
           const Gap(AppSpacing.sm),
           Text(
             'Busca por clave, valor o descripcion. Tambien puedes distinguir rapidamente entre parametros editables y de solo lectura.',
@@ -331,7 +349,7 @@ class _SystemParametersFiltersCard extends StatelessWidget {
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    isExpanded: true,
+                   isExpanded: true,
                     value: state.typeFilter.isEmpty ? null : state.typeFilter,
                     hint: const Text('Todos los tipos'),
                     items: [
@@ -445,46 +463,49 @@ class _SystemParametersListPanel extends StatelessWidget {
             const Gap(AppSpacing.lg),
             Expanded(
               child: switch (state.status) {
-                SystemParametersStatus.loading =>
-                  const Center(child: CircularProgressIndicator()),
+                SystemParametersStatus.loading => const Center(
+                  child: CircularProgressIndicator(),
+                ),
                 SystemParametersStatus.error => _SystemParametersCenteredMessage(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppMessageCard.error(
-                          title: 'No pudimos cargar los parametros',
-                          message: state.errorMessage ??
-                              'Intenta nuevamente para consultar la configuracion.',
-                        ),
-                        const Gap(AppSpacing.lg),
-                        AppButton.secondary(
-                          label: 'Reintentar',
-                          icon: Icons.refresh_rounded,
-                          onPressed: onRetry,
-                        ),
-                      ],
-                    ),
-                  ),
-                SystemParametersStatus.success => state.visibleItems.isEmpty
-                    ? const _SystemParametersCenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message:
-                              'No encontramos parametros con los filtros actuales.',
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: state.visibleItems.length,
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final item = state.visibleItems[index];
-                          return _SystemParameterListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedParameterId,
-                            onTap: () => onSelect(item.id),
-                          );
-                        },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppMessageCard.error(
+                        title: 'No pudimos cargar los parametros',
+                        message:
+                            state.errorMessage ??
+                            'Intenta nuevamente para consultar la configuracion.',
                       ),
+                      const Gap(AppSpacing.lg),
+                      AppButton.secondary(
+                        label: 'Reintentar',
+                        icon: Icons.refresh_rounded,
+                        onPressed: onRetry,
+                      ),
+                    ],
+                  ),
+                ),
+                SystemParametersStatus.success =>
+                  state.visibleItems.isEmpty
+                      ? const _SystemParametersCenteredMessage(
+                          child: AppMessageCard.info(
+                            title: 'Sin resultados',
+                            message:
+                                'No encontramos parametros con los filtros actuales.',
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: state.visibleItems.length,
+                          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                          itemBuilder: (context, index) {
+                            final item = state.visibleItems[index];
+                            return _SystemParameterListTileCard(
+                              item: item,
+                              isSelected: item.id == state.selectedParameterId,
+                              onTap: () => onSelect(item.id),
+                            );
+                          },
+                        ),
               },
             ),
           ],
@@ -555,7 +576,9 @@ class _SystemParametersDetailPanel extends StatelessWidget {
                               style: theme.textTheme.headlineSmall,
                             ),
                             _SystemParameterStatusBadge(
-                              label: parameter.editable ? 'Editable' : 'Solo lectura',
+                              label: parameter.editable
+                                  ? 'Editable'
+                                  : 'Solo lectura',
                               icon: parameter.editable
                                   ? Icons.edit_note_outlined
                                   : Icons.lock_outline,
@@ -734,10 +757,7 @@ class _ReadOnlyValueCard extends StatelessWidget {
 }
 
 class _SystemParameterDetailCard extends StatelessWidget {
-  const _SystemParameterDetailCard({
-    required this.title,
-    required this.lines,
-  });
+  const _SystemParameterDetailCard({required this.title, required this.lines});
 
   final String title;
   final List<String> lines;
@@ -800,9 +820,9 @@ class _SystemParameterStatusBadge extends StatelessWidget {
           const Gap(AppSpacing.sm),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: foreground,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: foreground),
           ),
         ],
       ),
@@ -834,14 +854,15 @@ class _SystemParameterMiniPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: foreground,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: foreground),
       ),
     );
   }
 }
 
+// ignore: unused_element
 class _SystemParameterSummaryBadge extends StatelessWidget {
   const _SystemParameterSummaryBadge({
     required this.label,

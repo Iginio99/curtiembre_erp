@@ -384,6 +384,7 @@ class _AjustesFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: state.tipoAjusteFilter,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de ajuste',

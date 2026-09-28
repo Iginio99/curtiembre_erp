@@ -49,10 +49,10 @@ class _UnitsPageState extends State<UnitsPage> {
     }
 
     final result = await context.read<UnitsCubit>().createUnit(
-          codigo: payload.codigo,
-          nombre: payload.nombre,
-          permiteDecimales: payload.permiteDecimales,
-        );
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      permiteDecimales: payload.permiteDecimales,
+    );
 
     if (!mounted) {
       return;
@@ -61,10 +61,7 @@ class _UnitsPageState extends State<UnitsPage> {
     _showActionResult(result);
   }
 
-  Future<void> _openEditUnitDialog(
-    UnitsState state,
-    UnitRecord unit,
-  ) async {
+  Future<void> _openEditUnitDialog(UnitsState state, UnitRecord unit) async {
     final payload = await showDialog<UnitUpsertFormData>(
       context: context,
       builder: (_) => UnitUpsertDialog(
@@ -80,10 +77,10 @@ class _UnitsPageState extends State<UnitsPage> {
     }
 
     final result = await context.read<UnitsCubit>().updateSelectedUnit(
-          codigo: payload.codigo,
-          nombre: payload.nombre,
-          permiteDecimales: payload.permiteDecimales,
-        );
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      permiteDecimales: payload.permiteDecimales,
+    );
 
     if (!mounted) {
       return;
@@ -93,7 +90,9 @@ class _UnitsPageState extends State<UnitsPage> {
   }
 
   Future<void> _toggleUnitState(UnitRecord unit) async {
-    final result = await context.read<UnitsCubit>().setSelectedUnitActive(!unit.activo);
+    final result = await context.read<UnitsCubit>().setSelectedUnitActive(
+      !unit.activo,
+    );
     if (!mounted) {
       return;
     }
@@ -141,10 +140,6 @@ class _UnitsPageState extends State<UnitsPage> {
                   constraints: const BoxConstraints(maxWidth: 1440),
                   child: BlocBuilder<UnitsCubit, UnitsState>(
                     builder: (context, state) {
-                      final isWide =
-                          MediaQuery.sizeOf(context).width >= AppBreakpoints.tablet;
-                      final compactHeight = constraints.maxHeight < 860;
-
                       if (_searchController.text != state.searchTerm) {
                         _searchController.value = TextEditingValue(
                           text: state.searchTerm,
@@ -157,7 +152,8 @@ class _UnitsPageState extends State<UnitsPage> {
                       final listPanel = _UnitsListPanel(
                         state: state,
                         onRetry: () => context.read<UnitsCubit>().initialize(),
-                        onSelectUnit: (unitId) => context.read<UnitsCubit>().selectUnit(unitId),
+                        onSelectUnit: (unitId) =>
+                            context.read<UnitsCubit>().selectUnit(unitId),
                       );
 
                       final detailPanel = _UnitDetailPanel(
@@ -165,7 +161,10 @@ class _UnitsPageState extends State<UnitsPage> {
                         onRetry: () => context.read<UnitsCubit>().retryDetail(),
                         onEditUnit: state.selectedUnit == null
                             ? null
-                            : () => _openEditUnitDialog(state, state.selectedUnit!),
+                            : () => _openEditUnitDialog(
+                                state,
+                                state.selectedUnit!,
+                              ),
                         onToggleState: state.selectedUnit == null
                             ? null
                             : () => _toggleUnitState(state.selectedUnit!),
@@ -185,13 +184,20 @@ class _UnitsPageState extends State<UnitsPage> {
                           isSubmittingAction: state.isSubmittingAction,
                           onSearch: _applySearch,
                           onCreateUnit: () => _openCreateUnitDialog(state),
-                          onActivityFilterChanged: (filter) =>
-                              context.read<UnitsCubit>().load(activityFilter: filter),
-                          onDecimalFilterChanged: (filter) =>
-                              context.read<UnitsCubit>().load(decimalFilter: filter),
+                          onActivityFilterChanged: (filter) => context
+                              .read<UnitsCubit>()
+                              .load(activityFilter: filter),
+                          onDecimalFilterChanged: (filter) => context
+                              .read<UnitsCubit>()
+                              .load(decimalFilter: filter),
                         ),
                         const Gap(AppSpacing.xl),
                       ];
+
+                      final isWide =
+                          MediaQuery.sizeOf(context).width >=
+                          AppBreakpoints.tablet;
+                      final compactHeight = constraints.maxHeight < 860;
 
                       if (compactHeight) {
                         if (isWide) {
@@ -220,15 +226,9 @@ class _UnitsPageState extends State<UnitsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ...headerAndFilters,
-                              SizedBox(
-                                height: 520,
-                                child: listPanel,
-                              ),
+                              SizedBox(height: 520, child: listPanel),
                               const Gap(AppSpacing.xl),
-                              SizedBox(
-                                height: 560,
-                                child: detailPanel,
-                              ),
+                              SizedBox(height: 560, child: detailPanel),
                             ],
                           ),
                         );
@@ -270,16 +270,18 @@ class _UnitsPageState extends State<UnitsPage> {
 }
 
 class _UnitsHeader extends StatelessWidget {
-  const _UnitsHeader({
-    required this.userName,
-    required this.itemCount,
-  });
+  const _UnitsHeader({required this.userName, required this.itemCount});
 
   final String? userName;
   final int itemCount;
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Unidades visibles: $itemCount. ${userName ?? ''}',
+      child: const SizedBox.shrink(),
+    );
+    /*
     final theme = Theme.of(context);
 
     return Container(
@@ -336,6 +338,7 @@ class _UnitsHeader extends StatelessWidget {
         ],
       ),
     );
+    */
   }
 }
 
@@ -518,45 +521,49 @@ class _UnitsListPanel extends StatelessWidget {
             const Gap(AppSpacing.lg),
             Expanded(
               child: switch (state.status) {
-                UnitsStatus.loading => const Center(child: CircularProgressIndicator()),
+                UnitsStatus.loading => const Center(
+                  child: CircularProgressIndicator(),
+                ),
                 UnitsStatus.error => _UnitsCenteredMessage(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppMessageCard.error(
-                          title: 'No pudimos cargar las unidades',
-                          message: state.errorMessage ??
-                              'Intenta nuevamente para consultar la configuracion.',
-                        ),
-                        const Gap(AppSpacing.lg),
-                        AppButton.secondary(
-                          label: 'Reintentar',
-                          icon: Icons.refresh_rounded,
-                          onPressed: onRetry,
-                        ),
-                      ],
-                    ),
-                  ),
-                UnitsStatus.success => state.items.isEmpty
-                    ? const _UnitsCenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message:
-                              'No encontramos unidades de medida con los filtros actuales.',
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _UnitListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedUnitId,
-                            onTap: () => onSelectUnit(item.id),
-                          );
-                        },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppMessageCard.error(
+                        title: 'No pudimos cargar las unidades',
+                        message:
+                            state.errorMessage ??
+                            'Intenta nuevamente para consultar la configuracion.',
                       ),
+                      const Gap(AppSpacing.lg),
+                      AppButton.secondary(
+                        label: 'Reintentar',
+                        icon: Icons.refresh_rounded,
+                        onPressed: onRetry,
+                      ),
+                    ],
+                  ),
+                ),
+                UnitsStatus.success =>
+                  state.items.isEmpty
+                      ? const _UnitsCenteredMessage(
+                          child: AppMessageCard.info(
+                            title: 'Sin resultados',
+                            message:
+                                'No encontramos unidades de medida con los filtros actuales.',
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: state.items.length,
+                          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                          itemBuilder: (context, index) {
+                            final item = state.items[index];
+                            return _UnitListTileCard(
+                              item: item,
+                              isSelected: item.id == state.selectedUnitId,
+                              onTap: () => onSelectUnit(item.id),
+                            );
+                          },
+                        ),
               },
             ),
           ],
@@ -674,7 +681,8 @@ class _UnitDetailPanel extends StatelessWidget {
                                   ? Icons.functions_outlined
                                   : Icons.looks_one_outlined,
                               background: theme.colorScheme.secondaryContainer,
-                              foreground: theme.colorScheme.onSecondaryContainer,
+                              foreground:
+                                  theme.colorScheme.onSecondaryContainer,
                             ),
                           ],
                         ),
@@ -697,8 +705,9 @@ class _UnitDetailPanel extends StatelessWidget {
                               onPressed: onEditUnit,
                             ),
                             AppButton.secondary(
-                              label:
-                                  unit.activo ? 'Inactivar unidad' : 'Activar unidad',
+                              label: unit.activo
+                                  ? 'Inactivar unidad'
+                                  : 'Activar unidad',
                               icon: unit.activo
                                   ? Icons.block_outlined
                                   : Icons.check_circle_outline,
@@ -823,10 +832,7 @@ class _UnitListTileCard extends StatelessWidget {
 }
 
 class _UnitDetailCard extends StatelessWidget {
-  const _UnitDetailCard({
-    required this.title,
-    required this.lines,
-  });
+  const _UnitDetailCard({required this.title, required this.lines});
 
   final String title;
   final List<String> lines;
@@ -889,9 +895,9 @@ class _UnitStatusBadge extends StatelessWidget {
           const Gap(AppSpacing.sm),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: foreground,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: foreground),
           ),
         ],
       ),
@@ -923,19 +929,17 @@ class _UnitMiniPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: foreground,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: foreground),
       ),
     );
   }
 }
 
+// ignore: unused_element
 class _UnitsSummaryBadge extends StatelessWidget {
-  const _UnitsSummaryBadge({
-    required this.label,
-    required this.value,
-  });
+  const _UnitsSummaryBadge({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -962,9 +966,7 @@ class _UnitsSummaryBadge extends StatelessWidget {
           const Gap(AppSpacing.xs),
           Text(
             value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-            ),
+            style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
           ),
         ],
       ),

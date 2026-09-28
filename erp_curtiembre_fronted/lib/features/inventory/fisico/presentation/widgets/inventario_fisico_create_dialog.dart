@@ -102,6 +102,7 @@ class _InventarioFisicoCreateDialogState
                 ),
                 const Gap(AppSpacing.lg),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _periodoMes,
                   decoration: const InputDecoration(
                     labelText: 'Periodo mes',

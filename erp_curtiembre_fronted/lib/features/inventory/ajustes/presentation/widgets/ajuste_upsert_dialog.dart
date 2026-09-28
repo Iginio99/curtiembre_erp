@@ -270,6 +270,7 @@ class _AjusteDetalleDraftCard extends StatelessWidget {
           ),
           const Gap(AppSpacing.md),
           DropdownButtonFormField<int?>(
+            isExpanded: true,
             initialValue: draft.insumoId,
             decoration: const InputDecoration(labelText: 'Insumo'),
             items: insumos

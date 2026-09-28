@@ -100,6 +100,7 @@ class _FormulaDetailDialogState extends State<FormulaDetailDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _insumoId,
                   decoration: const InputDecoration(labelText: 'Insumo'),
                   items: widget.insumoOptions

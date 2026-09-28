@@ -61,6 +61,7 @@ class _DepreciacionCalculateDialogState extends State<DepreciacionCalculateDialo
               ),
               const Gap(AppSpacing.xl),
               DropdownButtonFormField<int>(
+                isExpanded: true,
                 initialValue: _periodoId,
                 decoration: const InputDecoration(labelText: 'Periodo'),
                 items: widget.periodos

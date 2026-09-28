@@ -101,6 +101,7 @@ class _ManoObraUpsertDialogState extends State<ManoObraUpsertDialog> {
                 ),
                 const Gap(AppSpacing.xl),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _ordenProduccionId,
                   decoration: const InputDecoration(labelText: 'Orden de produccion'),
                   items: widget.ordenes
@@ -121,6 +122,7 @@ class _ManoObraUpsertDialogState extends State<ManoObraUpsertDialog> {
                 ),
                 const Gap(AppSpacing.lg),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _ordenProcesoId,
                   decoration: const InputDecoration(labelText: 'Proceso'),
                   items: processes

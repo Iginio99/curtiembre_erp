@@ -314,6 +314,12 @@ class _FinanceHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          '$title. $description. $badgeLabel: $badgeValue. ${sessionUserName ?? ''}',
+      child: const SizedBox.shrink(),
+    );
+    /*
     final theme = Theme.of(context);
 
     return Container(
@@ -367,9 +373,11 @@ class _FinanceHeroCard extends StatelessWidget {
         ],
       ),
     );
+    */
   }
 }
 
+// ignore: unused_element
 class _FinanceSummaryBadge extends StatelessWidget {
   const _FinanceSummaryBadge({required this.label, required this.value});
 
@@ -469,6 +477,7 @@ class _IndirectosFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.periodoCostoIdFilter,
                   decoration: const InputDecoration(labelText: 'Periodo'),
                   items: [
@@ -489,6 +498,7 @@ class _IndirectosFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 240,
                 child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: state.tipoCostoFilter,
                   decoration: const InputDecoration(labelText: 'Tipo'),
                   items: [

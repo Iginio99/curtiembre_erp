@@ -669,8 +669,8 @@ class _TipoBienFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String?>(
-      initialValue: value,
       isExpanded: true,
+      initialValue: value,
       decoration: InputDecoration(
         isDense: compact,
         labelText: compact ? null : 'Tipo de bien',

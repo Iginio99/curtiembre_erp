@@ -182,6 +182,7 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _selectedClienteId,
                   decoration: const InputDecoration(labelText: 'Cliente'),
                   items: widget.clienteOptions
@@ -210,6 +211,7 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
                 ),
                 const Gap(AppSpacing.md),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _selectedLoteId,
                   decoration: const InputDecoration(
                     labelText: 'Lote disponible',
@@ -245,6 +247,7 @@ class _OrdenUpsertDialogState extends State<OrdenUpsertDialog> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
+                          isExpanded: true,
                           initialValue: _selectedPersonalId,
                           decoration: const InputDecoration(
                             labelText: 'Responsable',

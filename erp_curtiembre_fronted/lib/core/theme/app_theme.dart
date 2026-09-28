@@ -2,11 +2,12 @@ import 'package:erp_curtiembre_fronted/core/theme/app_colors.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_radius.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 abstract final class AppTheme {
   static ThemeData light() {
-    final baseTextTheme = GoogleFonts.interTextTheme();
+    final baseTextTheme = ThemeData.light().textTheme.apply(
+      fontFamily: 'Segoe UI',
+    );
 
     return FlexThemeData.light(
       colors: const FlexSchemeColor(
@@ -33,12 +34,19 @@ abstract final class AppTheme {
       appBarTheme: _buildAppBarTheme(_lightColorScheme, baseTextTheme),
       cardTheme: _buildCardTheme(_lightColorScheme),
       chipTheme: _buildChipTheme(_lightColorScheme, false),
+      inputDecorationTheme: _buildInputTheme(_lightColorScheme),
+      filledButtonTheme: _buildFilledButtonTheme(_lightColorScheme),
+      outlinedButtonTheme: _buildOutlinedButtonTheme(_lightColorScheme),
+      dataTableTheme: _buildDataTableTheme(_lightColorScheme),
+      dividerTheme: DividerThemeData(color: _lightColorScheme.outlineVariant),
       extensions: const [],
     );
   }
 
   static ThemeData dark() {
-    final baseTextTheme = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
+    final baseTextTheme = ThemeData.dark().textTheme.apply(
+      fontFamily: 'Segoe UI',
+    );
 
     return FlexThemeData.dark(
       colors: const FlexSchemeColor(
@@ -65,6 +73,11 @@ abstract final class AppTheme {
       appBarTheme: _buildAppBarTheme(_darkColorScheme, baseTextTheme),
       cardTheme: _buildCardTheme(_darkColorScheme),
       chipTheme: _buildChipTheme(_darkColorScheme, true),
+      inputDecorationTheme: _buildInputTheme(_darkColorScheme),
+      filledButtonTheme: _buildFilledButtonTheme(_darkColorScheme),
+      outlinedButtonTheme: _buildOutlinedButtonTheme(_darkColorScheme),
+      dataTableTheme: _buildDataTableTheme(_darkColorScheme),
+      dividerTheme: DividerThemeData(color: _darkColorScheme.outlineVariant),
       extensions: const [],
     );
   }
@@ -89,10 +102,7 @@ abstract final class AppTheme {
     );
   }
 
-  static TextTheme _buildTextTheme(
-    TextTheme base,
-    ColorScheme colorScheme,
-  ) {
+  static TextTheme _buildTextTheme(TextTheme base, ColorScheme colorScheme) {
     return base.copyWith(
       displaySmall: base.displaySmall?.copyWith(
         fontWeight: FontWeight.w700,
@@ -118,9 +128,7 @@ abstract final class AppTheme {
         height: 1.45,
         color: colorScheme.onSurface,
       ),
-      labelLarge: base.labelLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
+      labelLarge: base.labelLarge?.copyWith(fontWeight: FontWeight.w700),
     );
   }
 
@@ -154,10 +162,7 @@ abstract final class AppTheme {
     );
   }
 
-  static ChipThemeData _buildChipTheme(
-    ColorScheme colorScheme,
-    bool isDark,
-  ) {
+  static ChipThemeData _buildChipTheme(ColorScheme colorScheme, bool isDark) {
     return ChipThemeData(
       backgroundColor: colorScheme.surfaceContainerHighest,
       disabledColor: colorScheme.surfaceContainerHighest,
@@ -177,6 +182,75 @@ abstract final class AppTheme {
         borderRadius: BorderRadius.circular(AppRadius.badge),
       ),
       side: BorderSide.none,
+    );
+  }
+
+  static InputDecorationTheme _buildInputTheme(ColorScheme colors) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      borderSide: BorderSide(color: colors.outlineVariant),
+    );
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: colors.surfaceContainerLowest,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: border,
+      enabledBorder: border,
+      focusedBorder: border.copyWith(
+        borderSide: BorderSide(color: colors.primary, width: 1.5),
+      ),
+      errorBorder: border.copyWith(borderSide: BorderSide(color: colors.error)),
+    );
+  }
+
+  static FilledButtonThemeData _buildFilledButtonTheme(ColorScheme colors) {
+    return FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(64, 42),
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+        ),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  static OutlinedButtonThemeData _buildOutlinedButtonTheme(ColorScheme colors) {
+    return OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(64, 42),
+        foregroundColor: colors.onSurface,
+        side: BorderSide(color: colors.outlineVariant),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+        ),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  static DataTableThemeData _buildDataTableTheme(ColorScheme colors) {
+    return DataTableThemeData(
+      headingRowColor: WidgetStatePropertyAll(
+        colors.brightness == Brightness.dark
+            ? const Color(0xFF3B3B3D)
+            : const Color(0xFF3B3B3D),
+      ),
+      headingTextStyle: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+        letterSpacing: .45,
+      ),
+      dataTextStyle: TextStyle(color: colors.onSurface, fontSize: 13),
+      dividerThickness: 1,
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
     );
   }
 
@@ -201,8 +275,8 @@ abstract final class AppTheme {
     surface: AppColors.surface,
     onSurface: AppColors.text,
     onSurfaceVariant: AppColors.textSecondary,
-    outline: Color(0xFFD4C7BA),
-    outlineVariant: Color(0xFFE7DDD2),
+    outline: Color(0xFFCFCFD3),
+    outlineVariant: Color(0xFFE3E3E6),
     shadow: Color(0x14000000),
     scrim: Color(0x33000000),
     inverseSurface: AppColors.text,
@@ -232,8 +306,8 @@ abstract final class AppTheme {
     surface: AppDarkColors.surface,
     onSurface: AppDarkColors.text,
     onSurfaceVariant: AppDarkColors.textSecondary,
-    outline: Color(0xFF56463B),
-    outlineVariant: Color(0xFF3A2E26),
+    outline: Color(0xFF525257),
+    outlineVariant: Color(0xFF38383C),
     shadow: Colors.black,
     scrim: Colors.black,
     inverseSurface: AppDarkColors.text,

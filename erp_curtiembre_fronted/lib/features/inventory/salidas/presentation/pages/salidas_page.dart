@@ -415,6 +415,7 @@ class _SalidasFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: state.tipoSalidaFilter,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de salida',

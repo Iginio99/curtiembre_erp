@@ -229,6 +229,27 @@ public sealed class SqlAlertaQueryService(ISqlConnectionFactory connectionFactor
             ORDER BY a.generada_en DESC, a.id DESC;
             """;
 
+        const string operationalSql = """
+            SELECT
+                (SELECT COUNT(*)
+                 FROM inventario.insumo i
+                 LEFT JOIN inventario.stock_insumo s ON s.insumo_id = i.id
+                 WHERE i.activo = 1
+                   AND ISNULL(s.cantidad_actual, 0) <= i.stock_minimo) AS StockBajo,
+                (SELECT COUNT(*)
+                 FROM produccion.orden_produccion op
+                 WHERE op.estado IN ('PROGRAMADA', 'EN_PROCESO')) AS OrdenesActivas,
+                (SELECT COUNT(*)
+                 FROM inventario.orden_compra oc
+                 WHERE oc.estado IN ('PENDIENTE', 'APROBADA', 'PARCIALMENTE_RECIBIDA')) AS ComprasPendientes,
+                (SELECT COUNT(*)
+                 FROM produccion.orden_produccion op
+                 WHERE op.estado IN ('PROGRAMADA', 'EN_PROCESO')
+                   AND op.fecha_fin_estimada < CAST(SYSDATETIME() AS date)) AS OrdenesRetrasadas,
+                (SELECT CAST(ISNULL(AVG(CAST(co.costo_total AS decimal(18,2))), 0) AS decimal(18,2))
+                 FROM finanzas.costo_orden co) AS CostoPromedioOrden;
+            """;
+
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var summary = await connection.QuerySingleAsync<AlertSummaryRow>(
             new CommandDefinition(countersSql, new { UsuarioId = usuarioId }, cancellationToken: cancellationToken));
@@ -236,12 +257,20 @@ public sealed class SqlAlertaQueryService(ISqlConnectionFactory connectionFactor
         var recientes = await connection.QueryAsync<AlertaSistema>(
             new CommandDefinition(recentSql, new { UsuarioId = usuarioId }, cancellationToken: cancellationToken));
 
+        var operational = await connection.QuerySingleAsync<OperationalSummaryRow>(
+            new CommandDefinition(operationalSql, cancellationToken: cancellationToken));
+
         return new ResumenAlertas(
             summary.TotalPendientes,
             summary.TotalLeidas,
             summary.TotalAlta,
             summary.TotalMedia,
             summary.TotalBaja,
+            operational.StockBajo,
+            operational.OrdenesActivas,
+            operational.ComprasPendientes,
+            operational.OrdenesRetrasadas,
+            operational.CostoPromedioOrden,
             recientes.ToArray());
     }
 
@@ -303,4 +332,11 @@ public sealed class SqlAlertaQueryService(ISqlConnectionFactory connectionFactor
         int TotalAlta,
         int TotalMedia,
         int TotalBaja);
+
+    private sealed record OperationalSummaryRow(
+        int StockBajo,
+        int OrdenesActivas,
+        int ComprasPendientes,
+        int OrdenesRetrasadas,
+        decimal CostoPromedioOrden);
 }

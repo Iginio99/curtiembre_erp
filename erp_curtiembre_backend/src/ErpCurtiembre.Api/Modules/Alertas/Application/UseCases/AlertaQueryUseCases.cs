@@ -69,6 +69,11 @@ public sealed class ObtenerResumenAlertasUseCase(IAlertaQueryService alertaQuery
             summary.TotalAlta,
             summary.TotalMedia,
             summary.TotalBaja,
+            summary.StockBajo,
+            summary.OrdenesActivas,
+            summary.ComprasPendientes,
+            summary.OrdenesRetrasadas,
+            summary.CostoPromedioOrden,
             summary.Recientes
                 .Select(item => new AlertaActivaDto(
                     item.Id,

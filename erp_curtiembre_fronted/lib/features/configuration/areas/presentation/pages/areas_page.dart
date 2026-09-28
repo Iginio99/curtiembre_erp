@@ -49,10 +49,10 @@ class _AreasPageState extends State<AreasPage> {
     }
 
     final result = await context.read<AreasCubit>().createArea(
-          codigo: payload.codigo,
-          nombre: payload.nombre,
-          descripcion: payload.descripcion,
-        );
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      descripcion: payload.descripcion,
+    );
 
     if (!mounted) {
       return;
@@ -61,10 +61,7 @@ class _AreasPageState extends State<AreasPage> {
     _showActionResult(result);
   }
 
-  Future<void> _openEditAreaDialog(
-    AreasState state,
-    AreaRecord area,
-  ) async {
+  Future<void> _openEditAreaDialog(AreasState state, AreaRecord area) async {
     final payload = await showDialog<AreaUpsertFormData>(
       context: context,
       builder: (_) => AreaUpsertDialog(
@@ -80,10 +77,10 @@ class _AreasPageState extends State<AreasPage> {
     }
 
     final result = await context.read<AreasCubit>().updateSelectedArea(
-          codigo: payload.codigo,
-          nombre: payload.nombre,
-          descripcion: payload.descripcion,
-        );
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      descripcion: payload.descripcion,
+    );
 
     if (!mounted) {
       return;
@@ -93,7 +90,9 @@ class _AreasPageState extends State<AreasPage> {
   }
 
   Future<void> _toggleAreaState(AreaRecord area) async {
-    final result = await context.read<AreasCubit>().setSelectedAreaActive(!area.activo);
+    final result = await context.read<AreasCubit>().setSelectedAreaActive(
+      !area.activo,
+    );
     if (!mounted) {
       return;
     }
@@ -142,7 +141,8 @@ class _AreasPageState extends State<AreasPage> {
                   child: BlocBuilder<AreasCubit, AreasState>(
                     builder: (context, state) {
                       final isWide =
-                          MediaQuery.sizeOf(context).width >= AppBreakpoints.tablet;
+                          MediaQuery.sizeOf(context).width >=
+                          AppBreakpoints.tablet;
                       final compactHeight = constraints.maxHeight < 860;
 
                       if (_searchController.text != state.searchTerm) {
@@ -157,7 +157,8 @@ class _AreasPageState extends State<AreasPage> {
                       final listPanel = _AreasListPanel(
                         state: state,
                         onRetry: () => context.read<AreasCubit>().initialize(),
-                        onSelectArea: (areaId) => context.read<AreasCubit>().selectArea(areaId),
+                        onSelectArea: (areaId) =>
+                            context.read<AreasCubit>().selectArea(areaId),
                       );
 
                       final detailPanel = _AreaDetailPanel(
@@ -165,7 +166,10 @@ class _AreasPageState extends State<AreasPage> {
                         onRetry: () => context.read<AreasCubit>().retryDetail(),
                         onEditArea: state.selectedArea == null
                             ? null
-                            : () => _openEditAreaDialog(state, state.selectedArea!),
+                            : () => _openEditAreaDialog(
+                                state,
+                                state.selectedArea!,
+                              ),
                         onToggleState: state.selectedArea == null
                             ? null
                             : () => _toggleAreaState(state.selectedArea!),
@@ -217,15 +221,9 @@ class _AreasPageState extends State<AreasPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ...headerAndFilters,
-                              SizedBox(
-                                height: 520,
-                                child: listPanel,
-                              ),
+                              SizedBox(height: 520, child: listPanel),
                               const Gap(AppSpacing.xl),
-                              SizedBox(
-                                height: 560,
-                                child: detailPanel,
-                              ),
+                              SizedBox(height: 560, child: detailPanel),
                             ],
                           ),
                         );
@@ -267,16 +265,18 @@ class _AreasPageState extends State<AreasPage> {
 }
 
 class _AreasHeader extends StatelessWidget {
-  const _AreasHeader({
-    required this.userName,
-    required this.itemCount,
-  });
+  const _AreasHeader({required this.userName, required this.itemCount});
 
   final String? userName;
   final int itemCount;
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Áreas visibles: $itemCount. ${userName ?? ''}',
+      child: const SizedBox.shrink(),
+    );
+    /*
     final theme = Theme.of(context);
 
     return Container(
@@ -333,6 +333,7 @@ class _AreasHeader extends StatelessWidget {
         ],
       ),
     );
+    */
   }
 }
 
@@ -483,44 +484,49 @@ class _AreasListPanel extends StatelessWidget {
             const Gap(AppSpacing.lg),
             Expanded(
               child: switch (state.status) {
-                AreasStatus.loading => const Center(child: CircularProgressIndicator()),
+                AreasStatus.loading => const Center(
+                  child: CircularProgressIndicator(),
+                ),
                 AreasStatus.error => _AreasCenteredMessage(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppMessageCard.error(
-                          title: 'No pudimos cargar las areas',
-                          message: state.errorMessage ??
-                              'Intenta nuevamente para consultar la configuracion.',
-                        ),
-                        const Gap(AppSpacing.lg),
-                        AppButton.secondary(
-                          label: 'Reintentar',
-                          icon: Icons.refresh_rounded,
-                          onPressed: onRetry,
-                        ),
-                      ],
-                    ),
-                  ),
-                AreasStatus.success => state.items.isEmpty
-                    ? const _AreasCenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message: 'No encontramos areas con los filtros actuales.',
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _AreaListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedAreaId,
-                            onTap: () => onSelectArea(item.id),
-                          );
-                        },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppMessageCard.error(
+                        title: 'No pudimos cargar las areas',
+                        message:
+                            state.errorMessage ??
+                            'Intenta nuevamente para consultar la configuracion.',
                       ),
+                      const Gap(AppSpacing.lg),
+                      AppButton.secondary(
+                        label: 'Reintentar',
+                        icon: Icons.refresh_rounded,
+                        onPressed: onRetry,
+                      ),
+                    ],
+                  ),
+                ),
+                AreasStatus.success =>
+                  state.items.isEmpty
+                      ? const _AreasCenteredMessage(
+                          child: AppMessageCard.info(
+                            title: 'Sin resultados',
+                            message:
+                                'No encontramos areas con los filtros actuales.',
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: state.items.length,
+                          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
+                          itemBuilder: (context, index) {
+                            final item = state.items[index];
+                            return _AreaListTileCard(
+                              item: item,
+                              isSelected: item.id == state.selectedAreaId,
+                              onTap: () => onSelectArea(item.id),
+                            );
+                          },
+                        ),
               },
             ),
           ],
@@ -651,7 +657,9 @@ class _AreaDetailPanel extends StatelessWidget {
                               onPressed: onEditArea,
                             ),
                             AppButton.secondary(
-                              label: area.activo ? 'Inactivar area' : 'Activar area',
+                              label: area.activo
+                                  ? 'Inactivar area'
+                                  : 'Activar area',
                               icon: area.activo
                                   ? Icons.block_outlined
                                   : Icons.check_circle_outline,
@@ -783,10 +791,7 @@ class _AreaListTileCard extends StatelessWidget {
 }
 
 class _AreaDetailCard extends StatelessWidget {
-  const _AreaDetailCard({
-    required this.title,
-    required this.lines,
-  });
+  const _AreaDetailCard({required this.title, required this.lines});
 
   final String title;
   final List<String> lines;
@@ -849,9 +854,9 @@ class _AreaStatusBadge extends StatelessWidget {
           const Gap(AppSpacing.sm),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: foreground,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: foreground),
           ),
         ],
       ),
@@ -883,19 +888,17 @@ class _AreaMiniPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: foreground,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: foreground),
       ),
     );
   }
 }
 
+// ignore: unused_element
 class _AreasSummaryBadge extends StatelessWidget {
-  const _AreasSummaryBadge({
-    required this.label,
-    required this.value,
-  });
+  const _AreasSummaryBadge({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -922,9 +925,7 @@ class _AreasSummaryBadge extends StatelessWidget {
           const Gap(AppSpacing.xs),
           Text(
             value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-            ),
+            style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
           ),
         ],
       ),

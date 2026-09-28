@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -170,37 +171,43 @@ class _MetricsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final money = NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ');
     final metrics = [
-      const _MetricData(
+      _MetricData(
         'Stock bajo',
-        '—',
+        '${summary?.stockBajo ?? 0}',
         Icons.inventory_2_outlined,
-        'No disponible',
+        summary == null ? 'Cargando resumen' : 'Insumos bajo el mínimo',
+        (summary?.stockBajo ?? 0) > 0
+            ? AppMetricTone.warning
+            : AppMetricTone.neutral,
       ),
-      const _MetricData(
+      _MetricData(
         'Órdenes activas',
-        '—',
+        '${summary?.ordenesActivas ?? 0}',
         Icons.factory_outlined,
-        'No disponible',
+        summary == null ? 'Cargando resumen' : 'Programadas y en proceso',
+        AppMetricTone.primary,
       ),
-      const _MetricData(
+      _MetricData(
         'Compras pendientes',
-        '—',
+        '${summary?.comprasPendientes ?? 0}',
         Icons.shopping_cart_outlined,
-        'No disponible',
+        summary == null ? 'Cargando resumen' : 'Pendientes de completar',
       ),
-      const _MetricData(
+      _MetricData(
         'Órdenes retrasadas',
-        '—',
+        '${summary?.ordenesRetrasadas ?? 0}',
         Icons.schedule_outlined,
-        'No disponible',
+        summary == null ? 'Cargando resumen' : 'Fuera de fecha estimada',
         AppMetricTone.error,
       ),
-      const _MetricData(
-        'Costo por orden',
-        '—',
+      _MetricData(
+        'Costo promedio por orden',
+        money.format(summary?.costoPromedioOrden ?? 0),
         Icons.payments_outlined,
-        'No disponible',
+        summary == null ? 'Cargando resumen' : 'Órdenes con costo calculado',
+        AppMetricTone.primary,
       ),
       _MetricData(
         'Alertas activas',

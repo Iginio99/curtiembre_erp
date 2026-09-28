@@ -421,6 +421,7 @@ class _InventarioFisicoFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<int?>(
+                  isExpanded: true,
                   initialValue: state.periodoMesFilter,
                   decoration: const InputDecoration(labelText: 'Periodo mes'),
                   items: [
@@ -442,6 +443,7 @@ class _InventarioFisicoFiltersCard extends StatelessWidget {
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: state.estadoFilter,
                   decoration: const InputDecoration(labelText: 'Estado'),
                   items: const [

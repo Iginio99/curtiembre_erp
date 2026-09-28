@@ -127,6 +127,7 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
                 ),
                 const Gap(AppSpacing.lg),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   initialValue: _procesoProductivoId,
                   decoration: const InputDecoration(
                     labelText: 'Proceso productivo',

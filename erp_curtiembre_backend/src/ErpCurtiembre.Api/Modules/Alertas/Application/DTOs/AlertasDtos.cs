@@ -49,6 +49,11 @@ public sealed record AlertasResumenDto(
     int TotalAlta,
     int TotalMedia,
     int TotalBaja,
+    int StockBajo,
+    int OrdenesActivas,
+    int ComprasPendientes,
+    int OrdenesRetrasadas,
+    decimal CostoPromedioOrden,
     IReadOnlyCollection<AlertaActivaDto> Recientes);
 
 public sealed record CerrarAlertaRequestDto(string? Comentario);

@@ -27,17 +27,17 @@ class AlertRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        tipoAlerta,
-        titulo,
-        mensaje,
-        severidad,
-        estado,
-        moduloOrigen,
-        entidadOrigen,
-        entidadOrigenId,
-        generadaEn,
-      ];
+    id,
+    tipoAlerta,
+    titulo,
+    mensaje,
+    severidad,
+    estado,
+    moduloOrigen,
+    entidadOrigen,
+    entidadOrigenId,
+    generadaEn,
+  ];
 }
 
 class AlertDetail extends AlertRecord {
@@ -84,14 +84,14 @@ class AlertHistoryItem extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        estadoAnterior,
-        estadoNuevo,
-        comentario,
-        cambiadoPorUsuarioId,
-        cambiadoPorNombre,
-        cambiadoEn,
-      ];
+    id,
+    estadoAnterior,
+    estadoNuevo,
+    comentario,
+    cambiadoPorUsuarioId,
+    cambiadoPorNombre,
+    cambiadoEn,
+  ];
 }
 
 class AlertsSummary extends Equatable {
@@ -101,6 +101,11 @@ class AlertsSummary extends Equatable {
     required this.totalAlta,
     required this.totalMedia,
     required this.totalBaja,
+    required this.stockBajo,
+    required this.ordenesActivas,
+    required this.comprasPendientes,
+    required this.ordenesRetrasadas,
+    required this.costoPromedioOrden,
     required this.recientes,
   });
 
@@ -109,15 +114,25 @@ class AlertsSummary extends Equatable {
   final int totalAlta;
   final int totalMedia;
   final int totalBaja;
+  final int stockBajo;
+  final int ordenesActivas;
+  final int comprasPendientes;
+  final int ordenesRetrasadas;
+  final double costoPromedioOrden;
   final List<AlertRecord> recientes;
 
   @override
   List<Object?> get props => [
-        totalPendientes,
-        totalLeidas,
-        totalAlta,
-        totalMedia,
-        totalBaja,
-        recientes,
-      ];
+    totalPendientes,
+    totalLeidas,
+    totalAlta,
+    totalMedia,
+    totalBaja,
+    stockBajo,
+    ordenesActivas,
+    comprasPendientes,
+    ordenesRetrasadas,
+    costoPromedioOrden,
+    recientes,
+  ];
 }

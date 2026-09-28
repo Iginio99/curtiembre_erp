@@ -6,4 +6,9 @@ public sealed record ResumenAlertas(
     int TotalAlta,
     int TotalMedia,
     int TotalBaja,
+    int StockBajo,
+    int OrdenesActivas,
+    int ComprasPendientes,
+    int OrdenesRetrasadas,
+    decimal CostoPromedioOrden,
     IReadOnlyCollection<AlertaSistema> Recientes);
