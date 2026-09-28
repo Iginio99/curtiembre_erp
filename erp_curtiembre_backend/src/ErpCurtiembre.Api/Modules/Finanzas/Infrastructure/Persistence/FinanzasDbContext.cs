@@ -79,6 +79,7 @@ public sealed class FinanzasDbContext(
             entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(50);
             entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(150);
             entity.Property(x => x.ValorCompra).HasColumnName("valor_compra").HasPrecision(18, 2);
+            entity.Property(x => x.Cantidad).HasColumnName("cantidad");
             entity.Property(x => x.FechaCompra).HasColumnName("fecha_compra");
             entity.Property(x => x.VidaUtilMeses).HasColumnName("vida_util_meses");
             entity.Property(x => x.ValorResidual).HasColumnName("valor_residual").HasPrecision(18, 2);

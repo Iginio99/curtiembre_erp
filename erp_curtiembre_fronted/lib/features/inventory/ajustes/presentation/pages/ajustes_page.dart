@@ -476,9 +476,9 @@ class _AjustesListPanel extends StatelessWidget {
 
     if (state.items.isEmpty) {
       return const AppMessageCard.info(
-        title: 'Sin ajustes registrados',
+        title: 'Sin movimientos por mostrar',
         message:
-            'Todavia no hay ajustes que coincidan con los filtros actuales.',
+            'No encontramos ajustes que coincidan con los filtros actuales.',
       );
     }
 
@@ -612,9 +612,8 @@ class _AjusteDetailPanel extends StatelessWidget {
 
     if (detail == null) {
       return const AppMessageCard.info(
-        title: 'Selecciona un ajuste',
-        message:
-            'Elige un registro para revisar sus lineas y el impacto asociado.',
+        title: 'Selecciona un movimiento',
+        message: 'Elige un ajuste para consultar su detalle e impacto.',
       );
     }
 

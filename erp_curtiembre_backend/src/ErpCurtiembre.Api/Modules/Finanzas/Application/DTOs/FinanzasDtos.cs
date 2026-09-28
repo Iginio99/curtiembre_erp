@@ -114,28 +114,36 @@ public sealed record ActivoDepreciableListItemDto(
     string Codigo,
     string Nombre,
     decimal ValorCompra,
+    int Cantidad,
+    decimal CostoTotal,
     DateTime FechaCompra,
     int VidaUtilMeses,
     decimal ValorResidual,
     bool Activo,
-    DateTime CreadoEn);
+    DateTime CreadoEn,
+    decimal DepreciacionAnual,
+    decimal DepreciacionMensual);
 
 public sealed record ActivoDepreciableDetailDto(
     long Id,
     string Codigo,
     string Nombre,
     decimal ValorCompra,
+    int Cantidad,
+    decimal CostoTotal,
     DateTime FechaCompra,
     int VidaUtilMeses,
     decimal ValorResidual,
     bool Activo,
     DateTime CreadoEn,
+    decimal DepreciacionAnual,
     decimal DepreciacionMensual);
 
 public sealed record CreateActivoDepreciableRequestDto(
     string Codigo,
     string Nombre,
     decimal ValorCompra,
+    int Cantidad,
     DateTime FechaCompra,
     int VidaUtilMeses,
     decimal ValorResidual,
@@ -145,6 +153,7 @@ public sealed record UpdateActivoDepreciableRequestDto(
     string Codigo,
     string Nombre,
     decimal ValorCompra,
+    int Cantidad,
     DateTime FechaCompra,
     int VidaUtilMeses,
     decimal ValorResidual,

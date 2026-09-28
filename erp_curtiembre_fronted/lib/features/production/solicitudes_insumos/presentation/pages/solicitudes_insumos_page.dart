@@ -89,8 +89,8 @@ class _Content extends StatelessWidget {
           )
         else if (state.items.isEmpty)
           const AppMessageCard.info(
-            title: 'Sin solicitudes',
-            message: 'No hay solicitudes para el filtro seleccionado.',
+            title: 'Todo al día',
+            message: 'No hay solicitudes que atender con el filtro actual.',
           )
         else
           Expanded(

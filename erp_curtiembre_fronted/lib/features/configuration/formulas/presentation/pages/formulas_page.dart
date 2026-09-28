@@ -268,7 +268,7 @@ class _FormulasPageState extends State<FormulasPage> {
 
     return AppShell(
       title: 'Fórmulas',
-      currentPath: '/configuracion/formulas',
+      currentPath: '/produccion/formulas',
       breadcrumbs: const ['Inicio', 'Configuración', 'Fórmulas'],
       userName: session.nombreCompleto,
       roleName: session.rolNombre,

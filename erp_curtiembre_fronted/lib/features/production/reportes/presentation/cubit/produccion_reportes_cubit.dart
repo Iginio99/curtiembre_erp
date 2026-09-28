@@ -78,6 +78,11 @@ class ProduccionReportesCubit extends Cubit<ProduccionReportesState> {
     return state.processOptionsByOrderId[orderId] ?? const [];
   }
 
+  Future<List<OrdenProcesoRecord>> processesForPrint(int orderId) async {
+    await _ensureProcessOptionsForOrder(orderId);
+    return processOptionsForOrder(orderId);
+  }
+
   Future<void> ensureTabLoaded(ProduccionReportesTab tab) async {
     _talker.cubit(
       'Verificando si la pestaña ${_tabLabel(tab)} requiere carga inicial.',

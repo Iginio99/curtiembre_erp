@@ -10,9 +10,8 @@ public sealed class CostoOrdenService(
     ICostoOrdenRepository costoOrdenRepository,
     IPeriodoCostoRepository periodoCostoRepository,
     IProduccionFinanceLookupRepository produccionFinanceLookupRepository,
-    IManoObraDirectaRepository manoObraDirectaRepository,
     ICostoIndirectoRepository costoIndirectoRepository,
-    IDepreciacionPeriodoRepository depreciacionPeriodoRepository,
+    IActivoDepreciableRepository activoDepreciableRepository,
     IDateTimeProvider dateTimeProvider)
 {
     public async Task<IReadOnlyCollection<CostoOrdenListItemDto>> ListAsync(
@@ -43,13 +42,9 @@ public sealed class CostoOrdenService(
         }
 
         var planned = await produccionFinanceLookupRepository.GetPlannedCostByOrderAsync(ordenProduccionId, cancellationToken);
-        var manoObra = await manoObraDirectaRepository.ListAsync(
-            new ManoObraDirectaFiltersDto(ordenProduccionId, null),
-            cancellationToken);
-
         var costoPieles = snapshot.ClienteTraeLote ? 0 : decimal.Round(snapshot.CostoPielesTotal, 2);
         var costoInsumos = decimal.Round(planned?.CostoInsumos ?? 0, 2);
-        var costoManoObra = decimal.Round(manoObra.Sum(x => x.Monto), 2);
+        var costoManoObra = 0m;
 
         var entity = new CostoOrden
         {
@@ -89,43 +84,48 @@ public sealed class CostoOrdenService(
             return UseCaseResult<CostoOrdenDetailDto>.Fail(FinanzasErrorCodes.NotFound, "No se encontro la orden de produccion.");
         }
 
-        if (snapshot.FechaFinReal is null)
-        {
-            return UseCaseResult<CostoOrdenDetailDto>.Fail(
-                FinanzasErrorCodes.Conflict,
-                "La orden debe estar finalizada para calcular el costo real.");
-        }
-
-        var periodo = await ResolvePeriodoAsync(snapshot.FechaFinReal.Value, cancellationToken);
+        var fechaCalculo = snapshot.FechaFinReal ?? dateTimeProvider.Now.Date;
+        var periodo = await ResolvePeriodoAsync(fechaCalculo, cancellationToken);
         if (periodo is null)
         {
             return UseCaseResult<CostoOrdenDetailDto>.Fail(
                 FinanzasErrorCodes.Conflict,
-                "No existe un periodo de costo para la fecha de cierre de la orden.");
+                "Primero registra los gastos mensuales del mes de la orden.");
         }
 
         var consumed = await produccionFinanceLookupRepository.GetConsumedCostByOrderAsync(ordenProduccionId, cancellationToken);
-        var manoObra = await manoObraDirectaRepository.ListAsync(
-            new ManoObraDirectaFiltersDto(ordenProduccionId, null),
-            cancellationToken);
         var indirectos = await costoIndirectoRepository.ListAsync(
             new CostoIndirectoFiltersDto(periodo.Id, null, null),
             cancellationToken);
-        var depreciaciones = await depreciacionPeriodoRepository.ListAsync(
-            new DepreciacionPeriodoFiltersDto(periodo.Id, null),
+        var fechaCorteDepreciacion = dateTimeProvider.Now.Date < periodo.FechaFin.Date
+            ? dateTimeProvider.Now.Date
+            : periodo.FechaFin.Date;
+        var activos = await activoDepreciableRepository.ListEligibleForPeriodAsync(
+            fechaCorteDepreciacion,
             cancellationToken);
+        var depreciacionMensual = activos.Sum(CalculateMonthlyDepreciation);
 
         var costoPieles = snapshot.ClienteTraeLote ? 0 : decimal.Round(snapshot.CostoPielesTotal, 2);
         var costoInsumos = decimal.Round(consumed?.CostoInsumos ?? 0, 2);
-        var costoManoObra = decimal.Round(manoObra.Sum(x => x.Monto), 2);
+        var totalManoObraPeriodo = indirectos
+            .Where(x => IsLaborCost(x.TipoCosto))
+            .Sum(x => x.Monto);
+        var totalOtrosGastosPeriodo = indirectos
+            .Where(x => !IsLaborCost(x.TipoCosto))
+            .Sum(x => x.Monto);
+        var costoManoObra = await CalculateIndirectoAsignadoAsync(
+            periodo,
+            totalManoObraPeriodo,
+            snapshot.CantidadPieles,
+            cancellationToken);
         var costoIndirecto = await CalculateIndirectoAsignadoAsync(
             periodo,
-            indirectos.Sum(x => x.Monto),
+            totalOtrosGastosPeriodo,
             snapshot.CantidadPieles,
             cancellationToken);
         var costoDepreciacion = await CalculateDepreciacionAsignadaAsync(
             periodo,
-            depreciaciones.Sum(x => x.MontoDepreciacion),
+            depreciacionMensual,
             snapshot.CantidadPieles,
             cancellationToken);
         var costoTotal = decimal.Round(costoPieles + costoInsumos + costoManoObra + costoIndirecto + costoDepreciacion, 2);
@@ -220,7 +220,7 @@ public sealed class CostoOrdenService(
         decimal cantidadPielesOrden,
         CancellationToken cancellationToken)
     {
-        var totalPielesPeriodo = await produccionFinanceLookupRepository.GetTotalSkinsClosedInPeriodAsync(
+        var totalPielesPeriodo = await produccionFinanceLookupRepository.GetTotalSkinsWorkedInPeriodAsync(
             periodo.Anio,
             periodo.Mes,
             cancellationToken);
@@ -239,7 +239,7 @@ public sealed class CostoOrdenService(
         decimal cantidadPielesOrden,
         CancellationToken cancellationToken)
     {
-        var totalPielesPeriodo = await produccionFinanceLookupRepository.GetTotalSkinsClosedInPeriodAsync(
+        var totalPielesPeriodo = await produccionFinanceLookupRepository.GetTotalSkinsWorkedInPeriodAsync(
             periodo.Anio,
             periodo.Mes,
             cancellationToken);
@@ -260,6 +260,20 @@ public sealed class CostoOrdenService(
         }
 
         return decimal.Round(costoTotal / pielesBuenasFinales.Value, 4, MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal CalculateMonthlyDepreciation(ActivoDepreciable activo) =>
+        activo.VidaUtilMeses <= 0
+            ? 0
+            : decimal.Round(
+                (activo.CostoTotal - activo.ValorResidual) / activo.VidaUtilMeses,
+                2,
+                MidpointRounding.AwayFromZero);
+
+    private static bool IsLaborCost(string tipoCosto)
+    {
+        var normalized = tipoCosto.Trim().ToUpperInvariant();
+        return normalized is "MANO_DE_OBRA" or "MANO DE OBRA" or "SUELDO" or "SUELDOS" or "PLANILLA";
     }
 
     private static CostoOrdenListItemDto MapList(CostoOrden item) =>

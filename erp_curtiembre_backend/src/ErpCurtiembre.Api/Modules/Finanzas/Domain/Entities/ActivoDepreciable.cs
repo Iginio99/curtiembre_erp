@@ -10,6 +10,10 @@ public sealed class ActivoDepreciable
 
     public decimal ValorCompra { get; init; }
 
+    public int Cantidad { get; init; }
+
+    public decimal CostoTotal => ValorCompra * Cantidad;
+
     public DateTime FechaCompra { get; init; }
 
     public int VidaUtilMeses { get; init; }

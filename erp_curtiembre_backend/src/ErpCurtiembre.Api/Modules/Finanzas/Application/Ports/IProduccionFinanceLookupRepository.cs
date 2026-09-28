@@ -20,7 +20,7 @@ public interface IProduccionFinanceLookupRepository
         long ordenProduccionId,
         CancellationToken cancellationToken);
 
-    Task<decimal> GetTotalSkinsClosedInPeriodAsync(
+    Task<decimal> GetTotalSkinsWorkedInPeriodAsync(
         int anio,
         int mes,
         CancellationToken cancellationToken);

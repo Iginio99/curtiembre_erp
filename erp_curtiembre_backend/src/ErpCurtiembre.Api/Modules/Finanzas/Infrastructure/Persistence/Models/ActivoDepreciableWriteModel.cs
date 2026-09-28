@@ -10,6 +10,8 @@ public sealed class ActivoDepreciableWriteModel
 
     public decimal ValorCompra { get; set; }
 
+    public int Cantidad { get; set; }
+
     public DateTime FechaCompra { get; set; }
 
     public int VidaUtilMeses { get; set; }

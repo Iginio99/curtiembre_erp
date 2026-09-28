@@ -75,6 +75,7 @@ class _ActivosPageState extends State<ActivosPage> {
       codigo: payload.codigo,
       nombre: payload.nombre,
       valorCompra: payload.valorCompra,
+      cantidad: payload.cantidad,
       fechaCompra: payload.fechaCompra,
       vidaUtilMeses: payload.vidaUtilMeses,
       valorResidual: payload.valorResidual,
@@ -128,6 +129,7 @@ class _ActivosPageState extends State<ActivosPage> {
       codigo: payload.codigo,
       nombre: payload.nombre,
       valorCompra: payload.valorCompra,
+      cantidad: payload.cantidad,
       fechaCompra: payload.fechaCompra,
       vidaUtilMeses: payload.vidaUtilMeses,
       valorResidual: payload.valorResidual,
@@ -164,7 +166,7 @@ class _ActivosPageState extends State<ActivosPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Activos depreciables'),
+        title: const Text('Equipos y depreciación'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.lg),
@@ -191,6 +193,13 @@ class _ActivosPageState extends State<ActivosPage> {
                   constraints: const BoxConstraints(maxWidth: 1440),
                   child: BlocBuilder<ActivosCubit, ActivosState>(
                     builder: (context, state) {
+                      final totalDepreciacionMensual = state.items
+                          .where((item) => item.activo)
+                          .fold<double>(
+                            0,
+                            (sum, item) =>
+                                sum + (item.depreciacionMensual ?? 0),
+                          );
                       final isWide =
                           MediaQuery.sizeOf(context).width >=
                           AppBreakpoints.tablet;
@@ -236,11 +245,12 @@ class _ActivosPageState extends State<ActivosPage> {
                       final headerAndFilters = <Widget>[
                         FinanceHeroCard(
                           title:
-                              'Registra los activos base que luego entraran al calculo mensual de depreciacion.',
+                              'Registra los equipos que participan en la producción.',
                           description:
-                              'Aqui controlas vigencia, valor de compra, residual y vida util para que el periodo financiero pueda distribuir el desgaste real.',
-                          badgeLabel: 'Activos visibles',
-                          badgeValue: '${state.items.length}',
+                              'El sistema calcula automáticamente la depreciación mensual de los equipos vigentes y la incorpora a los gastos del mes.',
+                          badgeLabel: 'Depreciacion mensual',
+                          badgeValue:
+                              'S/ ${totalDepreciacionMensual.toStringAsFixed(2)}',
                           sessionUserName: session?.userName,
                         ),
                         const Gap(AppSpacing.xl),
@@ -373,10 +383,10 @@ class _ActivosFiltersCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Busqueda y mantenimiento', style: theme.textTheme.titleLarge),
+          Text('Buscar y registrar equipos', style: theme.textTheme.titleLarge),
           const Gap(AppSpacing.sm),
           Text(
-            'Busca por codigo o nombre, filtra por vigencia y actualiza el activo seleccionado cuando sea necesario.',
+            'Los equipos inactivos dejan de participar automáticamente en la depreciación.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -407,7 +417,7 @@ class _ActivosFiltersCard extends StatelessWidget {
                 expand: false,
               ),
               AppButton.secondary(
-                label: 'Nuevo activo',
+                label: 'Nuevo equipo',
                 icon: Icons.add_business_outlined,
                 isLoading: state.isSubmittingAction,
                 onPressed: onCreate,
@@ -467,7 +477,7 @@ class _ActivosListPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Listado de activos', style: theme.textTheme.titleLarge),
+          Text('Equipos registrados', style: theme.textTheme.titleLarge),
           const Gap(AppSpacing.xs),
           Text(
             '${state.items.length} registro(s) para la vista actual.',
@@ -549,10 +559,10 @@ class _ActivosDetailPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Detalle del activo', style: theme.textTheme.titleLarge),
+          Text('Detalle y depreciación', style: theme.textTheme.titleLarge),
           const Gap(AppSpacing.xs),
           Text(
-            'Revisa la base monetaria, la vida util y la depreciacion mensual estimada.',
+            'Revisa costo, unidades, vida útil y depreciación calculada.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -641,8 +651,11 @@ class _ActivosDetailPanel extends StatelessWidget {
                           FinanceDetailCard(
                             title: 'Base economica',
                             lines: [
-                              'Compra: S/ ${item.valorCompra.toStringAsFixed(2)}',
+                              'Costo unitario: S/ ${item.valorCompra.toStringAsFixed(2)}',
+                              'Unidades: ${item.cantidad}',
+                              'Costo total: S/ ${item.costoTotal.toStringAsFixed(2)}',
                               'Residual: S/ ${item.valorResidual.toStringAsFixed(2)}',
+                              'Depreciacion anual: S/ ${(item.depreciacionAnual ?? 0).toStringAsFixed(2)}',
                               'Depreciacion mensual: S/ ${(item.depreciacionMensual ?? 0).toStringAsFixed(2)}',
                             ],
                           ),
@@ -650,7 +663,7 @@ class _ActivosDetailPanel extends StatelessWidget {
                             title: 'Vigencia',
                             lines: [
                               'Fecha compra: ${formatFinanceDate(item.fechaCompra)}',
-                              'Vida util: ${item.vidaUtilMeses} mes(es)',
+                              'Vida util: ${(item.vidaUtilMeses / 12).toStringAsFixed(item.vidaUtilMeses % 12 == 0 ? 0 : 1)} año(s)',
                               'Creado: ${formatFinanceDateTime(item.creadoEn)}',
                             ],
                           ),

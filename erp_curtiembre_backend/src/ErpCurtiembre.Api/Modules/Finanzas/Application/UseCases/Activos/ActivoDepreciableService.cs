@@ -31,6 +31,7 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
             request.Codigo,
             request.Nombre,
             request.ValorCompra,
+            request.Cantidad,
             request.FechaCompra,
             request.VidaUtilMeses,
             request.ValorResidual,
@@ -47,6 +48,7 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
                 Codigo = request.Codigo.Trim(),
                 Nombre = request.Nombre.Trim(),
                 ValorCompra = request.ValorCompra,
+                Cantidad = request.Cantidad,
                 FechaCompra = request.FechaCompra.Date,
                 VidaUtilMeses = request.VidaUtilMeses,
                 ValorResidual = request.ValorResidual,
@@ -75,6 +77,7 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
             request.Codigo,
             request.Nombre,
             request.ValorCompra,
+            request.Cantidad,
             request.FechaCompra,
             request.VidaUtilMeses,
             request.ValorResidual,
@@ -92,6 +95,7 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
                 Codigo = request.Codigo.Trim(),
                 Nombre = request.Nombre.Trim(),
                 ValorCompra = request.ValorCompra,
+                Cantidad = request.Cantidad,
                 FechaCompra = request.FechaCompra.Date,
                 VidaUtilMeses = request.VidaUtilMeses,
                 ValorResidual = request.ValorResidual,
@@ -109,6 +113,7 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
         string codigo,
         string nombre,
         decimal valorCompra,
+        int cantidad,
         DateTime fechaCompra,
         int vidaUtilMeses,
         decimal valorResidual,
@@ -142,12 +147,17 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
             errors.Add("El valor de compra no puede ser negativo.");
         }
 
+        if (cantidad <= 0)
+        {
+            errors.Add("La cantidad debe ser mayor a cero.");
+        }
+
         if (valorResidual < 0)
         {
             errors.Add("El valor residual no puede ser negativo.");
         }
 
-        if (valorResidual > valorCompra)
+        if (valorResidual > valorCompra * cantidad)
         {
             errors.Add("El valor residual no puede ser mayor al valor de compra.");
         }
@@ -177,11 +187,15 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
             item.Codigo,
             item.Nombre,
             item.ValorCompra,
+            item.Cantidad,
+            item.CostoTotal,
             item.FechaCompra,
             item.VidaUtilMeses,
             item.ValorResidual,
             item.Activo,
-            item.CreadoEn);
+            item.CreadoEn,
+            CalculateAnnualDepreciation(item),
+            CalculateMonthlyDepreciation(item));
 
     private static ActivoDepreciableDetailDto MapDetail(ActivoDepreciable item) =>
         new(
@@ -189,15 +203,23 @@ public sealed class ActivoDepreciableService(IActivoDepreciableRepository activo
             item.Codigo,
             item.Nombre,
             item.ValorCompra,
+            item.Cantidad,
+            item.CostoTotal,
             item.FechaCompra,
             item.VidaUtilMeses,
             item.ValorResidual,
             item.Activo,
             item.CreadoEn,
+            CalculateAnnualDepreciation(item),
             CalculateMonthlyDepreciation(item));
+
+    private static decimal CalculateAnnualDepreciation(ActivoDepreciable item) =>
+        item.VidaUtilMeses <= 0
+            ? 0
+            : decimal.Round((item.CostoTotal - item.ValorResidual) / item.VidaUtilMeses * 12, 2, MidpointRounding.AwayFromZero);
 
     private static decimal CalculateMonthlyDepreciation(ActivoDepreciable item) =>
         item.VidaUtilMeses <= 0
             ? 0
-            : decimal.Round((item.ValorCompra - item.ValorResidual) / item.VidaUtilMeses, 2, MidpointRounding.AwayFromZero);
+            : decimal.Round((item.CostoTotal - item.ValorResidual) / item.VidaUtilMeses, 2, MidpointRounding.AwayFromZero);
 }

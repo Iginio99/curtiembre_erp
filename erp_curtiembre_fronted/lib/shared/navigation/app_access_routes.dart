@@ -43,6 +43,7 @@ abstract final class AppAccessRoutes {
       routes.addAll({
         '/produccion/clientes',
         '/produccion/lotes',
+        '/produccion/formulas',
         '/produccion/ordenes',
         '/produccion/personal',
         '/produccion/productos-terminados',

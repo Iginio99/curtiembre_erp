@@ -27,6 +27,7 @@ public sealed class SqlActivoDepreciableRepository(
                 a.codigo AS Codigo,
                 a.nombre AS Nombre,
                 a.valor_compra AS ValorCompra,
+                a.cantidad AS Cantidad,
                 CAST(a.fecha_compra AS datetime2) AS FechaCompra,
                 a.vida_util_meses AS VidaUtilMeses,
                 a.valor_residual AS ValorResidual,
@@ -48,6 +49,7 @@ public sealed class SqlActivoDepreciableRepository(
             Codigo = activo.Codigo,
             Nombre = activo.Nombre,
             ValorCompra = activo.ValorCompra,
+            Cantidad = activo.Cantidad,
             FechaCompra = activo.FechaCompra.Date,
             VidaUtilMeses = activo.VidaUtilMeses,
             ValorResidual = activo.ValorResidual,
@@ -70,6 +72,7 @@ public sealed class SqlActivoDepreciableRepository(
         entity.Codigo = activo.Codigo;
         entity.Nombre = activo.Nombre;
         entity.ValorCompra = activo.ValorCompra;
+        entity.Cantidad = activo.Cantidad;
         entity.FechaCompra = activo.FechaCompra.Date;
         entity.VidaUtilMeses = activo.VidaUtilMeses;
         entity.ValorResidual = activo.ValorResidual;
@@ -86,6 +89,7 @@ public sealed class SqlActivoDepreciableRepository(
                 a.codigo AS Codigo,
                 a.nombre AS Nombre,
                 a.valor_compra AS ValorCompra,
+                a.cantidad AS Cantidad,
                 CAST(a.fecha_compra AS datetime2) AS FechaCompra,
                 a.vida_util_meses AS VidaUtilMeses,
                 a.valor_residual AS ValorResidual,
@@ -124,6 +128,7 @@ public sealed class SqlActivoDepreciableRepository(
                 a.codigo AS Codigo,
                 a.nombre AS Nombre,
                 a.valor_compra AS ValorCompra,
+                a.cantidad AS Cantidad,
                 CAST(a.fecha_compra AS datetime2) AS FechaCompra,
                 a.vida_util_meses AS VidaUtilMeses,
                 a.valor_residual AS ValorResidual,

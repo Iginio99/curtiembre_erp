@@ -28,6 +28,10 @@ import 'package:erp_curtiembre_fronted/features/configuration/units/data/datasou
 import 'package:erp_curtiembre_fronted/features/configuration/units/data/repositories/units_repository_impl.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/units/domain/repositories/units_repository.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/units/presentation/cubit/units_cubit.dart';
+import 'package:erp_curtiembre_fronted/features/configuration/formulas/data/datasources/formulas_remote_data_source.dart';
+import 'package:erp_curtiembre_fronted/features/configuration/formulas/data/repositories/formulas_repository_impl.dart';
+import 'package:erp_curtiembre_fronted/features/configuration/formulas/domain/repositories/formulas_repository.dart';
+import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentation/cubit/formulas_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/finance/activos/data/datasources/activos_remote_data_source.dart';
 import 'package:erp_curtiembre_fronted/features/finance/activos/data/repositories/activos_repository_impl.dart';
 import 'package:erp_curtiembre_fronted/features/finance/activos/domain/repositories/activos_repository.dart';
@@ -166,6 +170,9 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<UnitsRemoteDataSource>(
       () => UnitsRemoteDataSource(getIt()),
     )
+    ..registerLazySingleton<FormulasRemoteDataSource>(
+      () => FormulasRemoteDataSource(getIt()),
+    )
     ..registerLazySingleton<ActivosRemoteDataSource>(
       () => ActivosRemoteDataSource(getIt(), getIt()),
     )
@@ -249,6 +256,9 @@ Future<void> configureDependencies() async {
       () => SkinTypesRepositoryImpl(getIt()),
     )
     ..registerLazySingleton<UnitsRepository>(() => UnitsRepositoryImpl(getIt()))
+    ..registerLazySingleton<FormulasRepository>(
+      () => FormulasRepositoryImpl(getIt()),
+    )
     ..registerLazySingleton<ActivosRepository>(
       () => ActivosRepositoryImpl(getIt(), getIt()),
     )
@@ -321,6 +331,7 @@ Future<void> configureDependencies() async {
     ..registerFactory<AuthCubit>(() => AuthCubit(getIt()))
     ..registerFactory<AlertsCubit>(() => AlertsCubit(getIt()))
     ..registerFactory<AreasCubit>(() => AreasCubit(getIt()))
+    ..registerFactory<FormulasCubit>(() => FormulasCubit(getIt()))
     ..registerFactory<SystemParametersCubit>(
       () => SystemParametersCubit(getIt()),
     )

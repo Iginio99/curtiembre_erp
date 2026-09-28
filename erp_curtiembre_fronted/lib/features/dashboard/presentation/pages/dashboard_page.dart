@@ -306,9 +306,8 @@ class _AlertsPanel extends StatelessWidget {
           const Gap(AppSpacing.sm),
           if (alerts.isEmpty)
             const AppMessageCard.info(
-              title: 'Sin alertas pendientes',
-              message:
-                  'No hay alertas operativas para revisar en este momento.',
+              title: 'Todo en orden',
+              message: 'No hay alertas operativas pendientes por revisar.',
             )
           else
             ...alerts

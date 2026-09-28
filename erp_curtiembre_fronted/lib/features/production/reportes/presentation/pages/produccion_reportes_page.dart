@@ -475,8 +475,18 @@ class _OrdenesActivasTab extends StatelessWidget {
             return _ReportItemCard(
               title: item.codigoOrden,
               subtitle: '${item.cliente} · Lote ${item.codigoLote}',
-              onPrint: () =>
-                  ProductionReportPdfService.printActiveOrder(context, item),
+              onPrint: () async {
+                final cubit = context.read<ProduccionReportesCubit>();
+                final processes = await cubit.processesForPrint(
+                  item.ordenProduccionId,
+                );
+                if (!context.mounted) return;
+                await ProductionReportPdfService.printActiveOrder(
+                  context,
+                  item,
+                  processes,
+                );
+              },
               chips: [
                 _cardChip(context, item.estado),
                 if ((item.responsable ?? '').trim().isNotEmpty)
@@ -628,8 +638,18 @@ class _OrdenesClienteTab extends StatelessWidget {
             return _ReportItemCard(
               title: item.codigoOrden,
               subtitle: '${item.cliente} · Lote ${item.codigoLote}',
-              onPrint: () =>
-                  ProductionReportPdfService.printClientOrder(context, item),
+              onPrint: () async {
+                final cubit = context.read<ProduccionReportesCubit>();
+                final processes = await cubit.processesForPrint(
+                  item.ordenProduccionId,
+                );
+                if (!context.mounted) return;
+                await ProductionReportPdfService.printClientOrder(
+                  context,
+                  item,
+                  processes,
+                );
+              },
               chips: [
                 _cardChip(context, item.estado),
                 _cardChip(
@@ -1857,7 +1877,7 @@ class _CostosOrdenTabV2 extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             SizedBox(
-              width: 620,
+              width: 520,
               child: _SearchableReportFilter<int>(
                 key: ValueKey('costo-${state.costosOrdenProduccionId}'),
                 label: 'Orden o cliente',
@@ -1881,11 +1901,13 @@ class _CostosOrdenTabV2 extends StatelessWidget {
                 label: 'Costo total de la ficha',
                 value: money.format(total),
                 icon: Icons.payments_outlined,
+                compact: true,
               ),
               _SummaryMetric(
                 label: 'Orden seleccionada',
                 value: ordersWithCost == 0 ? 'Sin consumo' : 'Con consumo',
                 icon: Icons.assignment_turned_in_outlined,
+                compact: true,
               ),
             ],
           ],
@@ -1931,9 +1953,13 @@ class _CostosOrdenTabV2 extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: ExpansionTile(
                 initiallyExpanded: true,
-                title: Text('${order.codigoOrden} · ${order.cliente}'),
+                title: Text(
+                  '${order.codigoOrden} · ${order.cliente}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 subtitle: Text(
                   '${order.codigoLote} · Pieles ${order.clienteTraeLote ? 'traidas por cliente' : money.format(order.costoPieles)} · Materiales ${money.format(order.costoMaterialesReal)}',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -2034,7 +2060,10 @@ class _OrderCostSummary extends StatelessWidget {
                   (cell) => SizedBox(
                     width: cellWidth,
                     child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: Theme.of(context).colorScheme.outlineVariant,
@@ -2050,10 +2079,10 @@ class _OrderCostSummary extends StatelessWidget {
                               context,
                             ).textTheme.labelSmall?.copyWith(letterSpacing: 1),
                           ),
-                          const Gap(AppSpacing.sm),
+                          const Gap(AppSpacing.xs),
                           Text(
                             cell.$2,
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   color: cell.$1.startsWith('COSTO')
                                       ? Theme.of(context).colorScheme.primary
@@ -2096,7 +2125,7 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
       (sum, item) => sum + item.costoMaterialesReal,
     );
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2110,7 +2139,7 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                   child: Column(
                     children: [
                       CircleAvatar(
-                        radius: 17,
+                        radius: 14,
                         backgroundColor: active
                             ? Theme.of(context).colorScheme.primaryContainer
                             : Theme.of(
@@ -2127,6 +2156,7 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
+                          fontSize: 13,
                           fontWeight: active
                               ? FontWeight.w800
                               : FontWeight.w500,
@@ -2141,9 +2171,9 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
               );
             }),
           ),
-          const Gap(AppSpacing.lg),
+          const Gap(AppSpacing.md),
           Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLowest,
               border: Border.all(
@@ -2160,11 +2190,12 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                         children: [
                           Text(
                             stage.procesoNombre as String,
-                            style: Theme.of(context).textTheme.headlineSmall,
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const Gap(AppSpacing.xs),
                           Text(
                             'Inicio ${_formatOptionalDate(stage.fechaInicio as DateTime?)}   Fin ${_formatOptionalDate(stage.fechaFin as DateTime?)}   Pieles ${_formatDecimal(stage.cantidadPieles as double)}   Kilos ${stage.pesoBaseKg == null ? '-' : _formatDecimal(stage.pesoBaseKg as double)}',
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
                       ),
@@ -2175,7 +2206,7 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                         const Text('COSTO PROCESO'),
                         Text(
                           widget.money.format(total),
-                          style: Theme.of(context).textTheme.headlineSmall
+                          style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -2522,18 +2553,23 @@ class _SummaryMetric extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
+    this.compact = false,
   });
 
   final String label;
   final String value;
   final IconData icon;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      width: compact ? 210 : 260,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? AppSpacing.sm : AppSpacing.md,
+        vertical: compact ? AppSpacing.sm : AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
@@ -2542,14 +2578,24 @@ class _SummaryMetric extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, color: theme.colorScheme.primary),
-          const Gap(AppSpacing.md),
+          Gap(compact ? AppSpacing.sm : AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: theme.textTheme.labelMedium),
-                const Gap(AppSpacing.xs),
-                Text(value, style: theme.textTheme.titleLarge),
+                Text(
+                  label,
+                  style: compact
+                      ? theme.textTheme.labelSmall
+                      : theme.textTheme.labelMedium,
+                ),
+                if (!compact) const Gap(AppSpacing.xs),
+                Text(
+                  value,
+                  style: compact
+                      ? theme.textTheme.titleMedium
+                      : theme.textTheme.titleLarge,
+                ),
               ],
             ),
           ),

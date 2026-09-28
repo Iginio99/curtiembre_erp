@@ -344,7 +344,15 @@ class CostosOrdenCubit extends Cubit<CostosOrdenState> {
     );
 
     try {
-      final item = await _repository.getCostoOrden(costoOrdenId);
+      final selected = state.items
+          .where((item) => item.id == costoOrdenId)
+          .firstOrNull;
+      if (selected == null) {
+        throw StateError('El costo seleccionado ya no está en la lista.');
+      }
+      final item = await _repository.getCostoOrden(
+        selected.ordenProduccionId,
+      );
       _talker.cubit(
         'Detalle del costo por orden $costoOrdenId cargado correctamente.',
         logLevel: LogLevel.debug,

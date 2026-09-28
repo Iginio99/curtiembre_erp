@@ -373,6 +373,8 @@ class _ModuleNavigationGroup extends StatelessWidget {
         ],
       );
     }
+    final primaryItems = items.where((item) => !item.secondary).toList();
+    final secondaryItems = items.where((item) => item.secondary).toList();
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
@@ -385,11 +387,33 @@ class _ModuleNavigationGroup extends StatelessWidget {
         title: Text(group.label),
         childrenPadding: const EdgeInsets.only(left: AppSpacing.lg),
         children: [
-          for (final item in items)
+          for (final item in primaryItems)
             _SidebarItem(
               item: item,
               selected: item.matches(currentPath),
               compact: false,
+            ),
+          if (secondaryItems.isNotEmpty)
+            ExpansionTile(
+              initiallyExpanded: secondaryItems.any(
+                (item) => item.matches(currentPath),
+              ),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+              ),
+              leading: const Icon(Icons.settings_suggest_outlined, size: 20),
+              title: const Text('Ajustes mensuales'),
+              childrenPadding: const EdgeInsets.only(left: AppSpacing.md),
+              children: [
+                for (final item in secondaryItems)
+                  _SidebarItem(
+                    item: item,
+                    selected: item.matches(currentPath),
+                    compact: false,
+                  ),
+              ],
             ),
         ],
       ),
@@ -725,11 +749,13 @@ class _NavigationItem {
     required this.label,
     required this.icon,
     required this.route,
+    this.secondary = false,
   });
 
   final String label;
   final IconData icon;
   final String route;
+  final bool secondary;
 
   bool matches(String path) =>
       route == '/home' ? path == route : path.startsWith(route);
@@ -790,6 +816,11 @@ const _moduleNavigationGroups = [
       route: '/produccion/lotes',
     ),
     _NavigationItem(
+      label: 'Fórmulas por producto',
+      icon: Icons.science_outlined,
+      route: '/produccion/formulas',
+    ),
+    _NavigationItem(
       label: 'Personal',
       icon: Icons.badge_outlined,
       route: '/produccion/personal',
@@ -812,54 +843,19 @@ const _moduleNavigationGroups = [
   ]),
   _NavigationGroup('Finanzas', Icons.payments_outlined, '/finanzas/', [
     _NavigationItem(
-      label: 'Períodos',
-      icon: Icons.calendar_month_outlined,
-      route: '/finanzas/periodos',
-    ),
-    _NavigationItem(
-      label: 'Indirectos',
-      icon: Icons.receipt_long_outlined,
-      route: '/finanzas/indirectos',
-    ),
-    _NavigationItem(
-      label: 'Mano de obra',
-      icon: Icons.groups_outlined,
-      route: '/finanzas/mano-obra',
-    ),
-    _NavigationItem(
-      label: 'Activos',
-      icon: Icons.account_balance_outlined,
-      route: '/finanzas/activos',
-    ),
-    _NavigationItem(
-      label: 'Depreciaciones',
-      icon: Icons.trending_down_outlined,
-      route: '/finanzas/depreciaciones',
-    ),
-    _NavigationItem(
-      label: 'Costos por proceso',
-      icon: Icons.analytics_outlined,
-      route: '/finanzas/costos/procesos',
-    ),
-    _NavigationItem(
-      label: 'Costos por orden',
+      label: 'Costo por piel',
       icon: Icons.request_quote_outlined,
       route: '/finanzas/costos/ordenes',
     ),
     _NavigationItem(
-      label: 'Precios',
-      icon: Icons.sell_outlined,
-      route: '/finanzas/precios',
+      label: 'Gastos mensuales',
+      icon: Icons.receipt_long_outlined,
+      route: '/finanzas/indirectos',
     ),
     _NavigationItem(
-      label: 'Rentabilidad',
-      icon: Icons.insights_outlined,
-      route: '/finanzas/rentabilidad',
-    ),
-    _NavigationItem(
-      label: 'Reportes',
-      icon: Icons.bar_chart_outlined,
-      route: '/finanzas/reportes',
+      label: 'Equipos y depreciación',
+      icon: Icons.precision_manufacturing_outlined,
+      route: '/finanzas/activos',
     ),
   ]),
 ];

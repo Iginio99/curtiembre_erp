@@ -89,7 +89,7 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Costos por orden'),
+        title: const Text('Costo por piel'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.lg),
@@ -155,17 +155,19 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
                       final headerAndFilters = <Widget>[
                         FinanceHeroCard(
                           title:
-                              'Consolida el costo total de la orden y valida el impacto real de pieles, insumos, mano de obra, indirectos y depreciacion.',
+                              'Costo completo de cada orden, calculado por piel.',
                           description:
-                              'Desde aqui calculas estimado, luego real, y finalmente cierras el costo para dejar lista la base de precio y rentabilidad.',
-                          badgeLabel: 'Ordenes costadas',
+                              'Pieles e insumos son directos. Sueldos, gastos mensuales y depreciacion se reparten segun las pieles trabajadas en el mes.',
+                          badgeLabel: 'Órdenes calculadas',
                           badgeValue: '${state.items.length}',
                           sessionUserName: session?.userName,
                         ),
                         const Gap(AppSpacing.xl),
-                        _CostosOrdenFiltersCard(
-                          state: state,
-                          onOrderChanged: (value) {
+                        SizedBox(
+                          width: double.infinity,
+                          child: _CostosOrdenFiltersCard(
+                            state: state,
+                            onOrderChanged: (value) {
                             _talker.ui(
                               'Se cambio el filtro de orden en costos por orden a ${value ?? 'todas'}.',
                               logLevel: LogLevel.debug,
@@ -176,7 +178,7 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
                               estadoFilter: state.estadoFilter,
                             );
                           },
-                          onPeriodoChanged: (value) {
+                            onPeriodoChanged: (value) {
                             _talker.ui(
                               'Se cambio el filtro de periodo en costos por orden a ${value ?? 'todos'}.',
                               logLevel: LogLevel.debug,
@@ -188,7 +190,7 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
                               estadoFilter: state.estadoFilter,
                             );
                           },
-                          onEstadoChanged: (value) {
+                            onEstadoChanged: (value) {
                             _talker.ui(
                               'Se cambio el filtro de estado en costos por orden a ${_describeState(value)}.',
                               logLevel: LogLevel.debug,
@@ -200,9 +202,10 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
                               estadoFilter: value,
                             );
                           },
-                          onCalculateEstimated: () =>
-                              _calculateEstimated(context),
-                          onCalculateReal: () => _calculateReal(context),
+                            onCalculateEstimated: () =>
+                                _calculateEstimated(context),
+                            onCalculateReal: () => _calculateReal(context),
+                          ),
                         ),
                         const Gap(AppSpacing.xl),
                       ];
@@ -218,9 +221,9 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
                                   height: 620,
                                   child: Row(
                                     children: [
-                                      Expanded(flex: 9, child: listPanel),
+                                      Expanded(flex: 6, child: listPanel),
                                       const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
+                                      Expanded(flex: 10, child: detailPanel),
                                     ],
                                   ),
                                 ),
@@ -250,9 +253,9 @@ class _CostosOrdenPageState extends State<CostosOrdenPage> {
                             child: isWide
                                 ? Row(
                                     children: [
-                                      Expanded(flex: 9, child: listPanel),
+                                      Expanded(flex: 6, child: listPanel),
                                       const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
+                                      Expanded(flex: 10, child: detailPanel),
                                     ],
                                   )
                                 : Column(
@@ -311,10 +314,10 @@ class _CostosOrdenFiltersCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Orden, periodo y estado', style: theme.textTheme.titleLarge),
+          Text('Selecciona una orden', style: theme.textTheme.titleLarge),
           const Gap(AppSpacing.sm),
           Text(
-            'Filtra la base financiera y usa la orden seleccionada para calcular estimado o real segun su avance.',
+            'Actualiza su costo usando los consumos y gastos mensuales registrados.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -349,65 +352,9 @@ class _CostosOrdenFiltersCard extends StatelessWidget {
                   onChanged: onOrderChanged,
                 ),
               ),
-              SizedBox(
-                width: 260,
-                child: DropdownButtonFormField<int?>(
-                  isExpanded: true,
-                  initialValue: state.periodoCostoIdFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Periodo de costo',
-                  ),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Todos'),
-                    ),
-                    ...state.periodoOptions.map(
-                      (item) => DropdownMenuItem<int?>(
-                        value: item.id,
-                        child: Text('${item.codigo} | ${item.estado}'),
-                      ),
-                    ),
-                  ],
-                  onChanged: onPeriodoChanged,
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: state.estadoFilter,
-                  decoration: const InputDecoration(labelText: 'Estado'),
-                  items: const [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Todos'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'ESTIMADO',
-                      child: Text('ESTIMADO'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'REAL',
-                      child: Text('REAL'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'CERRADO',
-                      child: Text('CERRADO'),
-                    ),
-                  ],
-                  onChanged: onEstadoChanged,
-                ),
-              ),
               AppButton.secondary(
-                label: 'Calcular estimado',
-                icon: Icons.analytics_outlined,
-                isLoading: state.isSubmittingAction,
-                onPressed: onCalculateEstimated,
-              ),
-              AppButton.secondary(
-                label: 'Calcular real',
-                icon: Icons.price_change_outlined,
+                label: 'Actualizar costo',
+                icon: Icons.calculate_outlined,
                 isLoading: state.isSubmittingAction,
                 onPressed: onCalculateReal,
               ),
@@ -439,7 +386,7 @@ class _CostosOrdenListPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Listado de costos por orden',
+            'Órdenes de producción',
             style: theme.textTheme.titleLarge,
           ),
           const Gap(AppSpacing.xs),
@@ -528,40 +475,15 @@ class _CostosOrdenDetailPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Detalle del costo por orden',
+            'Detalle por orden',
             style: theme.textTheme.titleLarge,
           ),
           const Gap(AppSpacing.xs),
           Text(
-            'Revisa el reparto completo del costo y avanza desde estimado hasta cerrado segun el estado actual.',
+            'Aquí ves exactamente de dónde sale el costo de cada piel.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              AppButton.secondary(
-                label: 'Calcular estimado',
-                icon: Icons.analytics_outlined,
-                isLoading: state.isSubmittingAction,
-                onPressed: onCalculateEstimated,
-              ),
-              AppButton.secondary(
-                label: 'Calcular real',
-                icon: Icons.price_change_outlined,
-                isLoading: state.isSubmittingAction,
-                onPressed: onCalculateReal,
-              ),
-              AppButton.secondary(
-                label: 'Cerrar costo',
-                icon: Icons.lock_outline,
-                isLoading: state.isSubmittingAction,
-                onPressed: item?.canClose == true ? onClose : null,
-              ),
-            ],
           ),
           const Gap(AppSpacing.lg),
           Expanded(
@@ -634,46 +556,34 @@ class _CostosOrdenDetailPanel extends StatelessWidget {
                         runSpacing: AppSpacing.lg,
                         children: [
                           FinanceDetailCard(
-                            title: 'Costos directos',
+                            title: 'Costos propios de la orden',
                             lines: [
-                              'Pieles: S/ ${item.costoPieles.toStringAsFixed(2)}',
-                              'Insumos: S/ ${item.costoInsumos.toStringAsFixed(2)}',
+                              'Piel cruda: S/ ${item.costoPieles.toStringAsFixed(2)}',
+                              'Insumos consumidos: S/ ${item.costoInsumos.toStringAsFixed(2)}',
+                            ],
+                          ),
+                          FinanceDetailCard(
+                            title: 'Gastos mensuales asignados',
+                            lines: [
                               'Mano de obra: S/ ${item.costoManoObra.toStringAsFixed(2)}',
+                              'Otros gastos: S/ ${item.costoIndirectoAsignado.toStringAsFixed(2)}',
+                              'Depreciación: S/ ${item.costoDepreciacionAsignado.toStringAsFixed(2)}',
                             ],
                           ),
                           FinanceDetailCard(
-                            title: 'Asignaciones',
-                            lines: [
-                              'Indirectos: S/ ${item.costoIndirectoAsignado.toStringAsFixed(2)}',
-                              'Depreciacion: S/ ${item.costoDepreciacionAsignado.toStringAsFixed(2)}',
-                              'Total: S/ ${item.costoTotal.toStringAsFixed(2)}',
-                            ],
-                          ),
-                          FinanceDetailCard(
-                            title: 'Cierre economico',
+                            title: 'Resultado por piel',
                             lines: [
                               'Pieles buenas: ${item.pielesBuenasFinales?.toStringAsFixed(2) ?? 'Sin registro'}',
-                              'Costo por piel: ${item.costoPorPiel == null ? 'Sin registro' : 'S/ ${item.costoPorPiel!.toStringAsFixed(2)}'}',
-                              'Calculado: ${formatFinanceDateTime(item.calculadoEn)}',
+                              'Costo total: S/ ${item.costoTotal.toStringAsFixed(2)}',
+                              'COSTO POR PIEL: ${item.costoPorPiel == null ? 'Pendiente de pieles buenas' : 'S/ ${item.costoPorPiel!.toStringAsFixed(2)}'}',
                             ],
                           ),
                         ],
                       ),
-                      const Gap(AppSpacing.lg),
-                      Wrap(
-                        spacing: AppSpacing.lg,
-                        runSpacing: AppSpacing.lg,
-                        children: [
-                          FinanceDetailCard(
-                            title: 'Estimacion y real',
-                            width: 400,
-                            lines: [
-                              'Costo estimado: ${item.costoEstimado == null ? 'Sin registro' : 'S/ ${item.costoEstimado!.toStringAsFixed(2)}'}',
-                              'Costo real: ${item.costoReal == null ? 'Sin registro' : 'S/ ${item.costoReal!.toStringAsFixed(2)}'}',
-                              'Usuario calculador: ${item.calculadoPorUsuarioId?.toString() ?? 'Sin registro'}',
-                            ],
-                          ),
-                        ],
+                      const Gap(AppSpacing.md),
+                      Text(
+                        'Última actualización: ${formatFinanceDateTime(item.calculadoEn)}',
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),

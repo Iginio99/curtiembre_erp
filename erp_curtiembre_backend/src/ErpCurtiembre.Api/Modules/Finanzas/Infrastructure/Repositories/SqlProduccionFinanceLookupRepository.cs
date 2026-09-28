@@ -113,18 +113,24 @@ public sealed class SqlProduccionFinanceLookupRepository(ISqlConnectionFactory c
             new CommandDefinition(sql, new { OrdenProduccionId = ordenProduccionId }, cancellationToken: cancellationToken));
     }
 
-    public async Task<decimal> GetTotalSkinsClosedInPeriodAsync(
+    public async Task<decimal> GetTotalSkinsWorkedInPeriodAsync(
         int anio,
         int mes,
         CancellationToken cancellationToken)
     {
         const string sql = """
+            DECLARE @InicioMes date = DATEFROMPARTS(@Anio, @Mes, 1);
+            DECLARE @FinMes date = EOMONTH(@InicioMes);
+
             SELECT ISNULL(SUM(op.cantidad_pieles), 0)
             FROM produccion.orden_produccion op
-            WHERE op.estado = 'FINALIZADA'
-              AND op.fecha_fin_real IS NOT NULL
-              AND YEAR(op.fecha_fin_real) = @Anio
-              AND MONTH(op.fecha_fin_real) = @Mes;
+            WHERE op.estado <> 'ANULADA'
+              AND op.fecha_inicio_real IS NOT NULL
+              AND CAST(op.fecha_inicio_real AS date) <= @FinMes
+              AND (
+                    op.fecha_fin_real IS NULL OR
+                    CAST(op.fecha_fin_real AS date) >= @InicioMes
+                  );
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);

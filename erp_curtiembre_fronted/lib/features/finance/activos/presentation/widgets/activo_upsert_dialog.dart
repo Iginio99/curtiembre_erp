@@ -9,6 +9,7 @@ class ActivoUpsertFormData {
     required this.codigo,
     required this.nombre,
     required this.valorCompra,
+    required this.cantidad,
     required this.fechaCompra,
     required this.vidaUtilMeses,
     required this.valorResidual,
@@ -18,6 +19,7 @@ class ActivoUpsertFormData {
   final String codigo;
   final String nombre;
   final double valorCompra;
+  final int cantidad;
   final DateTime fechaCompra;
   final int vidaUtilMeses;
   final double valorResidual;
@@ -47,6 +49,7 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
   late final TextEditingController _codigoController;
   late final TextEditingController _nombreController;
   late final TextEditingController _valorCompraController;
+  late final TextEditingController _cantidadController;
   late final TextEditingController _vidaUtilController;
   late final TextEditingController _valorResidualController;
   late DateTime _fechaCompra;
@@ -60,6 +63,9 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
     _nombreController = TextEditingController(text: initial?.nombre ?? '');
     _valorCompraController = TextEditingController(
       text: initial == null ? '' : initial.valorCompra.toStringAsFixed(2),
+    );
+    _cantidadController = TextEditingController(
+      text: initial?.cantidad.toString() ?? '1',
     );
     _vidaUtilController = TextEditingController(
       text: initial?.vidaUtilMeses.toString() ?? '',
@@ -76,6 +82,7 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
     _codigoController.dispose();
     _nombreController.dispose();
     _valorCompraController.dispose();
+    _cantidadController.dispose();
     _vidaUtilController.dispose();
     _valorResidualController.dispose();
     super.dispose();
@@ -103,6 +110,7 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
         codigo: _codigoController.text.trim(),
         nombre: _nombreController.text.trim(),
         valorCompra: double.parse(_valorCompraController.text.trim()),
+        cantidad: int.parse(_cantidadController.text.trim()),
         fechaCompra: _fechaCompra,
         vidaUtilMeses: int.parse(_vidaUtilController.text.trim()),
         valorResidual: double.parse(_valorResidualController.text.trim()),
@@ -130,7 +138,7 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                 Text(widget.title, style: theme.textTheme.headlineSmall),
                 const Gap(AppSpacing.sm),
                 Text(
-                  'Registra el activo con su valor, vida util y residual para que el backend pueda calcular depreciacion mensual.',
+                  'Registra costo unitario, unidades y vida util. El sistema calculara costo total, depreciacion anual y mensual.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -139,15 +147,17 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                 TextFormField(
                   controller: _codigoController,
                   decoration: const InputDecoration(labelText: 'Codigo'),
-                  validator: (value) =>
-                      (value?.trim().isEmpty ?? true) ? 'Ingresa el codigo.' : null,
+                  validator: (value) => (value?.trim().isEmpty ?? true)
+                      ? 'Ingresa el codigo.'
+                      : null,
                 ),
                 const Gap(AppSpacing.lg),
                 TextFormField(
                   controller: _nombreController,
                   decoration: const InputDecoration(labelText: 'Nombre'),
-                  validator: (value) =>
-                      (value?.trim().isEmpty ?? true) ? 'Ingresa el nombre.' : null,
+                  validator: (value) => (value?.trim().isEmpty ?? true)
+                      ? 'Ingresa el nombre.'
+                      : null,
                 ),
                 const Gap(AppSpacing.lg),
                 Wrap(
@@ -158,8 +168,12 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                       width: 220,
                       child: TextFormField(
                         controller: _valorCompraController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Valor compra'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Costo unitario (S/)',
+                        ),
                         validator: (value) {
                           final parsed = double.tryParse(value?.trim() ?? '');
                           if (parsed == null) return 'Ingresa un valor valido.';
@@ -169,14 +183,34 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                       ),
                     ),
                     SizedBox(
+                      width: 160,
+                      child: TextFormField(
+                        controller: _cantidadController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Unidades',
+                        ),
+                        validator: (value) {
+                          final parsed = int.tryParse(value?.trim() ?? '');
+                          if (parsed == null) return 'Ingresa una cantidad.';
+                          if (parsed <= 0) return 'Debe ser mayor a 0.';
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(
                       width: 220,
                       child: TextFormField(
                         controller: _vidaUtilController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Vida util (meses)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Vida util (meses)',
+                          helperText: '120 meses = 10 años',
+                        ),
                         validator: (value) {
                           final parsed = int.tryParse(value?.trim() ?? '');
-                          if (parsed == null) return 'Ingresa un numero valido.';
+                          if (parsed == null)
+                            return 'Ingresa un numero valido.';
                           if (parsed <= 0) return 'Debe ser mayor a 0.';
                           return null;
                         },
@@ -186,15 +220,26 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                       width: 220,
                       child: TextFormField(
                         controller: _valorResidualController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Valor residual'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Valor residual',
+                        ),
                         validator: (value) {
                           final residual = double.tryParse(value?.trim() ?? '');
-                          final purchase = double.tryParse(_valorCompraController.text.trim());
-                          if (residual == null) return 'Ingresa un valor valido.';
+                          final purchase = double.tryParse(
+                            _valorCompraController.text.trim(),
+                          );
+                          final quantity =
+                              int.tryParse(_cantidadController.text.trim()) ??
+                              1;
+                          if (residual == null)
+                            return 'Ingresa un valor valido.';
                           if (residual < 0) return 'No puede ser negativo.';
-                          if (purchase != null && residual > purchase) {
-                            return 'No debe superar el valor de compra.';
+                          if (purchase != null &&
+                              residual > purchase * quantity) {
+                            return 'No debe superar el costo total.';
                           }
                           return null;
                         },
@@ -206,7 +251,9 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                 OutlinedButton.icon(
                   onPressed: _pickDate,
                   icon: const Icon(Icons.event_outlined),
-                  label: Text('Fecha compra: ${DateFormat('dd/MM/yyyy').format(_fechaCompra)}'),
+                  label: Text(
+                    'Fecha compra: ${DateFormat('dd/MM/yyyy').format(_fechaCompra)}',
+                  ),
                 ),
                 const Gap(AppSpacing.lg),
                 SwitchListTile(
@@ -220,8 +267,9 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed:
-                          widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: widget.isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Cancelar'),
                     ),
                     const Gap(AppSpacing.md),

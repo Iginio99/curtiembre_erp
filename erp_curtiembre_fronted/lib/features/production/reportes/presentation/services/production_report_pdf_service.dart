@@ -6,6 +6,7 @@ import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entit
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/costo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/orden_activa_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/orden_cliente_reporte_item.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
@@ -17,7 +18,11 @@ class ProductionReportPdfService {
   static const _orange = PdfColor.fromInt(0xFFE8590C);
   static const _charcoal = PdfColor.fromInt(0xFF343437);
 
-  static Future<void> printActiveOrder(BuildContext context, OrdenActivaReporteItem order) {
+  static Future<void> printActiveOrder(
+    BuildContext context,
+    OrdenActivaReporteItem order,
+    List<OrdenProcesoRecord> processes,
+  ) {
     return _print(
       context,
       '${order.codigoOrden}_orden_activa.pdf',
@@ -32,10 +37,15 @@ class ProductionReportPdfService {
         ('Fin estimado', _date.format(order.fechaFinEstimada)),
       ],
       sections: const [],
+      processes: processes,
     );
   }
 
-  static Future<void> printClientOrder(BuildContext context, OrdenClienteReporteItem order) {
+  static Future<void> printClientOrder(
+    BuildContext context,
+    OrdenClienteReporteItem order,
+    List<OrdenProcesoRecord> processes,
+  ) {
     return _print(
       context,
       '${order.codigoOrden}_orden_cliente.pdf',
@@ -51,6 +61,7 @@ class ProductionReportPdfService {
         ('Fin real', _optionalDate(order.fechaFinReal)),
       ],
       sections: const [],
+      processes: processes,
     );
   }
 
@@ -136,6 +147,7 @@ class ProductionReportPdfService {
               title: first.procesoNombre,
               subtitle:
                   'Inicio ${_optionalDate(first.fechaInicio)}   Fin ${_optionalDate(first.fechaFin)}',
+              headers: const ['INSUMO', 'PORCENTAJE', 'CANTIDAD', 'SOLES'],
               total: rows.fold<double>(
                 0,
                 (sum, item) => sum + item.costoMaterialesReal,
@@ -145,6 +157,9 @@ class ProductionReportPdfService {
                   .map(
                     (item) => [
                       '${item.insumoCodigo ?? '-'} - ${item.insumoNombre ?? 'Insumo'}',
+                      item.porcentaje == null
+                          ? '-'
+                          : '${_number(item.porcentaje!)}%',
                       _number(item.cantidadConsumida),
                       _money.format(item.costoMaterialesReal),
                     ],
@@ -163,6 +178,7 @@ class ProductionReportPdfService {
     required String code,
     required List<(String, String)> summary,
     required List<_PdfSection> sections,
+    List<OrdenProcesoRecord> processes = const [],
   }) async {
     final accepted = await _showPreview(
       context,
@@ -170,6 +186,7 @@ class ProductionReportPdfService {
       code: code,
       summary: summary,
       sections: sections,
+      processes: processes,
     );
     if (!accepted) return;
 
@@ -179,6 +196,7 @@ class ProductionReportPdfService {
       code: code,
       summary: summary,
       sections: sections,
+      processes: processes,
     );
     final blob = html.Blob([bytes], 'application/pdf');
     final url = html.Url.createObjectUrlFromBlob(blob);
@@ -190,9 +208,9 @@ class ProductionReportPdfService {
         ..rel = 'noopener'
         ..click();
     }
-    Future<void>.delayed(const Duration(minutes: 2)).then(
-      (_) => html.Url.revokeObjectUrl(url),
-    );
+    Future<void>.delayed(
+      const Duration(minutes: 2),
+    ).then((_) => html.Url.revokeObjectUrl(url));
   }
 
   static Future<bool> _showPreview(
@@ -201,6 +219,7 @@ class ProductionReportPdfService {
     required String code,
     required List<(String, String)> summary,
     required List<_PdfSection> sections,
+    required List<OrdenProcesoRecord> processes,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -220,7 +239,10 @@ class ProductionReportPdfService {
                     const Expanded(
                       child: Text(
                         'Vista previa del documento',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -247,6 +269,7 @@ class ProductionReportPdfService {
                           code: code,
                           summary: summary,
                           sections: sections,
+                          processes: processes,
                         ),
                       ),
                     ),
@@ -285,6 +308,7 @@ class ProductionReportPdfService {
     required String code,
     required List<(String, String)> summary,
     required List<_PdfSection> sections,
+    required List<OrdenProcesoRecord> processes,
   }) async {
     final document = pw.Document(
       title: '$title - $code',
@@ -311,6 +335,10 @@ class ProductionReportPdfService {
         build: (_) => [
           pw.SizedBox(height: 16),
           _summary(summary),
+          if (processes.isNotEmpty) ...[
+            pw.SizedBox(height: 22),
+            _processTimeline(processes),
+          ],
           ...sections.map(_section),
           pw.SizedBox(height: 34),
           pw.Row(
@@ -492,7 +520,7 @@ class ProductionReportPdfService {
         ),
         pw.SizedBox(height: 6),
         pw.TableHelper.fromTextArray(
-          headers: const ['INSUMO', 'CANTIDAD', 'SOLES'],
+          headers: section.headers,
           data: section.rows,
           headerDecoration: const pw.BoxDecoration(color: _charcoal),
           headerStyle: pw.TextStyle(
@@ -501,15 +529,22 @@ class ProductionReportPdfService {
             fontSize: 8,
           ),
           cellStyle: const pw.TextStyle(fontSize: 8),
-          cellAlignments: const {
-            1: pw.Alignment.centerRight,
-            2: pw.Alignment.centerRight,
+          cellAlignments: {
+            for (var index = 1; index < section.headers.length; index++)
+              index: pw.Alignment.centerRight,
           },
-          columnWidths: const {
-            0: pw.FlexColumnWidth(6),
-            1: pw.FlexColumnWidth(2),
-            2: pw.FlexColumnWidth(2),
-          },
+          columnWidths: section.headers.length == 4
+              ? const {
+                  0: pw.FlexColumnWidth(5),
+                  1: pw.FlexColumnWidth(1.7),
+                  2: pw.FlexColumnWidth(1.7),
+                  3: pw.FlexColumnWidth(1.8),
+                }
+              : const {
+                  0: pw.FlexColumnWidth(6),
+                  1: pw.FlexColumnWidth(2),
+                  2: pw.FlexColumnWidth(2),
+                },
           border: const pw.TableBorder(
             horizontalInside: pw.BorderSide(
               color: PdfColors.grey300,
@@ -520,6 +555,80 @@ class ProductionReportPdfService {
       ],
     ),
   );
+
+  static pw.Widget _processTimeline(List<OrdenProcesoRecord> processes) {
+    final ordered = [...processes]
+      ..sort((a, b) => a.secuencia.compareTo(b.secuencia));
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'LINEA DE TIEMPO DEL PROCESO',
+          style: pw.TextStyle(
+            fontSize: 10,
+            fontWeight: pw.FontWeight.bold,
+            color: _charcoal,
+          ),
+        ),
+        pw.SizedBox(height: 14),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: ordered.map((process) {
+            final completed =
+                process.fechaFin != null || process.estado == 'FINALIZADO';
+            final active = !completed && process.fechaInicio != null;
+            final color = completed || active ? _orange : PdfColors.grey400;
+            return pw.Expanded(
+              child: pw.Column(
+                children: [
+                  pw.Container(
+                    width: 22,
+                    height: 22,
+                    alignment: pw.Alignment.center,
+                    decoration: pw.BoxDecoration(
+                      color: completed ? _orange : PdfColors.white,
+                      border: pw.Border.all(color: color, width: 1.5),
+                      shape: pw.BoxShape.circle,
+                    ),
+                    child: pw.Text(
+                      completed ? 'OK' : '${process.secuencia}',
+                      style: pw.TextStyle(
+                        fontSize: 6.5,
+                        fontWeight: pw.FontWeight.bold,
+                        color: completed ? PdfColors.white : color,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(height: 5),
+                  pw.Text(
+                    process.procesoNombre,
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    _processStatus(process),
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(fontSize: 6.5, color: color),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  static String _processStatus(OrdenProcesoRecord process) {
+    if (process.fechaFin != null)
+      return 'Finalizado ${_date.format(process.fechaFin!)}';
+    if (process.fechaInicio != null) return 'En proceso';
+    return process.estado.replaceAll('_', ' ');
+  }
 
   static String _optionalDate(DateTime? value) =>
       value == null ? 'Sin registro' : _date.format(value);
@@ -532,6 +641,7 @@ class _PdfSection {
     required this.title,
     required this.total,
     required this.rows,
+    this.headers = const ['INSUMO', 'CANTIDAD', 'SOLES'],
     this.subtitle,
   });
 
@@ -539,6 +649,7 @@ class _PdfSection {
   final String? subtitle;
   final double total;
   final List<List<String>> rows;
+  final List<String> headers;
 }
 
 class _DocumentPreview extends StatelessWidget {
@@ -547,12 +658,14 @@ class _DocumentPreview extends StatelessWidget {
     required this.code,
     required this.summary,
     required this.sections,
+    required this.processes,
   });
 
   final String title;
   final String code;
   final List<(String, String)> summary;
   final List<_PdfSection> sections;
+  final List<OrdenProcesoRecord> processes;
 
   @override
   Widget build(BuildContext context) {
@@ -582,22 +695,45 @@ class _DocumentPreview extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(text: 'CITEccal Trujillo '),
-                          TextSpan(text: 'ERP', style: TextStyle(color: orange)),
+                          TextSpan(
+                            text: 'ERP',
+                            style: TextStyle(color: orange),
+                          ),
                         ],
                       ),
                     ),
                     Text(
                       'GESTION DE CURTIEMBRE',
-                      style: TextStyle(color: Colors.white60, fontSize: 9, letterSpacing: 1.4),
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: 9,
+                        letterSpacing: 1.4,
+                      ),
                     ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(title.toUpperCase(), style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                    Text(code, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-                    Text(ProductionReportPdfService._date.format(DateTime.now()), style: const TextStyle(color: Colors.white70)),
+                    Text(
+                      title.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      code,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      ProductionReportPdfService._date.format(DateTime.now()),
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   ],
                 ),
               ],
@@ -622,20 +758,35 @@ class _DocumentPreview extends StatelessWidget {
                     final item = summary[index];
                     return Container(
                       decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Color(0xFFD6D6D8))),
+                        border: Border(
+                          bottom: BorderSide(color: Color(0xFFD6D6D8)),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Text(item.$1, style: const TextStyle(color: Colors.black54)),
+                          Text(
+                            item.$1,
+                            style: const TextStyle(color: Colors.black54),
+                          ),
                           const Spacer(),
                           Flexible(
-                            child: Text(item.$2, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w700)),
+                            child: Text(
+                              item.$2,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     );
                   },
                 ),
+                if (processes.isNotEmpty) ...[
+                  const SizedBox(height: 28),
+                  _PreviewProcessTimeline(processes: processes),
+                ],
                 ...sections.map(
                   (section) => Padding(
                     padding: const EdgeInsets.only(top: 24),
@@ -648,20 +799,43 @@ class _DocumentPreview extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(section.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                                  if (section.subtitle != null) Text(section.subtitle!, style: const TextStyle(color: Colors.black54)),
+                                  Text(
+                                    section.title,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  if (section.subtitle != null)
+                                    Text(
+                                      section.subtitle!,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
                             Text(
-                              ProductionReportPdfService._money.format(section.total),
-                              style: const TextStyle(color: orange, fontSize: 16, fontWeight: FontWeight.w800),
+                              ProductionReportPdfService._money.format(
+                                section.total,
+                              ),
+                              style: const TextStyle(
+                                color: orange,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const _PreviewTableHeader(),
-                        ...section.rows.map((row) => _PreviewTableRow(row: row)),
+                        _PreviewTableHeader(headers: section.headers),
+                        ...section.rows.map(
+                          (row) => _PreviewTableRow(
+                            row: row,
+                            columnCount: section.headers.length,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -685,37 +859,138 @@ class _DocumentPreview extends StatelessWidget {
   }
 }
 
+class _PreviewProcessTimeline extends StatelessWidget {
+  const _PreviewProcessTimeline({required this.processes});
+
+  final List<OrdenProcesoRecord> processes;
+
+  @override
+  Widget build(BuildContext context) {
+    const orange = Color(0xFFE8590C);
+    final ordered = [...processes]
+      ..sort((a, b) => a.secuencia.compareTo(b.secuencia));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'LINEA DE TIEMPO DEL PROCESO',
+          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: ordered.map((process) {
+            final completed =
+                process.fechaFin != null || process.estado == 'FINALIZADO';
+            final active = !completed && process.fechaInicio != null;
+            final color = completed || active ? orange : Colors.black26;
+            return Expanded(
+              child: Column(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: completed ? orange : Colors.white,
+                      border: Border.all(color: color, width: 2),
+                    ),
+                    child: completed
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 19,
+                            color: Colors.white,
+                          )
+                        : Text(
+                            '${process.secuencia}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: color,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    process.procesoNombre,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    ProductionReportPdfService._processStatus(process),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, color: color),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
 class _PreviewTableHeader extends StatelessWidget {
-  const _PreviewTableHeader();
+  const _PreviewTableHeader({required this.headers});
+
+  final List<String> headers;
 
   @override
   Widget build(BuildContext context) => Container(
     color: const Color(0xFF343437),
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    child: const Row(
-      children: [
-        Expanded(flex: 6, child: Text('INSUMO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
-        Expanded(flex: 2, child: Text('CANTIDAD', textAlign: TextAlign.right, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
-        Expanded(flex: 2, child: Text('SOLES', textAlign: TextAlign.right, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
-      ],
+    child: Row(
+      children: headers
+          .asMap()
+          .entries
+          .map((entry) {
+            return Expanded(
+              flex: entry.key == 0 ? 6 : 2,
+              child: Text(
+                entry.value,
+                textAlign: entry.key == 0 ? TextAlign.left : TextAlign.right,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            );
+          })
+          .toList(growable: false),
     ),
   );
 }
 
 class _PreviewTableRow extends StatelessWidget {
-  const _PreviewTableRow({required this.row});
+  const _PreviewTableRow({required this.row, required this.columnCount});
   final List<String> row;
+  final int columnCount;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE3E3E5)))),
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: Color(0xFFE3E3E5))),
+    ),
     child: Row(
-      children: [
-        Expanded(flex: 6, child: Text(row[0])),
-        Expanded(flex: 2, child: Text(row[1], textAlign: TextAlign.right)),
-        Expanded(flex: 2, child: Text(row[2], textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w700))),
-      ],
+      children: row
+          .asMap()
+          .entries
+          .map((entry) {
+            return Expanded(
+              flex: entry.key == 0 ? 6 : 2,
+              child: Text(
+                entry.value,
+                textAlign: entry.key == 0 ? TextAlign.left : TextAlign.right,
+                style: entry.key == columnCount - 1
+                    ? const TextStyle(fontWeight: FontWeight.w700)
+                    : null,
+              ),
+            );
+          })
+          .toList(growable: false),
     ),
   );
 }
@@ -727,7 +1002,13 @@ class _Signature extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.only(top: 6),
-    decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.black54))),
-    child: Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+    decoration: const BoxDecoration(
+      border: Border(top: BorderSide(color: Colors.black54)),
+    ),
+    child: Text(
+      label,
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 10, color: Colors.black54),
+    ),
   );
 }

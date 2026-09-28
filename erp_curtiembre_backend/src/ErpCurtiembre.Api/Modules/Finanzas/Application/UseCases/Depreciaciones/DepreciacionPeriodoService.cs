@@ -91,7 +91,7 @@ public sealed class DepreciacionPeriodoService(
     private static decimal CalculateMonthlyDepreciation(ActivoDepreciable activo) =>
         activo.VidaUtilMeses <= 0
             ? 0
-            : decimal.Round((activo.ValorCompra - activo.ValorResidual) / activo.VidaUtilMeses, 2, MidpointRounding.AwayFromZero);
+            : decimal.Round((activo.CostoTotal - activo.ValorResidual) / activo.VidaUtilMeses, 2, MidpointRounding.AwayFromZero);
 
     private static DepreciacionPeriodoListItemDto MapList(DepreciacionPeriodo item) =>
         new(

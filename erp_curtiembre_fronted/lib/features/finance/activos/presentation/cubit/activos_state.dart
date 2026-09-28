@@ -55,11 +55,13 @@ class ActivosState extends Equatable {
       selectedActivoId: identical(selectedActivoId, _sentinel)
           ? this.selectedActivoId
           : selectedActivoId as int?,
-      selectedActivo:
-          clearSelectedActivo ? null : selectedActivo ?? this.selectedActivo,
+      selectedActivo: clearSelectedActivo
+          ? null
+          : selectedActivo ?? this.selectedActivo,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      detailErrorMessage:
-          clearDetailError ? null : detailErrorMessage ?? this.detailErrorMessage,
+      detailErrorMessage: clearDetailError
+          ? null
+          : detailErrorMessage ?? this.detailErrorMessage,
       isDetailLoading: isDetailLoading ?? this.isDetailLoading,
       isSubmittingAction: isSubmittingAction ?? this.isSubmittingAction,
       searchTerm: searchTerm ?? this.searchTerm,
@@ -69,15 +71,15 @@ class ActivosState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        selectedActivoId,
-        selectedActivo,
-        errorMessage,
-        detailErrorMessage,
-        isDetailLoading,
-        isSubmittingAction,
-        searchTerm,
-        filter,
-      ];
+    status,
+    items,
+    selectedActivoId,
+    selectedActivo,
+    errorMessage,
+    detailErrorMessage,
+    isDetailLoading,
+    isSubmittingAction,
+    searchTerm,
+    filter,
+  ];
 }

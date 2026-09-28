@@ -115,7 +115,7 @@ class _IndirectosPageState extends State<IndirectosPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Costos indirectos'),
+        title: const Text('Gastos mensuales'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.lg),
@@ -186,10 +186,10 @@ class _IndirectosPageState extends State<IndirectosPage> {
                       final headerAndFilters = <Widget>[
                         _FinanceHeroCard(
                           title:
-                              'Registra los costos mensuales que luego se distribuyen sobre las ordenes de produccion.',
+                              'Registra aquí la planilla y los gastos generales de cada mes.',
                           description:
-                              'Este bloque sirve para consolidar gastos de soporte como luz, agua, alquiler o mantenimiento dentro del periodo correcto.',
-                          badgeLabel: 'Indirectos visibles',
+                              'El sistema sumará mano de obra, servicios y depreciación, y los repartirá entre las pieles trabajadas.',
+                          badgeLabel: 'Gastos registrados',
                           badgeValue: '${state.items.length}',
                           sessionUserName: session?.userName,
                         ),
@@ -452,7 +452,7 @@ class _IndirectosFiltersCard extends StatelessWidget {
           Text('Busqueda y carga', style: theme.textTheme.titleLarge),
           const Gap(AppSpacing.sm),
           Text(
-            'Filtra por periodo, tipo o texto libre y registra nuevos costos solo sobre periodos que sigan abiertos.',
+            'Filtra por mes o tipo de gasto.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -468,7 +468,7 @@ class _IndirectosFiltersCard extends StatelessWidget {
                   controller: controller,
                   onSubmitted: (_) => onApply(),
                   decoration: const InputDecoration(
-                    labelText: 'Buscar costo',
+                    labelText: 'Buscar gasto',
                     hintText: 'Ej. luz, agua o alquiler',
                     prefixIcon: Icon(Icons.search_rounded),
                   ),
@@ -524,7 +524,7 @@ class _IndirectosFiltersCard extends StatelessWidget {
                 expand: false,
               ),
               AppButton.secondary(
-                label: 'Nuevo costo',
+                label: 'Registrar gasto',
                 icon: Icons.add_card_outlined,
                 isLoading: isSubmitting,
                 onPressed: onCreate,
@@ -563,7 +563,7 @@ class _IndirectosListPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Listado de indirectos', style: theme.textTheme.titleLarge),
+            Text('Gastos del mes', style: theme.textTheme.titleLarge),
             const Gap(AppSpacing.xs),
             Text(
               '${state.items.length} resultado(s) para la vista actual.',
@@ -582,7 +582,7 @@ class _IndirectosListPanel extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       AppMessageCard.error(
-                        title: 'No pudimos cargar los indirectos',
+                        title: 'No pudimos cargar los gastos',
                         message:
                             state.errorMessage ??
                             'Intenta nuevamente para consultar la base financiera.',
@@ -602,7 +602,7 @@ class _IndirectosListPanel extends StatelessWidget {
                           child: AppMessageCard.info(
                             title: 'Sin resultados',
                             message:
-                                'No encontramos costos indirectos con los filtros actuales.',
+                                'No hay gastos registrados para los filtros actuales.',
                           ),
                         )
                       : ListView.separated(
@@ -649,7 +649,7 @@ class _IndirectoDetailPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Detalle del costo indirecto',
+              'Detalle del gasto mensual',
               style: theme.textTheme.titleLarge,
             ),
             const Gap(AppSpacing.xs),
@@ -690,7 +690,7 @@ class _IndirectoDetailPanel extends StatelessWidget {
                   if (indirecto == null) {
                     return const _CenteredMessage(
                       child: AppMessageCard.info(
-                        title: 'Selecciona un costo',
+                        title: 'Selecciona un gasto',
                         message:
                             'Escoge un registro del listado para revisar su detalle.',
                       ),

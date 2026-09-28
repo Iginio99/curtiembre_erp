@@ -33,15 +33,14 @@ class IndirectoUpsertDialog extends StatefulWidget {
 
 class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _tipoCostoController;
   late final TextEditingController _montoController;
   late final TextEditingController _descripcionController;
   int? _periodoCostoId;
+  String _tipoCosto = 'MANO_DE_OBRA';
 
   @override
   void initState() {
     super.initState();
-    _tipoCostoController = TextEditingController();
     _montoController = TextEditingController();
     _descripcionController = TextEditingController();
     final openPeriods = widget.periodos.where((item) => item.isOpen).toList(growable: false);
@@ -50,7 +49,6 @@ class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
 
   @override
   void dispose() {
-    _tipoCostoController.dispose();
     _montoController.dispose();
     _descripcionController.dispose();
     super.dispose();
@@ -64,7 +62,7 @@ class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
     Navigator.of(context).pop(
       IndirectoUpsertFormData(
         periodoCostoId: _periodoCostoId!,
-        tipoCosto: _tipoCostoController.text.trim(),
+        tipoCosto: _tipoCosto,
         monto: double.parse(_montoController.text.trim()),
         descripcion: _descripcionController.text.trim().isEmpty
             ? null
@@ -90,10 +88,10 @@ class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Nuevo costo indirecto', style: theme.textTheme.headlineSmall),
+                Text('Registrar gasto mensual', style: theme.textTheme.headlineSmall),
                 const Gap(AppSpacing.sm),
                 Text(
-                  'Selecciona un periodo abierto y registra el monto que se distribuira luego en los calculos de costo.',
+                  'Registra sueldos, servicios u otros gastos del mes. El sistema los reparte entre las pieles trabajadas.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -122,19 +120,19 @@ class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
                   },
                 ),
                 const Gap(AppSpacing.lg),
-                TextFormField(
-                  controller: _tipoCostoController,
+                DropdownButtonFormField<String>(
+                  initialValue: _tipoCosto,
                   decoration: const InputDecoration(
-                    labelText: 'Tipo de costo',
-                    hintText: 'Ej. LUZ, AGUA o ALQUILER',
+                    labelText: 'Tipo de gasto',
                   ),
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-                    if (text.isEmpty) {
-                      return 'Ingresa el tipo de costo.';
-                    }
-                    return null;
-                  },
+                  items: const [
+                    DropdownMenuItem(value: 'MANO_DE_OBRA', child: Text('Mano de obra / planilla')),
+                    DropdownMenuItem(value: 'SERVICIOS', child: Text('Servicios (agua, luz, gas)')),
+                    DropdownMenuItem(value: 'ALQUILER', child: Text('Alquiler')),
+                    DropdownMenuItem(value: 'MANTENIMIENTO', child: Text('Mantenimiento')),
+                    DropdownMenuItem(value: 'OTROS', child: Text('Otros gastos')),
+                  ],
+                  onChanged: (value) => setState(() => _tipoCosto = value ?? 'OTROS'),
                 ),
                 const Gap(AppSpacing.lg),
                 TextFormField(
@@ -185,7 +183,7 @@ class _IndirectoUpsertDialogState extends State<IndirectoUpsertDialog> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.request_quote_outlined),
-                      label: const Text('Registrar costo'),
+                      label: const Text('Registrar gasto'),
                     ),
                   ],
                 ),
