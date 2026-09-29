@@ -49,6 +49,7 @@ public sealed class ProduccionModule : IErpModule
         services.AddScoped<ClienteCatalogService>();
         services.AddScoped<LoteCatalogService>();
         services.AddScoped<OrdenProduccionService>();
+        services.AddScoped<OrdenProductoService>();
         services.AddScoped<OrdenProcesoService>();
         services.AddScoped<ConsumoProduccionService>();
         services.AddScoped<CierreProduccionService>();

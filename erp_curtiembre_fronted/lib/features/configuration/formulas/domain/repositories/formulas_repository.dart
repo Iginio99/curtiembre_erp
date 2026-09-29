@@ -14,6 +14,8 @@ abstract class FormulasRepository {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
+    required String tipoProducto,
+    required String color,
     String? descripcion,
   });
 
@@ -22,6 +24,8 @@ abstract class FormulasRepository {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
+    required String tipoProducto,
+    required String color,
     String? descripcion,
   });
 

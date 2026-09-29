@@ -39,6 +39,8 @@ public sealed class SqlFormulaRepository(
                 f.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoProductivoCodigo,
                 pp.nombre AS ProcesoProductivoNombre,
+                f.tipo_producto AS TipoProducto,
+                f.color AS Color,
                 f.descripcion AS Descripcion,
                 f.activo AS Activo,
                 f.creado_en AS CreadoEn,
@@ -80,6 +82,8 @@ public sealed class SqlFormulaRepository(
                 f.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoProductivoCodigo,
                 pp.nombre AS ProcesoProductivoNombre,
+                f.tipo_producto AS TipoProducto,
+                f.color AS Color,
                 f.descripcion AS Descripcion,
                 f.activo AS Activo,
                 f.creado_en AS CreadoEn,
@@ -137,6 +141,8 @@ public sealed class SqlFormulaRepository(
             Codigo = formula.Codigo,
             Nombre = formula.Nombre,
             ProcesoProductivoId = formula.ProcesoProductivoId,
+            TipoProducto = formula.TipoProducto,
+            Color = formula.Color,
             Descripcion = formula.Descripcion,
             Activo = formula.Activo,
             CreadoPorUsuarioId = createdByUsuarioId
@@ -158,6 +164,8 @@ public sealed class SqlFormulaRepository(
         entity.Codigo = formula.Codigo;
         entity.Nombre = formula.Nombre;
         entity.ProcesoProductivoId = formula.ProcesoProductivoId;
+        entity.TipoProducto = formula.TipoProducto;
+        entity.Color = formula.Color;
         entity.Descripcion = formula.Descripcion;
 
         await dbContext.SaveChangesAsync(cancellationToken);

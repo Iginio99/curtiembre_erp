@@ -47,7 +47,7 @@ public sealed class LoteCatalogService(
             request.FechaIngreso,
             request.CantidadPielesInicial,
             request.ClienteTraeLote,
-            request.CostoPielesTotal,
+            request.CostoUnitarioPiel,
             null,
             cancellationToken);
 
@@ -66,6 +66,9 @@ public sealed class LoteCatalogService(
             return UseCaseResult<LoteDetailDto>.Fail(ProduccionErrorCodes.Conflict, exception.Message);
         }
 
+        var costoUnitario = request.ClienteTraeLote ? 0 : decimal.Round(request.CostoUnitarioPiel, 4);
+        var costoTotal = decimal.Round(request.CantidadPielesInicial * costoUnitario, 2);
+
         var id = await loteRepository.CreateAsync(
             new Lote
             {
@@ -76,7 +79,8 @@ public sealed class LoteCatalogService(
                 CantidadPielesInicial = decimal.Round(request.CantidadPielesInicial, 4),
                 CantidadPielesDisponible = decimal.Round(request.CantidadPielesInicial, 4),
                 ClienteTraeLote = request.ClienteTraeLote,
-                CostoPielesTotal = decimal.Round(request.CostoPielesTotal, 2),
+                CostoUnitarioPiel = costoUnitario,
+                CostoPielesTotal = costoTotal,
                 Observacion = NormalizeNullable(request.Observacion),
                 Estado = "DISPONIBLE",
                 CreadoPorUsuarioId = actorId
@@ -106,7 +110,7 @@ public sealed class LoteCatalogService(
             request.FechaIngreso,
             request.CantidadPielesInicial,
             request.ClienteTraeLote,
-            request.CostoPielesTotal,
+            request.CostoUnitarioPiel,
             existing,
             cancellationToken);
 
@@ -145,7 +149,7 @@ public sealed class LoteCatalogService(
                 validation.Errors.Add("No se puede cambiar el origen de un lote que ya tiene ordenes de produccion.");
             }
 
-            if (existing.CostoPielesTotal != request.CostoPielesTotal)
+            if (existing.CostoUnitarioPiel != request.CostoUnitarioPiel)
             {
                 validation.Errors.Add("No se puede cambiar el costo de pieles de un lote que ya tiene ordenes de produccion.");
             }
@@ -161,6 +165,9 @@ public sealed class LoteCatalogService(
             ? "ANULADO"
             : nuevaCantidadDisponible <= 0 ? "AGOTADO" : "DISPONIBLE";
 
+        var costoUnitario = request.ClienteTraeLote ? 0 : decimal.Round(request.CostoUnitarioPiel, 4);
+        var costoTotal = decimal.Round(request.CantidadPielesInicial * costoUnitario, 2);
+
         await loteRepository.UpdateAsync(
             new Lote
             {
@@ -172,7 +179,8 @@ public sealed class LoteCatalogService(
                 CantidadPielesInicial = decimal.Round(request.CantidadPielesInicial, 4),
                 CantidadPielesDisponible = nuevaCantidadDisponible,
                 ClienteTraeLote = request.ClienteTraeLote,
-                CostoPielesTotal = decimal.Round(request.CostoPielesTotal, 2),
+                CostoUnitarioPiel = costoUnitario,
+                CostoPielesTotal = costoTotal,
                 Observacion = NormalizeNullable(request.Observacion),
                 Estado = nuevoEstado
             },
@@ -190,7 +198,7 @@ public sealed class LoteCatalogService(
         DateTime fechaIngreso,
         decimal cantidadPielesInicial,
         bool clienteTraeLote,
-        decimal costoPielesTotal,
+        decimal costoUnitarioPiel,
         Lote? existing,
         CancellationToken cancellationToken)
     {
@@ -226,14 +234,14 @@ public sealed class LoteCatalogService(
             errors.Add("La cantidad de pieles inicial debe ser mayor que 0.");
         }
 
-        if (costoPielesTotal < 0)
+        if (costoUnitarioPiel < 0)
         {
-            errors.Add("El costo de pieles total no puede ser negativo.");
+            errors.Add("El costo unitario por piel no puede ser negativo.");
         }
 
-        if (clienteTraeLote && costoPielesTotal != 0)
+        if (clienteTraeLote && costoUnitarioPiel != 0)
         {
-            errors.Add("Cuando el lote es del cliente, el costo de pieles debe ser 0.00.");
+            errors.Add("Cuando el lote es del cliente, el costo unitario por piel debe ser 0.00.");
         }
 
         if (existing is not null && existing.Estado == "ANULADO")
@@ -262,6 +270,7 @@ public sealed class LoteCatalogService(
             lote.CantidadPielesDisponible,
             lote.CantidadLadosCalculada,
             lote.ClienteTraeLote,
+            lote.CostoUnitarioPiel,
             lote.CostoPielesTotal,
             lote.Estado,
             lote.Observacion,
@@ -283,6 +292,7 @@ public sealed class LoteCatalogService(
             lote.CantidadPielesDisponible,
             lote.CantidadLadosCalculada,
             lote.ClienteTraeLote,
+            lote.CostoUnitarioPiel,
             lote.CostoPielesTotal,
             lote.Estado,
             lote.Observacion,

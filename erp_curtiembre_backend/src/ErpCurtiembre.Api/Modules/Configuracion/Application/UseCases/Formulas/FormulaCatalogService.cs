@@ -30,6 +30,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             request.Codigo,
             request.Nombre,
             request.ProcesoProductivoId,
+            request.TipoProducto,
+            request.Color,
             request.Descripcion,
             null,
             cancellationToken);
@@ -44,6 +46,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
                 Codigo = request.Codigo.Trim(),
                 Nombre = request.Nombre.Trim(),
                 ProcesoProductivoId = request.ProcesoProductivoId,
+                TipoProducto = request.TipoProducto.Trim(),
+                Color = NormalizeNullable(request.Color),
                 Descripcion = NormalizeNullable(request.Descripcion),
                 Activo = true
             },
@@ -71,6 +75,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             request.Codigo,
             request.Nombre,
             request.ProcesoProductivoId,
+            request.TipoProducto,
+            request.Color,
             request.Descripcion,
             id,
             cancellationToken);
@@ -86,6 +92,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
                 Codigo = request.Codigo.Trim(),
                 Nombre = request.Nombre.Trim(),
                 ProcesoProductivoId = request.ProcesoProductivoId,
+                TipoProducto = request.TipoProducto.Trim(),
+                Color = NormalizeNullable(request.Color),
                 Descripcion = NormalizeNullable(request.Descripcion)
             },
             cancellationToken);
@@ -445,6 +453,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
         string codigo,
         string nombre,
         long procesoProductivoId,
+        string? tipoProducto,
+        string? color,
         string? descripcion,
         long? excludeId,
         CancellationToken cancellationToken)
@@ -452,6 +462,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
         var errors = new List<string>();
         var normalizedCodigo = codigo.Trim();
         var normalizedNombre = nombre.Trim();
+        var normalizedTipoProducto = NormalizeNullable(tipoProducto);
+        var normalizedColor = NormalizeNullable(color);
         var normalizedDescripcion = NormalizeNullable(descripcion);
 
         if (string.IsNullOrWhiteSpace(normalizedCodigo))
@@ -477,6 +489,20 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             errors.Add("El proceso productivo es obligatorio.");
         }
 
+        if (normalizedTipoProducto is null)
+        {
+            errors.Add("El tipo de producto es obligatorio.");
+        }
+        else if (normalizedTipoProducto.Length > 120)
+        {
+            errors.Add("El tipo de producto no debe superar 120 caracteres.");
+        }
+
+        if (normalizedColor is not null && normalizedColor.Length > 80)
+        {
+            errors.Add("El color no debe superar 80 caracteres.");
+        }
+
         if (normalizedDescripcion is not null && normalizedDescripcion.Length > 500)
         {
             errors.Add("La descripcion no debe superar 500 caracteres.");
@@ -492,6 +518,17 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             !await formulaRepository.IsProcesoProductivoActiveAsync(procesoProductivoId, cancellationToken))
         {
             errors.Add("El proceso productivo no existe o esta inactivo.");
+        }
+
+        if (errors.Count == 0)
+        {
+            var proceso = (await formulaRepository.ListActiveProcesosProductivosAsync(cancellationToken))
+                .FirstOrDefault(item => item.Id == procesoProductivoId);
+            var colorOpcional = proceso?.Codigo is "REMOJO_PELAMBRE" or "CURTIDO";
+            if (!colorOpcional && normalizedColor is null)
+            {
+                errors.Add("El color es obligatorio para recurtido y acabado.");
+            }
         }
 
         return errors;
@@ -581,12 +618,6 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             errors.Add("El insumo no existe o esta inactivo.");
         }
 
-        if (errors.Count == 0 &&
-            await formulaRepository.ExistsActiveDetailInsumoAsync(versionId, insumoId, excludeId, cancellationToken))
-        {
-            errors.Add("El insumo ya existe en el detalle activo de esta version.");
-        }
-
         return errors;
     }
 
@@ -611,6 +642,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             formula.ProcesoProductivoId,
             formula.ProcesoProductivoCodigo,
             formula.ProcesoProductivoNombre,
+            formula.TipoProducto,
+            formula.Color,
             formula.Descripcion,
             formula.Activo,
             formula.CreadoEn,
@@ -624,6 +657,8 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             formula.ProcesoProductivoId,
             formula.ProcesoProductivoCodigo,
             formula.ProcesoProductivoNombre,
+            formula.TipoProducto,
+            formula.Color,
             formula.Descripcion,
             formula.Activo,
             formula.CreadoEn,

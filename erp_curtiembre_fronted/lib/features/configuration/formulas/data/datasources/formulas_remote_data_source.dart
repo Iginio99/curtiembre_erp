@@ -27,7 +27,9 @@ class FormulasRemoteDataSource {
 
       final items = response.data ?? const [];
       return items
-          .map((item) => FormulaRecordModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => FormulaRecordModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList(growable: false);
     } on DioException catch (exception) {
       throw ApiException.fromDioException(exception);
@@ -36,7 +38,9 @@ class FormulasRemoteDataSource {
 
   Future<FormulaRecordModel> getFormula(int id) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/api/configuracion/formulas/$id');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/configuracion/formulas/$id',
+      );
       return FormulaRecordModel.fromJson(response.data!);
     } on DioException catch (exception) {
       throw ApiException.fromDioException(exception);
@@ -47,6 +51,8 @@ class FormulasRemoteDataSource {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
+    required String tipoProducto,
+    required String color,
     String? descripcion,
   }) async {
     try {
@@ -56,6 +62,8 @@ class FormulasRemoteDataSource {
           'codigo': codigo,
           'nombre': nombre,
           'procesoProductivoId': procesoProductivoId,
+          'tipoProducto': tipoProducto,
+          'color': color,
           'descripcion': descripcion,
         },
       );
@@ -70,6 +78,8 @@ class FormulasRemoteDataSource {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
+    required String tipoProducto,
+    required String color,
     String? descripcion,
   }) async {
     try {
@@ -79,6 +89,8 @@ class FormulasRemoteDataSource {
           'codigo': codigo,
           'nombre': nombre,
           'procesoProductivoId': procesoProductivoId,
+          'tipoProducto': tipoProducto,
+          'color': color,
           'descripcion': descripcion,
         },
       );
@@ -110,7 +122,11 @@ class FormulasRemoteDataSource {
       );
       final items = response.data ?? const [];
       return items
-          .map((item) => FormulaVersionRecordModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => FormulaVersionRecordModel.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList(growable: false);
     } on DioException catch (exception) {
       throw ApiException.fromDioException(exception);
@@ -247,7 +263,11 @@ class FormulasRemoteDataSource {
       );
       final items = response.data ?? const [];
       return items
-          .map((item) => ProcesoProductivoOptionModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ProcesoProductivoOptionModel.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList(growable: false);
     } on DioException catch (exception) {
       throw ApiException.fromDioException(exception);
@@ -256,10 +276,14 @@ class FormulasRemoteDataSource {
 
   Future<List<InsumoLookupModel>> listActiveInsumos() async {
     try {
-      final response = await _dio.get<List<dynamic>>('/api/inventario/catalogos/insumos/activos');
+      final response = await _dio.get<List<dynamic>>(
+        '/api/inventario/catalogos/insumos/activos',
+      );
       final items = response.data ?? const [];
       return items
-          .map((item) => InsumoLookupModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => InsumoLookupModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList(growable: false);
     } on DioException catch (exception) {
       throw ApiException.fromDioException(exception);

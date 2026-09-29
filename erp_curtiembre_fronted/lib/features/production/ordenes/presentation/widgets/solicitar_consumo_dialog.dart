@@ -1,6 +1,7 @@
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/shared/domain/entities/insumo_lookup.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:flutter/material.dart';
@@ -25,11 +26,13 @@ class SolicitarConsumoDialog extends StatefulWidget {
     super.key,
     required this.proceso,
     required this.insumos,
+    required this.formulas,
     required this.isSubmitting,
   });
 
   final OrdenProcesoRecord proceso;
   final List<InsumoLookup> insumos;
+  final List<FormulaProduccionOption> formulas;
   final bool isSubmitting;
 
   @override
@@ -40,12 +43,17 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
   final _formKey = GlobalKey<FormState>();
   final _motivoController = TextEditingController();
   final _observacionController = TextEditingController();
+  final _kilosController = TextEditingController();
+  final _pielesController = TextEditingController();
+  int? _formulaVersionId;
   final List<_ConsumoDetalleDraft> _drafts = [_ConsumoDetalleDraft()];
 
   @override
   void dispose() {
     _motivoController.dispose();
     _observacionController.dispose();
+    _kilosController.dispose();
+    _pielesController.dispose();
     for (final draft in _drafts) {
       draft.dispose();
     }
@@ -55,6 +63,50 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
   void _addDraft() {
     setState(() => _drafts.add(_ConsumoDetalleDraft()));
   }
+
+  void _applyFormula(int? versionId) {
+    setState(() {
+      _formulaVersionId = versionId;
+      FormulaProduccionOption? formula;
+      for (final candidate in widget.formulas) {
+        if (candidate.formulaVersionId == versionId) {
+          formula = candidate;
+          break;
+        }
+      }
+      if (formula == null) return;
+      for (final draft in _drafts) {
+        draft.dispose();
+      }
+      _drafts.clear();
+      for (final detail in formula.insumos) {
+        final draft = _ConsumoDetalleDraft()..insumoId = detail.insumoId;
+        draft.porcentajeController.text = detail.porcentaje
+            .toStringAsFixed(4)
+            .replaceFirst(RegExp(r'\.?0+$'), '');
+        draft.observacionController.text = detail.observacion ?? '';
+        _drafts.add(draft);
+      }
+      if (_drafts.isEmpty) _drafts.add(_ConsumoDetalleDraft());
+      _recalculateFormula();
+    });
+  }
+
+  void _recalculateFormula() {
+    final kilos =
+        double.tryParse(_kilosController.text.trim().replaceAll(',', '.')) ?? 0;
+    for (final draft in _drafts) {
+      final pct =
+          double.tryParse(
+            draft.porcentajeController.text.trim().replaceAll(',', '.'),
+          ) ??
+          0;
+      draft.cantidadController.text = _formatCantidad(kilos * pct / 100);
+    }
+  }
+
+  String _formatCantidad(double value) =>
+      value.toStringAsFixed(4).replaceFirst(RegExp(r'\.?0+$'), '');
 
   void _removeDraft(int index) {
     if (_drafts.length == 1) {
@@ -200,6 +252,78 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                   ),
                 ),
                 const Gap(AppSpacing.md),
+                if (widget.formulas.isNotEmpty) ...[
+                  DropdownButtonFormField<int>(
+                    initialValue: _formulaVersionId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Formula / receta',
+                      helperText:
+                          'Carga automaticamente los insumos y porcentajes de la receta.',
+                    ),
+                    items: widget.formulas
+                        .map(
+                          (f) => DropdownMenuItem(
+                            value: f.formulaVersionId,
+                            child: Text(
+                              '${f.formulaNombre} · ${f.tipoProducto ?? ''} · ${f.color ?? ''} · v${f.numeroVersion}',
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _applyFormula,
+                  ),
+                  const Gap(AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _kilosController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Kilos a preparar',
+                          ),
+                          onChanged: (_) => setState(_recalculateFormula),
+                          validator: _formulaVersionId == null
+                              ? null
+                              : (v) =>
+                                    (double.tryParse(
+                                              (v ?? '').replaceAll(',', '.'),
+                                            ) ??
+                                            0) <=
+                                        0
+                                    ? 'Ingresa los kilos.'
+                                    : null,
+                        ),
+                      ),
+                      const Gap(AppSpacing.md),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _pielesController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Cantidad de pieles',
+                          ),
+                          validator: _formulaVersionId == null
+                              ? null
+                              : (v) =>
+                                    (double.tryParse(
+                                              (v ?? '').replaceAll(',', '.'),
+                                            ) ??
+                                            0) <=
+                                        0
+                                    ? 'Ingresa las pieles.'
+                                    : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(AppSpacing.md),
+                ],
                 if (isWide)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +394,14 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                             _ConsumoDetalleDraftCard(
                               key: ValueKey(_drafts[index]),
                               draft: _drafts[index],
-                              pesoBaseKg: widget.proceso.pesoBaseKg ?? 0,
+                              pesoBaseKg: _formulaVersionId == null
+                                  ? widget.proceso.pesoBaseKg ?? 0
+                                  : double.tryParse(
+                                          _kilosController.text
+                                              .trim()
+                                              .replaceAll(',', '.'),
+                                        ) ??
+                                        0,
                               insumos: widget.insumos,
                               compact: isWide,
                               showDivider: index < _drafts.length - 1,
@@ -480,7 +611,7 @@ class _ConsumoDetalleDraftCard extends StatelessWidget {
       final porcentaje = double.tryParse(value.trim().replaceAll(',', '.'));
       draft.cantidadController.text = porcentaje == null
           ? ''
-          : _formatCantidad(porcentaje * pesoBaseKg);
+          : _formatCantidad(porcentaje * pesoBaseKg / 100);
       onChanged();
     },
     validator: (value) {

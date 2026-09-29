@@ -8,6 +8,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/merma_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 
@@ -68,6 +69,14 @@ class FinalizarOrdenProduccionInput {
 }
 
 abstract class OrdenesProduccionRepository {
+  Future<List<FormulaProduccionOption>> listFormulaProduccionOptions();
+  Future<List<OrdenProductoRecord>> listOrdenProductos(int ordenId);
+  Future<OrdenProductoRecord> saveOrdenProducto({
+    required int ordenId,
+    int? id,
+    required OrdenProductoInput input,
+  });
+  Future<void> deleteOrdenProducto({required int ordenId, required int id});
   Future<List<PersonalEmpresaOption>> listPersonal();
 
   Future<PersonalEmpresaOption> createPersonal({

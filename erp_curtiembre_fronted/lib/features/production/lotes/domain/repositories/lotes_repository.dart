@@ -25,7 +25,7 @@ abstract class LotesRepository {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   });
 
@@ -36,7 +36,7 @@ abstract class LotesRepository {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   });
 }

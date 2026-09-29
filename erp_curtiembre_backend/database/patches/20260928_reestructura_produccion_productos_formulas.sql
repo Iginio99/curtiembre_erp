@@ -50,7 +50,6 @@ BEGIN
         porcentaje decimal(9,4) NOT NULL,
         observacion nvarchar(300) NULL,
         activo bit NOT NULL CONSTRAINT DF_formula_detalle_activo DEFAULT (1),
-        CONSTRAINT UQ_formula_detalle UNIQUE (formula_version_id, insumo_id),
         CONSTRAINT FK_formula_detalle_version FOREIGN KEY (formula_version_id) REFERENCES configuracion.formula_version(id),
         CONSTRAINT FK_formula_detalle_insumo FOREIGN KEY (insumo_id) REFERENCES inventario.insumo(id)
     );

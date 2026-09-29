@@ -49,12 +49,16 @@ class _FormulaDetailDialogState extends State<FormulaDetailDialog> {
   void initState() {
     super.initState();
     final initial = widget.initialDetail;
-    _insumoId = initial?.insumoId ?? (widget.insumoOptions.isEmpty ? null : widget.insumoOptions.first.id);
+    _insumoId =
+        initial?.insumoId ??
+        (widget.insumoOptions.isEmpty ? null : widget.insumoOptions.first.id);
     _activo = initial?.activo ?? true;
     _porcentajeController = TextEditingController(
       text: initial == null ? '' : initial.porcentaje.toStringAsFixed(4),
     );
-    _observacionController = TextEditingController(text: initial?.observacion ?? '');
+    _observacionController = TextEditingController(
+      text: initial?.observacion ?? '',
+    );
   }
 
   @override
@@ -114,12 +118,15 @@ class _FormulaDetailDialogState extends State<FormulaDetailDialog> {
                   onChanged: widget.isSubmitting
                       ? null
                       : (value) => setState(() => _insumoId = value),
-                  validator: (value) => value == null ? 'Selecciona un insumo.' : null,
+                  validator: (value) =>
+                      value == null ? 'Selecciona un insumo.' : null,
                 ),
                 const Gap(AppSpacing.lg),
                 TextFormField(
                   controller: _porcentajeController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Porcentaje',
                     hintText: 'Ej. 12.5000',
@@ -160,7 +167,9 @@ class _FormulaDetailDialogState extends State<FormulaDetailDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+          onPressed: widget.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
         FilledButton.icon(

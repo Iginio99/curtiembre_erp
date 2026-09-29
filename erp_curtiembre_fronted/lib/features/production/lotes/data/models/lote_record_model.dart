@@ -15,6 +15,7 @@ class LoteRecordModel {
     required this.cantidadPielesDisponible,
     required this.cantidadLadosCalculada,
     required this.clienteTraeLote,
+    required this.costoUnitarioPiel,
     required this.costoPielesTotal,
     required this.estado,
     required this.creadoEn,
@@ -35,6 +36,7 @@ class LoteRecordModel {
   final double cantidadPielesDisponible;
   final double cantidadLadosCalculada;
   final bool clienteTraeLote;
+  final double costoUnitarioPiel;
   final double costoPielesTotal;
   final String estado;
   final String? observacion;
@@ -56,6 +58,7 @@ class LoteRecordModel {
       cantidadPielesDisponible: (json['cantidadPielesDisponible'] as num).toDouble(),
       cantidadLadosCalculada: (json['cantidadLadosCalculada'] as num).toDouble(),
       clienteTraeLote: json['clienteTraeLote'] as bool,
+      costoUnitarioPiel: (json['costoUnitarioPiel'] as num).toDouble(),
       costoPielesTotal: (json['costoPielesTotal'] as num).toDouble(),
       estado: json['estado'] as String,
       observacion: json['observacion'] as String?,
@@ -79,6 +82,7 @@ class LoteRecordModel {
       cantidadPielesDisponible: cantidadPielesDisponible,
       cantidadLadosCalculada: cantidadLadosCalculada,
       clienteTraeLote: clienteTraeLote,
+      costoUnitarioPiel: costoUnitarioPiel,
       costoPielesTotal: costoPielesTotal,
       estado: estado,
       observacion: observacion,

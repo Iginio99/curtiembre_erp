@@ -61,11 +61,15 @@ class _FormulaVersionDialogState extends State<FormulaVersionDialog> {
     _numeroVersionController = TextEditingController(
       text: initial?.numeroVersion.toString() ?? '',
     );
-    _fechaInicioController = TextEditingController(text: _formatDate(_fechaInicioVigencia));
+    _fechaInicioController = TextEditingController(
+      text: _formatDate(_fechaInicioVigencia),
+    );
     _fechaFinController = TextEditingController(
       text: _fechaFinVigencia == null ? '' : _formatDate(_fechaFinVigencia!),
     );
-    _observacionController = TextEditingController(text: initial?.observacion ?? '');
+    _observacionController = TextEditingController(
+      text: initial?.observacion ?? '',
+    );
   }
 
   @override
@@ -190,9 +194,9 @@ class _FormulaVersionDialogState extends State<FormulaVersionDialog> {
                             onPressed: widget.isSubmitting
                                 ? null
                                 : () => setState(() {
-                                      _fechaFinVigencia = null;
-                                      _fechaFinController.clear();
-                                    }),
+                                    _fechaFinVigencia = null;
+                                    _fechaFinController.clear();
+                                  }),
                             icon: const Icon(Icons.close_rounded),
                           ),
                         const Icon(Icons.calendar_today_outlined),
@@ -223,7 +227,8 @@ class _FormulaVersionDialogState extends State<FormulaVersionDialog> {
                     ],
                     onChanged: widget.isSubmitting
                         ? null
-                        : (value) => setState(() => _clonarDesdeVersionId = value),
+                        : (value) =>
+                              setState(() => _clonarDesdeVersionId = value),
                   ),
                 ],
                 const Gap(AppSpacing.lg),
@@ -243,7 +248,9 @@ class _FormulaVersionDialogState extends State<FormulaVersionDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+          onPressed: widget.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
         FilledButton.icon(

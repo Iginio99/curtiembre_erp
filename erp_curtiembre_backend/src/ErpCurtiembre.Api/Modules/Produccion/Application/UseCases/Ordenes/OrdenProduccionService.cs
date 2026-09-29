@@ -32,8 +32,7 @@ public sealed class OrdenProduccionService(
     }
     private static readonly string[] ExpectedSequenceCodes =
     [
-        "REMOJO",
-        "PELAMBRE",
+        "REMOJO_PELAMBRE",
         "CURTIDO",
         "RECURTIDO",
         "ACABADO"
@@ -110,7 +109,7 @@ public sealed class OrdenProduccionService(
         if (procesos.Count != ExpectedSequenceCodes.Length ||
             procesos.Select(x => x.Codigo.ToUpperInvariant()).SequenceEqual(ExpectedSequenceCodes) is false)
         {
-            errors.Add("La secuencia fija MVP de procesos no esta configurada correctamente. Se requiere: Remojo, Pelambre, Curtido, Recurtido y Acabado.");
+            errors.Add("La secuencia de produccion no esta configurada correctamente. Se requiere: Remojo y Pelambre, Curtido, Recurtido y Acabado.");
         }
 
         if (errors.Count > 0)

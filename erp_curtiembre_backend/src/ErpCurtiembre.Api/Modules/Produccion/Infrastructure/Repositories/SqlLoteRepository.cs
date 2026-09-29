@@ -30,6 +30,7 @@ public sealed class SqlLoteRepository(
                 l.cantidad_pieles_disponible AS CantidadPielesDisponible,
                 CAST(l.cantidad_pieles_inicial * 2.0 AS DECIMAL(18,2)) AS CantidadLadosCalculada,
                 l.cliente_trae_lote AS ClienteTraeLote,
+                l.costo_unitario_piel AS CostoUnitarioPiel,
                 l.costo_pieles_total AS CostoPielesTotal,
                 l.observacion AS Observacion,
                 l.estado AS Estado,
@@ -57,6 +58,7 @@ public sealed class SqlLoteRepository(
             CantidadPielesInicial = lote.CantidadPielesInicial,
             CantidadPielesDisponible = lote.CantidadPielesDisponible,
             ClienteTraeLote = lote.ClienteTraeLote,
+            CostoUnitarioPiel = lote.CostoUnitarioPiel,
             CostoPielesTotal = lote.CostoPielesTotal,
             Observacion = lote.Observacion,
             Estado = lote.Estado,
@@ -77,6 +79,7 @@ public sealed class SqlLoteRepository(
         entity.CantidadPielesInicial = lote.CantidadPielesInicial;
         entity.CantidadPielesDisponible = lote.CantidadPielesDisponible;
         entity.ClienteTraeLote = lote.ClienteTraeLote;
+        entity.CostoUnitarioPiel = lote.CostoUnitarioPiel;
         entity.CostoPielesTotal = lote.CostoPielesTotal;
         entity.Observacion = lote.Observacion;
         entity.Estado = lote.Estado;
@@ -105,6 +108,7 @@ public sealed class SqlLoteRepository(
                 l.cantidad_pieles_disponible AS CantidadPielesDisponible,
                 CAST(l.cantidad_pieles_inicial * 2.0 AS DECIMAL(18,2)) AS CantidadLadosCalculada,
                 l.cliente_trae_lote AS ClienteTraeLote,
+                l.costo_unitario_piel AS CostoUnitarioPiel,
                 l.costo_pieles_total AS CostoPielesTotal,
                 l.observacion AS Observacion,
                 l.estado AS Estado,

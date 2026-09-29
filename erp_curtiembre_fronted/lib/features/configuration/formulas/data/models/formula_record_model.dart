@@ -19,7 +19,9 @@ class FormulaVersionSummaryModel {
     return FormulaVersionSummaryModel(
       id: (json['id'] as num).toInt(),
       numeroVersion: (json['numeroVersion'] as num).toInt(),
-      fechaInicioVigencia: DateTime.parse(json['fechaInicioVigencia'] as String),
+      fechaInicioVigencia: DateTime.parse(
+        json['fechaInicioVigencia'] as String,
+      ),
       fechaFinVigencia: json['fechaFinVigencia'] == null
           ? null
           : DateTime.parse(json['fechaFinVigencia'] as String),
@@ -124,7 +126,9 @@ class FormulaVersionRecordModel {
       formulaCodigo: json['formulaCodigo'] as String,
       formulaNombre: json['formulaNombre'] as String,
       numeroVersion: (json['numeroVersion'] as num).toInt(),
-      fechaInicioVigencia: DateTime.parse(json['fechaInicioVigencia'] as String),
+      fechaInicioVigencia: DateTime.parse(
+        json['fechaInicioVigencia'] as String,
+      ),
       fechaFinVigencia: json['fechaFinVigencia'] == null
           ? null
           : DateTime.parse(json['fechaFinVigencia'] as String),
@@ -134,7 +138,10 @@ class FormulaVersionRecordModel {
       creadoPorUsuarioId: (json['creadoPorUsuarioId'] as num?)?.toInt(),
       detallesActivos: (json['detallesActivos'] as num?)?.toInt() ?? 0,
       detalles: (json['detalles'] as List<dynamic>? ?? const [])
-          .map((item) => FormulaDetailRecordModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) =>
+                FormulaDetailRecordModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList(growable: false),
     );
   }
@@ -166,6 +173,8 @@ class FormulaRecordModel {
     required this.procesoProductivoId,
     required this.procesoProductivoCodigo,
     required this.procesoProductivoNombre,
+    this.tipoProducto,
+    this.color,
     this.descripcion,
     required this.activo,
     required this.creadoEn,
@@ -179,6 +188,8 @@ class FormulaRecordModel {
   final int procesoProductivoId;
   final String procesoProductivoCodigo;
   final String procesoProductivoNombre;
+  final String? tipoProducto;
+  final String? color;
   final String? descripcion;
   final bool activo;
   final DateTime creadoEn;
@@ -193,6 +204,8 @@ class FormulaRecordModel {
       procesoProductivoId: (json['procesoProductivoId'] as num).toInt(),
       procesoProductivoCodigo: json['procesoProductivoCodigo'] as String,
       procesoProductivoNombre: json['procesoProductivoNombre'] as String,
+      tipoProducto: json['tipoProducto'] as String?,
+      color: json['color'] as String?,
       descripcion: json['descripcion'] as String?,
       activo: json['activo'] as bool,
       creadoEn: DateTime.parse(json['creadoEn'] as String),
@@ -213,6 +226,8 @@ class FormulaRecordModel {
       procesoProductivoId: procesoProductivoId,
       procesoProductivoCodigo: procesoProductivoCodigo,
       procesoProductivoNombre: procesoProductivoNombre,
+      tipoProducto: tipoProducto,
+      color: color,
       descripcion: descripcion,
       activo: activo,
       creadoEn: creadoEn,

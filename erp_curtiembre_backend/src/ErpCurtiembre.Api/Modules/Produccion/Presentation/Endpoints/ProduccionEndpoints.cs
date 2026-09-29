@@ -455,6 +455,74 @@ public static class ProduccionEndpoints
             return Results.Ok(await service.ListByOrderAsync(ordenId, cancellationToken));
         });
 
+        group.MapGet("/catalogos/formulas-producto", async (
+            HttpRequest request,
+            ValidateSessionUseCase validateSessionUseCase,
+            OrdenProductoService service,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return Results.Ok(await service.ListFormulaOptionsAsync(cancellationToken));
+        });
+
+        ordenes.MapGet("/{ordenId:long}/productos", async (
+            HttpRequest request, long ordenId, ValidateSessionUseCase validateSessionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return Results.Ok(await service.ListAsync(ordenId, cancellationToken));
+        });
+
+        ordenes.MapPost("/{ordenId:long}/productos", async (
+            HttpRequest request, long ordenId, UpsertOrdenProductoRequestDto body,
+            ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(await service.CreateAsync(ordenId, body, authorization.Session!.UsuarioId, cancellationToken));
+        });
+
+        ordenes.MapPut("/{ordenId:long}/productos/{id:long}", async (
+            HttpRequest request, long ordenId, long id, UpsertOrdenProductoRequestDto body,
+            ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(await service.UpdateAsync(ordenId, id, body, authorization.Session!.UsuarioId, cancellationToken));
+        });
+
+        ordenes.MapDelete("/{ordenId:long}/productos/{id:long}", async (
+            HttpRequest request, long ordenId, long id,
+            ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(await service.DeactivateAsync(ordenId, id, cancellationToken));
+        });
+
+        ordenes.MapGet("/{ordenId:long}/consumo-planificado", async (
+            HttpRequest request, long ordenId, ValidateSessionUseCase validateSessionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return Results.Ok(await service.ListPlannedAsync(ordenId, cancellationToken));
+        });
+
+        ordenes.MapPost("/{ordenId:long}/consumo-planificado/calcular", async (
+            HttpRequest request, long ordenId, ValidateSessionUseCase validateSessionUseCase,
+            CheckPermissionUseCase checkPermissionUseCase, OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(await service.GeneratePlannedAsync(ordenId, cancellationToken));
+        });
+
         ordenes.MapPost("/{ordenId:long}/solicitar-consumo", async (
             HttpRequest request,
             long ordenId,

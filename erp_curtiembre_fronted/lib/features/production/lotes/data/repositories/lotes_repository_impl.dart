@@ -82,7 +82,7 @@ class LotesRepositoryImpl implements LotesRepository {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   }) async {
     _talker.repository(
@@ -94,7 +94,7 @@ class LotesRepositoryImpl implements LotesRepository {
       fechaIngreso: fechaIngreso,
       cantidadPielesInicial: cantidadPielesInicial,
       clienteTraeLote: clienteTraeLote,
-      costoPielesTotal: costoPielesTotal,
+      costoUnitarioPiel: costoUnitarioPiel,
       observacion: observacion,
     );
     _talker.repository('Lote creado correctamente con id=${item.id}.');
@@ -109,7 +109,7 @@ class LotesRepositoryImpl implements LotesRepository {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   }) async {
     _talker.repository(
@@ -122,7 +122,7 @@ class LotesRepositoryImpl implements LotesRepository {
       fechaIngreso: fechaIngreso,
       cantidadPielesInicial: cantidadPielesInicial,
       clienteTraeLote: clienteTraeLote,
-      costoPielesTotal: costoPielesTotal,
+      costoUnitarioPiel: costoUnitarioPiel,
       observacion: observacion,
     );
     _talker.repository('Lote $id actualizado correctamente.');

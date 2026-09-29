@@ -89,7 +89,7 @@ class _LotesPageState extends State<LotesPage> {
       fechaIngreso: payload.fechaIngreso,
       cantidadPielesInicial: payload.cantidadPielesInicial,
       clienteTraeLote: payload.clienteTraeLote,
-      costoPielesTotal: payload.costoPielesTotal,
+      costoUnitarioPiel: payload.costoUnitarioPiel,
       observacion: payload.observacion,
     );
 
@@ -131,7 +131,7 @@ class _LotesPageState extends State<LotesPage> {
       fechaIngreso: payload.fechaIngreso,
       cantidadPielesInicial: payload.cantidadPielesInicial,
       clienteTraeLote: payload.clienteTraeLote,
-      costoPielesTotal: payload.costoPielesTotal,
+      costoUnitarioPiel: payload.costoUnitarioPiel,
       observacion: payload.observacion,
     );
 
@@ -561,7 +561,11 @@ class _LoteDetailPanel extends StatelessWidget {
                         value: _formatDate(lote.fechaIngreso),
                       ),
                       _DetailRow(
-                        label: 'Costo de pieles',
+                        label: 'Costo unitario por piel',
+                        value: 'S/ ${_formatDecimal(lote.costoUnitarioPiel)}',
+                      ),
+                      _DetailRow(
+                        label: 'Costo total de pieles',
                         value: 'S/ ${_formatDecimal(lote.costoPielesTotal)}',
                       ),
                       const Gap(AppSpacing.md),

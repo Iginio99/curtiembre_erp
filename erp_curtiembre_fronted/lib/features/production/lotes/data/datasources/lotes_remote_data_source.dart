@@ -126,7 +126,7 @@ class LotesRemoteDataSource {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   }) async {
     const path = '/api/produccion/lotes';
@@ -143,7 +143,7 @@ class LotesRemoteDataSource {
           'fechaIngreso': fechaIngreso.toIso8601String(),
           'cantidadPielesInicial': cantidadPielesInicial,
           'clienteTraeLote': clienteTraeLote,
-          'costoPielesTotal': costoPielesTotal,
+          'costoUnitarioPiel': costoUnitarioPiel,
           'observacion': observacion,
         },
       );
@@ -161,7 +161,7 @@ class LotesRemoteDataSource {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   }) async {
     final path = '/api/produccion/lotes/$id';
@@ -178,7 +178,7 @@ class LotesRemoteDataSource {
           'fechaIngreso': fechaIngreso.toIso8601String(),
           'cantidadPielesInicial': cantidadPielesInicial,
           'clienteTraeLote': clienteTraeLote,
-          'costoPielesTotal': costoPielesTotal,
+          'costoUnitarioPiel': costoUnitarioPiel,
           'observacion': observacion,
         },
       );

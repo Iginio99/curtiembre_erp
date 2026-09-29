@@ -17,12 +17,12 @@ class FormulaVersionSummary extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        numeroVersion,
-        fechaInicioVigencia,
-        fechaFinVigencia,
-        vigente,
-      ];
+    id,
+    numeroVersion,
+    fechaInicioVigencia,
+    fechaFinVigencia,
+    vigente,
+  ];
 }
 
 class FormulaDetailRecord extends Equatable {
@@ -50,15 +50,15 @@ class FormulaDetailRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        formulaVersionId,
-        insumoId,
-        insumoCodigo,
-        insumoNombre,
-        porcentaje,
-        observacion,
-        activo,
-      ];
+    id,
+    formulaVersionId,
+    insumoId,
+    insumoCodigo,
+    insumoNombre,
+    porcentaje,
+    observacion,
+    activo,
+  ];
 }
 
 class FormulaVersionRecord extends Equatable {
@@ -96,20 +96,20 @@ class FormulaVersionRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        formulaId,
-        formulaCodigo,
-        formulaNombre,
-        numeroVersion,
-        fechaInicioVigencia,
-        fechaFinVigencia,
-        vigente,
-        observacion,
-        creadoEn,
-        creadoPorUsuarioId,
-        detallesActivos,
-        detalles,
-      ];
+    id,
+    formulaId,
+    formulaCodigo,
+    formulaNombre,
+    numeroVersion,
+    fechaInicioVigencia,
+    fechaFinVigencia,
+    vigente,
+    observacion,
+    creadoEn,
+    creadoPorUsuarioId,
+    detallesActivos,
+    detalles,
+  ];
 }
 
 class FormulaRecord extends Equatable {
@@ -120,6 +120,8 @@ class FormulaRecord extends Equatable {
     required this.procesoProductivoId,
     required this.procesoProductivoCodigo,
     required this.procesoProductivoNombre,
+    this.tipoProducto,
+    this.color,
     this.descripcion,
     required this.activo,
     required this.creadoEn,
@@ -133,28 +135,33 @@ class FormulaRecord extends Equatable {
   final int procesoProductivoId;
   final String procesoProductivoCodigo;
   final String procesoProductivoNombre;
+  final String? tipoProducto;
+  final String? color;
   final String? descripcion;
   final bool activo;
   final DateTime creadoEn;
   final int? creadoPorUsuarioId;
   final FormulaVersionSummary? versionVigente;
 
-  String get processLabel => '$procesoProductivoCodigo · $procesoProductivoNombre';
+  String get processLabel =>
+      '$procesoProductivoCodigo · $procesoProductivoNombre';
 
   @override
   List<Object?> get props => [
-        id,
-        codigo,
-        nombre,
-        procesoProductivoId,
-        procesoProductivoCodigo,
-        procesoProductivoNombre,
-        descripcion,
-        activo,
-        creadoEn,
-        creadoPorUsuarioId,
-        versionVigente,
-      ];
+    id,
+    codigo,
+    nombre,
+    procesoProductivoId,
+    procesoProductivoCodigo,
+    procesoProductivoNombre,
+    tipoProducto,
+    color,
+    descripcion,
+    activo,
+    creadoEn,
+    creadoPorUsuarioId,
+    versionVigente,
+  ];
 }
 
 class ProcesoProductivoOption extends Equatable {

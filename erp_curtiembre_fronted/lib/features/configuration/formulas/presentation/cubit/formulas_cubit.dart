@@ -5,19 +5,27 @@ import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentat
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FormulasActionResult {
-  const FormulasActionResult._({
-    required this.success,
-    required this.message,
-  });
+  const FormulasActionResult._({required this.success, required this.message});
 
   const FormulasActionResult.success(String message)
-      : this._(success: true, message: message);
+    : this._(success: true, message: message);
 
   const FormulasActionResult.failure(String message)
-      : this._(success: false, message: message);
+    : this._(success: false, message: message);
 
   final bool success;
   final String message;
+}
+
+class FormulaCreationDetail {
+  const FormulaCreationDetail({
+    required this.insumoId,
+    required this.porcentaje,
+    this.observacion,
+  });
+  final int insumoId;
+  final double porcentaje;
+  final String? observacion;
 }
 
 class FormulasCubit extends Cubit<FormulasState> {
@@ -100,7 +108,8 @@ class FormulasCubit extends Cubit<FormulasState> {
   }
 
   Future<void> selectFormula(int formulaId) async {
-    if (state.selectedFormulaId == formulaId && state.selectedFormula?.id == formulaId) {
+    if (state.selectedFormulaId == formulaId &&
+        state.selectedFormula?.id == formulaId) {
       return;
     }
 
@@ -116,7 +125,8 @@ class FormulasCubit extends Cubit<FormulasState> {
   }
 
   Future<void> selectVersion(int versionId) async {
-    if (state.selectedVersionId == versionId && state.selectedVersion?.id == versionId) {
+    if (state.selectedVersionId == versionId &&
+        state.selectedVersion?.id == versionId) {
       return;
     }
 
@@ -149,7 +159,8 @@ class FormulasCubit extends Cubit<FormulasState> {
       emit(
         state.copyWith(
           isVersionDetailLoading: false,
-          versionDetailErrorMessage: 'No pudimos cargar el detalle de la version.',
+          versionDetailErrorMessage:
+              'No pudimos cargar el detalle de la version.',
         ),
       );
     }
@@ -175,7 +186,10 @@ class FormulasCubit extends Cubit<FormulasState> {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
+    required String tipoProducto,
+    required String color,
     String? descripcion,
+    required List<FormulaCreationDetail> detalles,
   }) async {
     emit(state.copyWith(isSubmittingAction: true));
     try {
@@ -183,18 +197,39 @@ class FormulasCubit extends Cubit<FormulasState> {
         codigo: codigo,
         nombre: nombre,
         procesoProductivoId: procesoProductivoId,
+        tipoProducto: tipoProducto,
+        color: color,
         descripcion: descripcion,
       );
+
+      final version = await _repository.createVersion(
+        formulaId: formula.id,
+        numeroVersion: 1,
+        fechaInicioVigencia: DateTime.now(),
+        observacion: 'Version inicial de la receta',
+      );
+      for (final detail in detalles) {
+        await _repository.createDetail(
+          versionId: version.id,
+          insumoId: detail.insumoId,
+          porcentaje: detail.porcentaje,
+          observacion: detail.observacion,
+        );
+      }
+      await _repository.activateVersion(version.id);
 
       await _reloadFormulas(
         searchTerm: state.searchTerm,
         activityFilter: state.activityFilter,
         processFilterId: state.processFilterId,
         preferredFormulaId: formula.id,
+        preferredVersionId: version.id,
       );
 
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Formula creada correctamente.');
+      return const FormulasActionResult.success(
+        'Formula y receta creadas correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -210,11 +245,15 @@ class FormulasCubit extends Cubit<FormulasState> {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
+    required String tipoProducto,
+    required String color,
     String? descripcion,
   }) async {
     final formulaId = state.selectedFormulaId;
     if (formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una formula para editar.');
+      return const FormulasActionResult.failure(
+        'Selecciona una formula para editar.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -224,6 +263,8 @@ class FormulasCubit extends Cubit<FormulasState> {
         codigo: codigo,
         nombre: nombre,
         procesoProductivoId: procesoProductivoId,
+        tipoProducto: tipoProducto,
+        color: color,
         descripcion: descripcion,
       );
 
@@ -235,7 +276,9 @@ class FormulasCubit extends Cubit<FormulasState> {
       );
 
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Formula actualizada correctamente.');
+      return const FormulasActionResult.success(
+        'Formula actualizada correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -250,7 +293,9 @@ class FormulasCubit extends Cubit<FormulasState> {
   Future<FormulasActionResult> setSelectedFormulaActive(bool active) async {
     final formulaId = state.selectedFormulaId;
     if (formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una formula para continuar.');
+      return const FormulasActionResult.failure(
+        'Selecciona una formula para continuar.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -266,7 +311,9 @@ class FormulasCubit extends Cubit<FormulasState> {
 
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.success(
-        active ? 'Formula activada correctamente.' : 'Formula inactivada correctamente.',
+        active
+            ? 'Formula activada correctamente.'
+            : 'Formula inactivada correctamente.',
       );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
@@ -274,7 +321,9 @@ class FormulasCubit extends Cubit<FormulasState> {
     } catch (_) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(
-        active ? 'No pudimos activar la formula.' : 'No pudimos inactivar la formula.',
+        active
+            ? 'No pudimos activar la formula.'
+            : 'No pudimos inactivar la formula.',
       );
     }
   }
@@ -288,7 +337,9 @@ class FormulasCubit extends Cubit<FormulasState> {
   }) async {
     final formulaId = state.selectedFormulaId;
     if (formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una formula primero.');
+      return const FormulasActionResult.failure(
+        'Selecciona una formula primero.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -308,7 +359,9 @@ class FormulasCubit extends Cubit<FormulasState> {
       );
 
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Version creada correctamente.');
+      return const FormulasActionResult.success(
+        'Version creada correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -327,7 +380,9 @@ class FormulasCubit extends Cubit<FormulasState> {
   }) async {
     final versionId = state.selectedVersionId;
     if (versionId == null) {
-      return const FormulasActionResult.failure('Selecciona una version para editar.');
+      return const FormulasActionResult.failure(
+        'Selecciona una version para editar.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -345,7 +400,9 @@ class FormulasCubit extends Cubit<FormulasState> {
       );
 
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Version actualizada correctamente.');
+      return const FormulasActionResult.success(
+        'Version actualizada correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -361,7 +418,9 @@ class FormulasCubit extends Cubit<FormulasState> {
     final versionId = state.selectedVersionId;
     final formulaId = state.selectedFormulaId;
     if (versionId == null || formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una version para activarla.');
+      return const FormulasActionResult.failure(
+        'Selecciona una version para activarla.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -375,7 +434,9 @@ class FormulasCubit extends Cubit<FormulasState> {
         preferredVersionId: versionId,
       );
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Version vigente actualizada correctamente.');
+      return const FormulasActionResult.success(
+        'Version vigente actualizada correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -395,7 +456,9 @@ class FormulasCubit extends Cubit<FormulasState> {
     final versionId = state.selectedVersionId;
     final formulaId = state.selectedFormulaId;
     if (versionId == null || formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una version para agregar detalle.');
+      return const FormulasActionResult.failure(
+        'Selecciona una version para agregar detalle.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -411,7 +474,9 @@ class FormulasCubit extends Cubit<FormulasState> {
         preferredVersionId: versionId,
       );
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Detalle agregado correctamente.');
+      return const FormulasActionResult.success(
+        'Detalle agregado correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -433,7 +498,9 @@ class FormulasCubit extends Cubit<FormulasState> {
     final versionId = state.selectedVersionId;
     final formulaId = state.selectedFormulaId;
     if (versionId == null || formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una version para editar detalle.');
+      return const FormulasActionResult.failure(
+        'Selecciona una version para editar detalle.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -450,7 +517,9 @@ class FormulasCubit extends Cubit<FormulasState> {
         preferredVersionId: versionId,
       );
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Detalle actualizado correctamente.');
+      return const FormulasActionResult.success(
+        'Detalle actualizado correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -466,7 +535,9 @@ class FormulasCubit extends Cubit<FormulasState> {
     final versionId = state.selectedVersionId;
     final formulaId = state.selectedFormulaId;
     if (versionId == null || formulaId == null) {
-      return const FormulasActionResult.failure('Selecciona una version para inactivar detalle.');
+      return const FormulasActionResult.failure(
+        'Selecciona una version para inactivar detalle.',
+      );
     }
 
     emit(state.copyWith(isSubmittingAction: true));
@@ -477,7 +548,9 @@ class FormulasCubit extends Cubit<FormulasState> {
         preferredVersionId: versionId,
       );
       emit(state.copyWith(isSubmittingAction: false));
-      return const FormulasActionResult.success('Detalle inactivado correctamente.');
+      return const FormulasActionResult.success(
+        'Detalle inactivado correctamente.',
+      );
     } on ApiException catch (exception) {
       emit(state.copyWith(isSubmittingAction: false));
       return FormulasActionResult.failure(exception.message);
@@ -506,8 +579,8 @@ class FormulasCubit extends Cubit<FormulasState> {
     final selectedFormulaId = items.any((item) => item.id == currentSelectedId)
         ? currentSelectedId
         : items.isNotEmpty
-            ? items.first.id
-            : null;
+        ? items.first.id
+        : null;
 
     emit(
       state.copyWith(
@@ -563,7 +636,8 @@ class FormulasCubit extends Cubit<FormulasState> {
       final selectedVersionId = _resolveVersionId(
         versions: versions,
         preferredVersionId: preferredVersionId,
-        fallbackVersionId: formula.versionVigente?.id ?? state.selectedVersionId,
+        fallbackVersionId:
+            formula.versionVigente?.id ?? state.selectedVersionId,
       );
 
       emit(
@@ -609,7 +683,8 @@ class FormulasCubit extends Cubit<FormulasState> {
         state.copyWith(
           isFormulaDetailLoading: false,
           isVersionDetailLoading: false,
-          formulaDetailErrorMessage: 'No pudimos cargar el detalle de la formula.',
+          formulaDetailErrorMessage:
+              'No pudimos cargar el detalle de la formula.',
         ),
       );
     }

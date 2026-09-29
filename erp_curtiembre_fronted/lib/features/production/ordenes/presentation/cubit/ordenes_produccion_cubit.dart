@@ -5,6 +5,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 
 class OrdenesActionResult {
   const OrdenesActionResult._({required this.success, required this.message});
@@ -55,6 +56,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
       final loteOptions = await _repository.listLotesDisponibles();
       final personalOptions = await _repository.listPersonal();
       final insumoOptions = await _repository.listActiveInsumos();
+      final formulaProduccionOptions = await _repository
+          .listFormulaProduccionOptions();
       _talker.cubit(
         'Catalogos base cargados para ordenes: clientes=${clienteOptions.length}, lotes=${loteOptions.length}, insumos=${insumoOptions.length}.',
         logLevel: LogLevel.debug,
@@ -65,6 +68,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
           loteOptions: loteOptions,
           personalOptions: personalOptions,
           insumoOptions: insumoOptions,
+          formulaProduccionOptions: formulaProduccionOptions,
         ),
       );
       await load();
@@ -828,6 +832,51 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     }
   }
 
+  Future<OrdenesActionResult> saveProducto({
+    int? id,
+    required OrdenProductoInput input,
+  }) async {
+    final ordenId = state.selectedOrdenId;
+    if (ordenId == null)
+      return const OrdenesActionResult.failure('Selecciona una orden.');
+    emit(state.copyWith(isSubmittingAction: true));
+    try {
+      await _repository.saveOrdenProducto(
+        ordenId: ordenId,
+        id: id,
+        input: input,
+      );
+      final productos = await _repository.listOrdenProductos(ordenId);
+      emit(
+        state.copyWith(isSubmittingAction: false, ordenProductos: productos),
+      );
+      return const OrdenesActionResult.success(
+        'Producto guardado correctamente.',
+      );
+    } on ApiException catch (e) {
+      emit(state.copyWith(isSubmittingAction: false));
+      return OrdenesActionResult.failure(e.message);
+    }
+  }
+
+  Future<OrdenesActionResult> deleteProducto(int id) async {
+    final ordenId = state.selectedOrdenId;
+    if (ordenId == null)
+      return const OrdenesActionResult.failure('Selecciona una orden.');
+    emit(state.copyWith(isSubmittingAction: true));
+    try {
+      await _repository.deleteOrdenProducto(ordenId: ordenId, id: id);
+      final productos = await _repository.listOrdenProductos(ordenId);
+      emit(
+        state.copyWith(isSubmittingAction: false, ordenProductos: productos),
+      );
+      return const OrdenesActionResult.success('Producto retirado.');
+    } on ApiException catch (e) {
+      emit(state.copyWith(isSubmittingAction: false));
+      return OrdenesActionResult.failure(e.message);
+    }
+  }
+
   Future<void> _loadOrdenDetail(int ordenId) async {
     _talker.cubit('Cargando detalle operativo de la orden $ordenId.');
     emit(
@@ -842,6 +891,10 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     try {
       final orden = await _repository.getOrden(ordenId);
       final procesos = await _repository.listProcesos(ordenId);
+      final productos = await _repository.listOrdenProductos(ordenId);
+      final consumoPlanificado = await _repository.listConsumoPlanificado(
+        ordenId,
+      );
       final consumoReal = await _repository.listConsumoReal(ordenId);
       final desviaciones = await _repository.listDesviaciones(ordenId);
       final mermas = await _repository.listMermas(ordenProduccionId: ordenId);
@@ -859,7 +912,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
           isDetailLoading: false,
           selectedOrden: orden,
           selectedProcesos: procesos,
-          consumoPlanificado: const [],
+          ordenProductos: productos,
+          consumoPlanificado: consumoPlanificado,
           consumoReal: consumoReal,
           desviaciones: desviaciones,
           mermas: mermas,

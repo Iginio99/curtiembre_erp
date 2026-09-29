@@ -2,17 +2,9 @@ import 'package:equatable/equatable.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/formulas/domain/entities/formula_record.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/shared/domain/entities/insumo_lookup.dart';
 
-enum FormulasStatus {
-  loading,
-  success,
-  error,
-}
+enum FormulasStatus { loading, success, error }
 
-enum FormulaActivityFilter {
-  active,
-  inactive,
-  all,
-}
+enum FormulaActivityFilter { active, inactive, all }
 
 class FormulasState extends Equatable {
   static const Object _sentinel = Object();
@@ -93,13 +85,15 @@ class FormulasState extends Equatable {
       selectedFormulaId: identical(selectedFormulaId, _sentinel)
           ? this.selectedFormulaId
           : selectedFormulaId as int?,
-      selectedFormula:
-          clearSelectedFormula ? null : selectedFormula ?? this.selectedFormula,
+      selectedFormula: clearSelectedFormula
+          ? null
+          : selectedFormula ?? this.selectedFormula,
       selectedVersionId: identical(selectedVersionId, _sentinel)
           ? this.selectedVersionId
           : selectedVersionId as int?,
-      selectedVersion:
-          clearSelectedVersion ? null : selectedVersion ?? this.selectedVersion,
+      selectedVersion: clearSelectedVersion
+          ? null
+          : selectedVersion ?? this.selectedVersion,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       formulaDetailErrorMessage: clearFormulaDetailError
           ? null
@@ -122,23 +116,23 @@ class FormulasState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        processOptions,
-        insumoOptions,
-        versions,
-        selectedFormulaId,
-        selectedFormula,
-        selectedVersionId,
-        selectedVersion,
-        errorMessage,
-        formulaDetailErrorMessage,
-        versionDetailErrorMessage,
-        isFormulaDetailLoading,
-        isVersionDetailLoading,
-        isSubmittingAction,
-        searchTerm,
-        activityFilter,
-        processFilterId,
-      ];
+    status,
+    items,
+    processOptions,
+    insumoOptions,
+    versions,
+    selectedFormulaId,
+    selectedFormula,
+    selectedVersionId,
+    selectedVersion,
+    errorMessage,
+    formulaDetailErrorMessage,
+    versionDetailErrorMessage,
+    isFormulaDetailLoading,
+    isVersionDetailLoading,
+    isSubmittingAction,
+    searchTerm,
+    activityFilter,
+    processFilterId,
+  ];
 }

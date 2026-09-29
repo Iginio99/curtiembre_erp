@@ -13,6 +13,8 @@ public sealed class Formula
     public string ProcesoProductivoCodigo { get; init; } = string.Empty;
 
     public string ProcesoProductivoNombre { get; init; } = string.Empty;
+    public string? TipoProducto { get; init; }
+    public string? Color { get; init; }
 
     public string? Descripcion { get; init; }
 

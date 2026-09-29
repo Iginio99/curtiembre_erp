@@ -8,7 +8,7 @@ public sealed record CreateLoteRequestDto(
     DateTime FechaIngreso,
     [property: Range(typeof(decimal), "0.0001", "999999999999999.9999")] decimal CantidadPielesInicial,
     bool ClienteTraeLote,
-    [property: Range(typeof(decimal), "0", "999999999999999.99")] decimal CostoPielesTotal,
+    [property: Range(typeof(decimal), "0", "999999999999999.9999")] decimal CostoUnitarioPiel,
     [property: StringLength(500)] string? Observacion);
 
 public sealed record UpdateLoteRequestDto(
@@ -17,7 +17,7 @@ public sealed record UpdateLoteRequestDto(
     DateTime FechaIngreso,
     [property: Range(typeof(decimal), "0.0001", "999999999999999.9999")] decimal CantidadPielesInicial,
     bool ClienteTraeLote,
-    [property: Range(typeof(decimal), "0", "999999999999999.99")] decimal CostoPielesTotal,
+    [property: Range(typeof(decimal), "0", "999999999999999.9999")] decimal CostoUnitarioPiel,
     [property: StringLength(500)] string? Observacion);
 
 public sealed record LoteFiltersDto(
@@ -40,6 +40,7 @@ public sealed record LoteListItemDto(
     decimal CantidadPielesDisponible,
     decimal CantidadLadosCalculada,
     bool ClienteTraeLote,
+    decimal CostoUnitarioPiel,
     decimal CostoPielesTotal,
     string Estado,
     string? Observacion,
@@ -60,6 +61,7 @@ public sealed record LoteDetailDto(
     decimal CantidadPielesDisponible,
     decimal CantidadLadosCalculada,
     bool ClienteTraeLote,
+    decimal CostoUnitarioPiel,
     decimal CostoPielesTotal,
     string Estado,
     string? Observacion,

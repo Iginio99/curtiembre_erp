@@ -14,12 +14,36 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 
 class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
   OrdenesProduccionRepositoryImpl(this._remoteDataSource, this._talker);
 
   final OrdenesProduccionRemoteDataSource _remoteDataSource;
   final Talker _talker;
+
+  @override
+  Future<List<FormulaProduccionOption>> listFormulaProduccionOptions() =>
+      _remoteDataSource.listFormulaProduccionOptions();
+
+  @override
+  Future<List<OrdenProductoRecord>> listOrdenProductos(int ordenId) =>
+      _remoteDataSource.listOrdenProductos(ordenId);
+
+  @override
+  Future<OrdenProductoRecord> saveOrdenProducto({
+    required int ordenId,
+    int? id,
+    required OrdenProductoInput input,
+  }) => _remoteDataSource.saveOrdenProducto(
+    ordenId: ordenId,
+    id: id,
+    input: input,
+  );
+
+  @override
+  Future<void> deleteOrdenProducto({required int ordenId, required int id}) =>
+      _remoteDataSource.deleteOrdenProducto(ordenId: ordenId, id: id);
 
   @override
   Future<List<PersonalEmpresaOption>> listPersonal() =>

@@ -1,0 +1,1423 @@
+Usando la configuración de inicio de D:\Tesis\erp_curtiembre_backend\src\ErpCurtiembre.Api\Properties\launchSettings.json...
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5085
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: D:\Tesis\erp_curtiembre_backend\src\ErpCurtiembre.Api
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@usuarioId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [u].[id], [u].[activo], [u].[actualizado_en], [u].[actualizado_por_usuario_id], [u].[apellidos], [u].[area_id], [u].[bloqueado_hasta], [u].[creado_en], [u].[creado_por_usuario_id], [u].[debe_cambiar_password], [u].[dni], [u].[intentos_fallidos], [u].[nombres], [u].[password_hash], [u].[rol_id], [u].[ultimo_login_en], [u].[usuario]
+      FROM [seguridad].[usuario] AS [u]
+      WHERE [u].[id] = @usuarioId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[usuario] SET [ultimo_login_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Boolean), @p1='?' (DbType = DateTime2), @p2='?' (DbType = DateTime2), @p3='?' (DbType = DateTime2), @p4='?' (Size = 50), @p5='?' (Size = 100), @p6='?' (Size = 255), @p7='?' (Size = 500), @p8='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      INSERT INTO [seguridad].[sesion_usuario] ([activa], [cerrado_en], [expira_en], [inicio_en], [ip_origen], [motivo_cierre], [token_hash], [user_agent], [usuario_id])
+      OUTPUT INSERTED.[id]
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = DateTime2), @p1='?' (DbType = Boolean), @p2='?' (Size = 50), @p3='?' (Size = 250), @p4='?' (DbType = Int64), @p5='?' (Size = 60)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      INSERT INTO [seguridad].[intento_login] ([creado_en], [fue_exitoso], [ip_origen], [mensaje], [usuario_id], [usuario_login])
+      OUTPUT INSERTED.[id]
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = DateTime2), @p1='?' (Size = 500), @p2='?' (Size = 80), @p3='?' (Size = 50), @p4='?' (DbType = Int64), @p5='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      INSERT INTO [seguridad].[auditoria_seguridad] ([creado_en], [descripcion], [evento], [ip_origen], [usuario_accion_id], [usuario_afectado_id])
+      OUTPUT INSERTED.[id]
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@orderId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [o].[id], [o].[actualizado_en], [o].[actualizado_por_usuario_id], [o].[cantidad_pieles], [o].[cliente_id], [o].[codigo], [o].[creado_en], [o].[creado_por_usuario_id], [o].[estado], [o].[fecha_fin_estimada], [o].[fecha_fin_real], [o].[fecha_inicio_planificada], [o].[fecha_inicio_real], [o].[lote_id], [o].[motivo_anulacion], [o].[observacion], [o].[responsable_cargo], [o].[responsable_nombre], [o].[responsable_usuario_id]
+      FROM [produccion].[orden_produccion] AS [o]
+      WHERE [o].[id] = @orderId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@orderId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [o].[id], [o].[creado_en], [o].[estado], [o].[fecha_fin], [o].[fecha_fin_estimada], [o].[fecha_inicio], [o].[observacion], [o].[orden_produccion_id], [o].[peso_base_kg], [o].[proceso_productivo_id], [o].[responsable_cargo], [o].[responsable_nombre], [o].[responsable_usuario_id], [o].[secuencia]
+      FROM [produccion].[orden_produccion_proceso] AS [o]
+      WHERE [o].[orden_produccion_id] = @orderId
+      ORDER BY [o].[secuencia], [o].[id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (11ms) [Parameters=[@p3='?' (DbType = Int64), @p0='?' (DbType = DateTime2), @p1='?' (Size = 30), @p2='?' (DbType = DateTime2), @p10='?' (DbType = Int64), @p4='?' (Size = 30), @p5='?' (DbType = DateTime2), @p6='?' (DbType = DateTime2), @p7='?' (Precision = 18) (Scale = 2) (DbType = Decimal), @p8='?' (Size = 100), @p9='?' (Size = 150)], CommandType='Text', CommandTimeout='30']
+      SET NOCOUNT ON;
+      UPDATE [produccion].[orden_produccion] SET [actualizado_en] = @p0, [estado] = @p1, [fecha_inicio_real] = @p2
+      OUTPUT 1
+      WHERE [id] = @p3;
+      UPDATE [produccion].[orden_produccion_proceso] SET [estado] = @p4, [fecha_fin_estimada] = @p5, [fecha_inicio] = @p6, [peso_base_kg] = @p7, [responsable_cargo] = @p8, [responsable_nombre] = @p9
+      OUTPUT 1
+      WHERE [id] = @p10;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@normalizedCode='?' (Size = 20)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activo], [s].[codigo_documento], [s].[longitud_numero], [s].[nombre_documento], [s].[prefijo], [s].[ultimo_numero]
+      FROM [configuracion].[secuencia_documento] AS [s]
+      WHERE [s].[codigo_documento] = @normalizedCode AND [s].[activo] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [configuracion].[secuencia_documento] SET [ultimo_numero] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@p0='?' (DbType = DateTime2), @p1='?' (DbType = Int64), @p2='?' (DbType = Int64), @p3='?' (Size = 50), @p4='?' (DbType = DateTime2), @p5='?' (DbType = Int64), @p6='?' (Size = 40), @p7='?' (DbType = DateTime2), @p8='?' (DbType = DateTime2), @p9='?' (Size = 500), @p10='?' (Size = 500), @p11='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      INSERT INTO [inventario].[orden_compra] ([actualizado_en], [actualizado_por_usuario_id], [aprobado_por_usuario_id], [codigo], [creado_en], [creado_por_usuario_id], [estado], [fecha_aprobacion], [fecha_emision], [motivo_anulacion], [observacion], [proveedor_id])
+      OUTPUT INSERTED.[id]
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (13ms) [Parameters=[@p0='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p1='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p2='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p3='?' (DbType = Int64), @p4='?' (Size = 300), @p5='?' (DbType = Int64), @p6='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p7='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p8='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p9='?' (DbType = Int64), @p10='?' (Size = 300), @p11='?' (DbType = Int64), @p12='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p13='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p14='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p15='?' (DbType = Int64), @p16='?' (Size = 300), @p17='?' (DbType = Int64), @p18='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p19='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p20='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p21='?' (DbType = Int64), @p22='?' (Size = 300), @p23='?' (DbType = Int64), @p24='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p25='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p26='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p27='?' (DbType = Int64), @p28='?' (Size = 300), @p29='?' (DbType = Int64), @p30='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p31='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p32='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p33='?' (DbType = Int64), @p34='?' (Size = 300), @p35='?' (DbType = Int64), @p36='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p37='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p38='?' (Precision = 18) (Scale = 4) (DbType = Decimal), @p39='?' (DbType = Int64), @p40='?' (Size = 300), @p41='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      MERGE [inventario].[orden_compra_detalle] USING (
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, 0),
+      (@p6, @p7, @p8, @p9, @p10, @p11, 1),
+      (@p12, @p13, @p14, @p15, @p16, @p17, 2),
+      (@p18, @p19, @p20, @p21, @p22, @p23, 3),
+      (@p24, @p25, @p26, @p27, @p28, @p29, 4),
+      (@p30, @p31, @p32, @p33, @p34, @p35, 5),
+      (@p36, @p37, @p38, @p39, @p40, @p41, 6)) AS i ([cantidad_recibida], [cantidad_solicitada], [costo_unitario_estimado], [insumo_id], [observacion], [orden_compra_id], _Position) ON 1=0
+      WHEN NOT MATCHED THEN
+      INSERT ([cantidad_recibida], [cantidad_solicitada], [costo_unitario_estimado], [insumo_id], [observacion], [orden_compra_id])
+      VALUES (i.[cantidad_recibida], i.[cantidad_solicitada], i.[costo_unitario_estimado], i.[insumo_id], i.[observacion], i.[orden_compra_id])
+      OUTPUT INSERTED.[id], i._Position;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@id='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [o].[id], [o].[actualizado_en], [o].[actualizado_por_usuario_id], [o].[aprobado_por_usuario_id], [o].[codigo], [o].[creado_en], [o].[creado_por_usuario_id], [o].[estado], [o].[fecha_aprobacion], [o].[fecha_emision], [o].[motivo_anulacion], [o].[observacion], [o].[proveedor_id]
+      FROM [inventario].[orden_compra] AS [o]
+      WHERE [o].[id] = @id
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (16ms) [Parameters=[@p5='?' (DbType = Int64), @p0='?' (DbType = DateTime2), @p1='?' (DbType = Int64), @p2='?' (DbType = Int64), @p3='?' (Size = 40), @p4='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [inventario].[orden_compra] SET [actualizado_en] = @p0, [actualizado_por_usuario_id] = @p1, [aprobado_por_usuario_id] = @p2, [estado] = @p3, [fecha_aprobacion] = @p4
+      OUTPUT 1
+      WHERE [id] = @p5;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@ordenProcesoId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [produccion].[solicitud_insumo] AS [s]
+              WHERE [s].[orden_proceso_id] = @ordenProcesoId AND [s].[estado] IN (N'SOLICITADA', N'PARCIAL', N'ENTREGANDO')) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@ordenProcesoId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [produccion].[solicitud_insumo] AS [s]
+              WHERE [s].[orden_proceso_id] = @ordenProcesoId AND [s].[estado] IN (N'SOLICITADA', N'PARCIAL', N'ENTREGANDO')) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sesionId='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [s].[id], [s].[activa], [s].[cerrado_en], [s].[expira_en], [s].[inicio_en], [s].[ip_origen], [s].[motivo_cierre], [s].[token_hash], [s].[user_agent], [s].[usuario_id]
+      FROM [seguridad].[sesion_usuario] AS [s]
+      WHERE [s].[id] = @sesionId AND [s].[activa] = CAST(1 AS bit)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Int64), @p0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [seguridad].[sesion_usuario] SET [expira_en] = @p0
+      OUTPUT 1
+      WHERE [id] = @p1;

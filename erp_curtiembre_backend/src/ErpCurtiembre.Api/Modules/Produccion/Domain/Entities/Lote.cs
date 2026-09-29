@@ -28,6 +28,8 @@ public sealed class Lote
 
     public bool ClienteTraeLote { get; init; }
 
+    public decimal CostoUnitarioPiel { get; init; }
+
     public decimal CostoPielesTotal { get; init; }
 
     public string? Observacion { get; init; }

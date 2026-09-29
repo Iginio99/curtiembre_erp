@@ -18,6 +18,8 @@ public sealed class LoteWriteModel
 
     public bool ClienteTraeLote { get; set; }
 
+    public decimal CostoUnitarioPiel { get; set; }
+
     public decimal CostoPielesTotal { get; set; }
 
     public string? Observacion { get; set; }

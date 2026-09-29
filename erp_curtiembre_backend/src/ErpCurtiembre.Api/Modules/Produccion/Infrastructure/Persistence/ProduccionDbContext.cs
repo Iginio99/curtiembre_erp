@@ -64,6 +64,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.CantidadPielesInicial).HasColumnName("cantidad_pieles_inicial").HasPrecision(18, 4);
             entity.Property(x => x.CantidadPielesDisponible).HasColumnName("cantidad_pieles_disponible").HasPrecision(18, 4);
             entity.Property(x => x.ClienteTraeLote).HasColumnName("cliente_trae_lote");
+            entity.Property(x => x.CostoUnitarioPiel).HasColumnName("costo_unitario_piel").HasPrecision(18, 4);
             entity.Property(x => x.CostoPielesTotal).HasColumnName("costo_pieles_total").HasPrecision(18, 2);
             entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(30);

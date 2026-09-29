@@ -84,6 +84,8 @@ public sealed class ConfiguracionDbContext(
             entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(50);
             entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(150);
             entity.Property(x => x.ProcesoProductivoId).HasColumnName("proceso_productivo_id");
+            entity.Property(x => x.TipoProducto).HasColumnName("tipo_producto").HasMaxLength(120);
+            entity.Property(x => x.Color).HasColumnName("color").HasMaxLength(80);
             entity.Property(x => x.Descripcion).HasColumnName("descripcion").HasMaxLength(500);
             entity.Property(x => x.Activo).HasColumnName("activo");
             entity.Property(x => x.CreadoEn).HasColumnName("creado_en");

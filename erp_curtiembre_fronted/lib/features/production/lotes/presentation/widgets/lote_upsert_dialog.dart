@@ -13,7 +13,7 @@ class LoteUpsertFormData {
     required this.fechaIngreso,
     required this.cantidadPielesInicial,
     required this.clienteTraeLote,
-    required this.costoPielesTotal,
+    required this.costoUnitarioPiel,
     this.observacion,
   });
 
@@ -22,7 +22,7 @@ class LoteUpsertFormData {
   final DateTime fechaIngreso;
   final double cantidadPielesInicial;
   final bool clienteTraeLote;
-  final double costoPielesTotal;
+  final double costoUnitarioPiel;
   final String? observacion;
 }
 
@@ -70,18 +70,40 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
       text: _formatNumber(initialLote?.cantidadPielesInicial),
     );
     _costoController = TextEditingController(
-      text: _formatNumber(initialLote?.costoPielesTotal),
+      text: _formatNumber(initialLote?.costoUnitarioPiel),
     );
+    _cantidadController.addListener(_refreshCalculatedTotal);
+    _costoController.addListener(_refreshCalculatedTotal);
     _observacionController = TextEditingController(text: initialLote?.observacion ?? '');
     _syncCostoTraeLote();
   }
 
   @override
   void dispose() {
+    _cantidadController.removeListener(_refreshCalculatedTotal);
+    _costoController.removeListener(_refreshCalculatedTotal);
     _cantidadController.dispose();
     _costoController.dispose();
     _observacionController.dispose();
     super.dispose();
+  }
+
+  void _refreshCalculatedTotal() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  double? _parseNumber(String value) =>
+      double.tryParse(value.trim().replaceAll(',', '.'));
+
+  double get _costoTotalCalculado {
+    if (_clienteTraeLote) {
+      return 0;
+    }
+    final cantidad = _parseNumber(_cantidadController.text) ?? 0;
+    final costoUnitario = _parseNumber(_costoController.text) ?? 0;
+    return cantidad * costoUnitario;
   }
 
   String _formatNumber(double? value) {
@@ -128,9 +150,9 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
         clienteId: _selectedClienteId!,
         tipoPielId: _selectedTipoPielId!,
         fechaIngreso: _fechaIngreso,
-        cantidadPielesInicial: double.parse(_cantidadController.text.trim()),
+        cantidadPielesInicial: _parseNumber(_cantidadController.text)!,
         clienteTraeLote: _clienteTraeLote,
-        costoPielesTotal: double.parse(_costoController.text.trim()),
+        costoUnitarioPiel: _parseNumber(_costoController.text)!,
         observacion: _normalizeOptional(_observacionController.text),
       ),
     );
@@ -215,7 +237,7 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
                   ),
                   validator: (value) {
                     final text = value?.trim() ?? '';
-                    final number = double.tryParse(text);
+                    final number = _parseNumber(text);
                     if (number == null || number <= 0) {
                       return 'Ingresa una cantidad valida mayor a cero.';
                     }
@@ -245,12 +267,12 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
                   enabled: !_clienteTraeLote,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
-                    labelText: 'Costo total de pieles',
-                    hintText: 'Ej. 3500.00',
+                    labelText: 'Costo unitario por piel',
+                    hintText: 'Ej. 35.50',
                   ),
                   validator: (value) {
                     final text = value?.trim() ?? '';
-                    final number = double.tryParse(text);
+                    final number = _parseNumber(text);
                     if (number == null || number < 0) {
                       return 'Ingresa un costo valido.';
                     }
@@ -259,6 +281,14 @@ class _LoteUpsertDialogState extends State<LoteUpsertDialog> {
                     }
                     return null;
                   },
+                ),
+                const Gap(AppSpacing.md),
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Costo total de pieles (automático)',
+                    prefixText: 'S/ ',
+                  ),
+                  child: Text(_costoTotalCalculado.toStringAsFixed(2)),
                 ),
                 const Gap(AppSpacing.md),
                 TextFormField(

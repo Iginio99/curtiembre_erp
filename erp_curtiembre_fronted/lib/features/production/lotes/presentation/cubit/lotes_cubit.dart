@@ -168,7 +168,7 @@ class LotesCubit extends Cubit<LotesState> {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   }) async {
     _talker.cubit(
@@ -183,7 +183,7 @@ class LotesCubit extends Cubit<LotesState> {
         fechaIngreso: fechaIngreso,
         cantidadPielesInicial: cantidadPielesInicial,
         clienteTraeLote: clienteTraeLote,
-        costoPielesTotal: costoPielesTotal,
+        costoUnitarioPiel: costoUnitarioPiel,
         observacion: observacion,
       );
 
@@ -224,7 +224,7 @@ class LotesCubit extends Cubit<LotesState> {
     required DateTime fechaIngreso,
     required double cantidadPielesInicial,
     required bool clienteTraeLote,
-    required double costoPielesTotal,
+    required double costoUnitarioPiel,
     String? observacion,
   }) async {
     final loteId = state.selectedLoteId;
@@ -249,7 +249,7 @@ class LotesCubit extends Cubit<LotesState> {
         fechaIngreso: fechaIngreso,
         cantidadPielesInicial: cantidadPielesInicial,
         clienteTraeLote: clienteTraeLote,
-        costoPielesTotal: costoPielesTotal,
+        costoUnitarioPiel: costoUnitarioPiel,
         observacion: observacion,
       );
 

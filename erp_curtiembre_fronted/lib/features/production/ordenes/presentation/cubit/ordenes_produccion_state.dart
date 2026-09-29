@@ -11,6 +11,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 
 enum OrdenesProduccionStatus { loading, success, error }
 
@@ -24,6 +25,8 @@ class OrdenesProduccionState extends Equatable {
     this.loteOptions = const [],
     this.insumoOptions = const [],
     this.personalOptions = const [],
+    this.formulaProduccionOptions = const [],
+    this.ordenProductos = const [],
     this.selectedOrdenId,
     this.selectedOrden,
     this.selectedProcesos = const [],
@@ -52,6 +55,8 @@ class OrdenesProduccionState extends Equatable {
   final List<LoteOption> loteOptions;
   final List<InsumoLookup> insumoOptions;
   final List<PersonalEmpresaOption> personalOptions;
+  final List<FormulaProduccionOption> formulaProduccionOptions;
+  final List<OrdenProductoRecord> ordenProductos;
   final int? selectedOrdenId;
   final OrdenProduccionRecord? selectedOrden;
   final List<OrdenProcesoRecord> selectedProcesos;
@@ -77,6 +82,8 @@ class OrdenesProduccionState extends Equatable {
     List<LoteOption>? loteOptions,
     List<InsumoLookup>? insumoOptions,
     List<PersonalEmpresaOption>? personalOptions,
+    List<FormulaProduccionOption>? formulaProduccionOptions,
+    List<OrdenProductoRecord>? ordenProductos,
     Object? selectedOrdenId = _sentinel,
     OrdenProduccionRecord? selectedOrden,
     List<OrdenProcesoRecord>? selectedProcesos,
@@ -106,6 +113,11 @@ class OrdenesProduccionState extends Equatable {
       loteOptions: loteOptions ?? this.loteOptions,
       insumoOptions: insumoOptions ?? this.insumoOptions,
       personalOptions: personalOptions ?? this.personalOptions,
+      formulaProduccionOptions:
+          formulaProduccionOptions ?? this.formulaProduccionOptions,
+      ordenProductos: clearSelectedProcesos
+          ? const []
+          : ordenProductos ?? this.ordenProductos,
       selectedOrdenId: identical(selectedOrdenId, _sentinel)
           ? this.selectedOrdenId
           : selectedOrdenId as int?,
@@ -162,6 +174,8 @@ class OrdenesProduccionState extends Equatable {
     loteOptions,
     insumoOptions,
     personalOptions,
+    formulaProduccionOptions,
+    ordenProductos,
     selectedOrdenId,
     selectedOrden,
     selectedProcesos,

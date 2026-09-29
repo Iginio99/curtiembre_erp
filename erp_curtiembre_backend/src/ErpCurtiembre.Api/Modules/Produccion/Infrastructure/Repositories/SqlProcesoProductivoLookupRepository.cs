@@ -9,8 +9,7 @@ public sealed class SqlProcesoProductivoLookupRepository(ISqlConnectionFactory c
 {
     private static readonly string[] ExpectedSequenceCodes =
     [
-        "REMOJO",
-        "PELAMBRE",
+        "REMOJO_PELAMBRE",
         "CURTIDO",
         "RECURTIDO",
         "ACABADO"
@@ -32,11 +31,10 @@ public sealed class SqlProcesoProductivoLookupRepository(ISqlConnectionFactory c
               AND p.codigo IN @ExpectedCodes
             ORDER BY
                 CASE p.codigo
-                    WHEN 'REMOJO' THEN 1
-                    WHEN 'PELAMBRE' THEN 2
-                    WHEN 'CURTIDO' THEN 3
-                    WHEN 'RECURTIDO' THEN 4
-                    WHEN 'ACABADO' THEN 5
+                    WHEN 'REMOJO_PELAMBRE' THEN 1
+                    WHEN 'CURTIDO' THEN 2
+                    WHEN 'RECURTIDO' THEN 3
+                    WHEN 'ACABADO' THEN 4
                     ELSE 999
                 END,
                 p.orden_secuencia,

@@ -14,6 +14,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/o
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/producto_terminado_record_model.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 
 class OrdenesProduccionRemoteDataSource {
   OrdenesProduccionRemoteDataSource(this._dio, this._talker);
@@ -43,6 +44,40 @@ class OrdenesProduccionRemoteDataSource {
 
   final Dio _dio;
   final Talker _talker;
+
+  Future<List<FormulaProduccionOption>> listFormulaProduccionOptions() async {
+    final response = await _dio.get<List<dynamic>>(
+      '/api/produccion/catalogos/formulas-producto',
+    );
+    return (response.data ?? const [])
+        .map((x) => FormulaProduccionOption.fromJson(x as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<OrdenProductoRecord>> listOrdenProductos(int ordenId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/api/produccion/ordenes/$ordenId/productos',
+    );
+    return (response.data ?? const [])
+        .map((x) => OrdenProductoRecord.fromJson(x as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<OrdenProductoRecord> saveOrdenProducto({
+    required int ordenId,
+    int? id,
+    required OrdenProductoInput input,
+  }) async {
+    final path =
+        '/api/produccion/ordenes/$ordenId/productos${id == null ? '' : '/$id'}';
+    final response = id == null
+        ? await _dio.post<Map<String, dynamic>>(path, data: input.toJson())
+        : await _dio.put<Map<String, dynamic>>(path, data: input.toJson());
+    return OrdenProductoRecord.fromJson(response.data!);
+  }
+
+  Future<void> deleteOrdenProducto({required int ordenId, required int id}) =>
+      _dio.delete<void>('/api/produccion/ordenes/$ordenId/productos/$id');
 
   Future<List<OrdenProduccionRecordModel>> listOrdenes({
     String? texto,

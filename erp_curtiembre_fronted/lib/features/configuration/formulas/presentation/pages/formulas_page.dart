@@ -49,6 +49,7 @@ class _FormulasPageState extends State<FormulasPage> {
         submitLabel: 'Crear formula',
         processOptions: state.processOptions,
         isSubmitting: state.isSubmittingAction,
+        insumoOptions: state.insumoOptions,
       ),
     );
 
@@ -60,7 +61,18 @@ class _FormulasPageState extends State<FormulasPage> {
       codigo: payload.codigo,
       nombre: payload.nombre,
       procesoProductivoId: payload.procesoProductivoId,
+      tipoProducto: payload.tipoProducto,
+      color: payload.color,
       descripcion: payload.descripcion,
+      detalles: payload.detalles
+          .map(
+            (x) => FormulaCreationDetail(
+              insumoId: x.insumoId,
+              porcentaje: x.porcentaje,
+              observacion: x.observacion,
+            ),
+          )
+          .toList(),
     );
 
     if (mounted) {
@@ -79,6 +91,7 @@ class _FormulasPageState extends State<FormulasPage> {
         submitLabel: 'Guardar cambios',
         processOptions: state.processOptions,
         isSubmitting: state.isSubmittingAction,
+        insumoOptions: state.insumoOptions,
         initialFormula: formula,
       ),
     );
@@ -91,6 +104,8 @@ class _FormulasPageState extends State<FormulasPage> {
       codigo: payload.codigo,
       nombre: payload.nombre,
       procesoProductivoId: payload.procesoProductivoId,
+      tipoProducto: payload.tipoProducto,
+      color: payload.color,
       descripcion: payload.descripcion,
     );
 
