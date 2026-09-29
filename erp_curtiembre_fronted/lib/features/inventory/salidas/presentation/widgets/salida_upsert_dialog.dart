@@ -5,11 +5,7 @@ import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
-enum SalidaDraftType {
-  general,
-  devolucionProveedor,
-  ajusteNegativo,
-}
+enum SalidaDraftType { general, devolucionProveedor, ajusteNegativo }
 
 class SalidaUpsertFormData {
   const SalidaUpsertFormData({
@@ -67,6 +63,35 @@ class _SalidaUpsertDialogState extends State<SalidaUpsertDialog> {
       final removed = _drafts.removeAt(index);
       removed.dispose();
     });
+  }
+
+  Future<void> _editLineObservation(_SalidaDetalleDraft draft) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Observación del insumo'),
+        content: SizedBox(
+          width: 420,
+          child: TextFormField(
+            controller: draft.observacionController,
+            autofocus: true,
+            maxLength: 300,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: 'Agrega una observación si es necesaria',
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Listo'),
+          ),
+        ],
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   void _submit() {
@@ -156,51 +181,33 @@ class _SalidaUpsertDialogState extends State<SalidaUpsertDialog> {
                 const Gap(AppSpacing.lg),
                 TextFormField(
                   controller: _observacionController,
-                  minLines: 2,
-                  maxLines: 4,
+                  maxLines: 1,
                   decoration: const InputDecoration(
                     labelText: 'Observacion',
                     hintText: 'Agrega contexto adicional si aplica',
                   ),
                 ),
                 const Gap(AppSpacing.xl),
-                Row(
-                  children: [
-                    Text('Detalle', style: theme.textTheme.titleLarge),
-                    const Spacer(),
-                    AppButton.secondary(
-                      label: 'Agregar linea',
-                      icon: Icons.add_rounded,
-                      onPressed: _addDraft,
-                    ),
-                  ],
+                Text('Detalle', style: theme.textTheme.titleMedium),
+                const Gap(AppSpacing.sm),
+                _SalidaDetalleTable(
+                  drafts: _drafts,
+                  insumos: widget.insumos,
+                  onAdd: _addDraft,
+                  onRemove: _removeDraft,
+                  onEditObservation: _editLineObservation,
                 ),
-                const Gap(AppSpacing.md),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        for (var index = 0; index < _drafts.length; index++) ...[
-                          _SalidaDetalleDraftCard(
-                            key: ValueKey(_drafts[index]),
-                            index: index,
-                            draft: _drafts[index],
-                            insumos: widget.insumos,
-                            onRemove: _drafts.length == 1 ? null : () => _removeDraft(index),
-                          ),
-                          if (index < _drafts.length - 1) const Gap(AppSpacing.md),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                const Gap(AppSpacing.xl),
+                const Gap(AppSpacing.sm),
+                Divider(color: theme.colorScheme.outlineVariant),
+                const Gap(AppSpacing.sm),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     AppButton.secondary(
                       label: 'Cancelar',
-                      onPressed: widget.isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: widget.isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                     ),
                     const Gap(AppSpacing.md),
                     AppButton.primary(
@@ -221,95 +228,203 @@ class _SalidaUpsertDialogState extends State<SalidaUpsertDialog> {
   }
 }
 
-class _SalidaDetalleDraftCard extends StatelessWidget {
-  const _SalidaDetalleDraftCard({
-    super.key,
-    required this.index,
-    required this.draft,
+class _SalidaDetalleTable extends StatelessWidget {
+  const _SalidaDetalleTable({
+    required this.drafts,
     required this.insumos,
-    this.onRemove,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onEditObservation,
   });
 
-  final int index;
-  final _SalidaDetalleDraft draft;
+  final List<_SalidaDetalleDraft> drafts;
   final List<InsumoLookup> insumos;
-  final VoidCallback? onRemove;
+  final VoidCallback onAdd;
+  final ValueChanged<int> onRemove;
+  final Future<void> Function(_SalidaDetalleDraft) onEditObservation;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final rows = ListView.separated(
+      shrinkWrap: true,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      itemCount: drafts.length,
+      separatorBuilder: (_, _) =>
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+      itemBuilder: (context, index) => _SalidaDetalleRow(
+        draft: drafts[index],
+        insumos: insumos,
+        canRemove: drafts.length > 1,
+        onRemove: () => onRemove(index),
+        onEditObservation: () => onEditObservation(drafts[index]),
+      ),
+    );
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Linea ${index + 1}', style: theme.textTheme.titleMedium),
-              const Spacer(),
-              if (onRemove != null)
-                IconButton(
-                  onPressed: onRemove,
-                  tooltip: 'Quitar linea',
-                  icon: const Icon(Icons.delete_outline_rounded),
+              Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(11),
+                  ),
                 ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          DropdownButtonFormField<int?>(
-            isExpanded: true,
-            initialValue: draft.insumoId,
-            decoration: const InputDecoration(labelText: 'Insumo'),
-            items: insumos
-                .map(
-                  (item) => DropdownMenuItem<int?>(
-                    value: item.id,
-                    child: Text('${item.codigo} - ${item.nombre}'),
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: Text(
+                        'Insumo *',
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'Cantidad *',
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 48,
+                      child: Text('Obs.', style: theme.textTheme.labelSmall),
+                    ),
+                    SizedBox(
+                      width: 48,
+                      child: Text('Acción', style: theme.textTheme.labelSmall),
+                    ),
+                  ],
+                ),
+              ),
+              if (drafts.length > 5)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 282),
+                  child: rows,
                 )
-                .toList(growable: false),
-            onChanged: (value) => draft.insumoId = value,
-            validator: (value) => value == null ? 'Selecciona un insumo.' : null,
-          ),
-          const Gap(AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: draft.cantidadController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Cantidad',
-                    hintText: '0.00',
-                  ),
-                  validator: (value) {
-                    final parsed = double.tryParse(
-                      (value ?? '').trim().replaceAll(',', '.'),
-                    );
-                    if (parsed == null || parsed <= 0) {
-                      return 'Cantidad invalida.';
-                    }
-                    return null;
-                  },
+              else
+                rows,
+              const Divider(height: 1),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Agregar producto'),
                 ),
               ),
             ],
+          );
+          if (constraints.maxWidth >= 620) return content;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(width: 620, child: content),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SalidaDetalleRow extends StatefulWidget {
+  const _SalidaDetalleRow({
+    required this.draft,
+    required this.insumos,
+    required this.canRemove,
+    required this.onRemove,
+    required this.onEditObservation,
+  });
+  final _SalidaDetalleDraft draft;
+  final List<InsumoLookup> insumos;
+  final bool canRemove;
+  final VoidCallback onRemove;
+  final VoidCallback onEditObservation;
+  @override
+  State<_SalidaDetalleRow> createState() => _SalidaDetalleRowState();
+}
+
+class _SalidaDetalleRowState extends State<_SalidaDetalleRow> {
+  @override
+  Widget build(BuildContext context) {
+    const decoration = InputDecoration(
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: DropdownButtonFormField<int?>(
+              isExpanded: true,
+              initialValue: widget.draft.insumoId,
+              decoration: decoration,
+              items: widget.insumos
+                  .map(
+                    (item) => DropdownMenuItem<int?>(
+                      value: item.id,
+                      child: Text('${item.codigo} - ${item.nombre}'),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) =>
+                  setState(() => widget.draft.insumoId = value),
+              validator: (value) =>
+                  value == null ? 'Selecciona un insumo.' : null,
+            ),
           ),
-          const Gap(AppSpacing.md),
-          TextFormField(
-            controller: draft.observacionController,
-            minLines: 1,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Observacion de linea',
-              hintText: 'Opcional',
+          Expanded(
+            flex: 3,
+            child: TextFormField(
+              controller: widget.draft.cantidadController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: decoration.copyWith(hintText: '0.00'),
+              validator: (value) {
+                final parsed = double.tryParse(
+                  (value ?? '').trim().replaceAll(',', '.'),
+                );
+                return parsed == null || parsed <= 0
+                    ? 'Cantidad inválida.'
+                    : null;
+              },
+            ),
+          ),
+          SizedBox(
+            width: 48,
+            child: IconButton(
+              onPressed: widget.onEditObservation,
+              tooltip: 'Observación',
+              icon: Icon(
+                widget.draft.observacionController.text.trim().isEmpty
+                    ? Icons.note_add_outlined
+                    : Icons.sticky_note_2_outlined,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 48,
+            child: IconButton(
+              onPressed: widget.canRemove ? widget.onRemove : null,
+              tooltip: 'Eliminar producto',
+              icon: const Icon(Icons.delete_outline),
             ),
           ),
         ],

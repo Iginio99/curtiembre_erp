@@ -1,17 +1,22 @@
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
+
 import 'package:erp_curtiembre_fronted/features/inventory/kardex/domain/entities/kardex_record.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/kardex/presentation/cubit/kardex_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/kardex/presentation/cubit/kardex_state.dart';
+
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
+
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -27,17 +32,20 @@ class KardexPage extends StatefulWidget {
 
 class _KardexPageState extends State<KardexPage> {
   final _usuarioResponsableController = TextEditingController();
+
   final Talker _talker = getIt<Talker>();
 
   @override
   void initState() {
     super.initState();
+
     _talker.ui('Se abrio la pantalla de kardex.');
   }
 
   @override
   void dispose() {
     _usuarioResponsableController.dispose();
+
     super.dispose();
   }
 
@@ -48,23 +56,29 @@ class _KardexPageState extends State<KardexPage> {
     final initial = isStart
         ? (state.fechaDesde ?? DateTime.now())
         : (state.fechaHasta ?? DateTime.now());
+
     final selected = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2024),
       lastDate: DateTime(2035),
     );
+
     if (selected == null || !mounted) {
       _talker.ui(
         'Se cerro el selector de fecha de kardex sin confirmar.',
         logLevel: LogLevel.debug,
       );
+
       return;
     }
+
     _talker.ui(
-      'Se selecciono ${isStart ? 'fecha desde' : 'fecha hasta'} en kardex: ${DateFormat('dd/MM/yyyy').format(selected)}.',
+      'Se selecciono ${isStart ? 'fecha desde' : 'fecha hasta'} '
+      'en kardex: ${DateFormat('dd/MM/yyyy').format(selected)}.',
       logLevel: LogLevel.debug,
     );
+
     await context.read<KardexCubit>().load(
       fechaDesde: isStart ? selected : state.fechaDesde,
       fechaHasta: isStart ? state.fechaHasta : selected,
@@ -73,19 +87,25 @@ class _KardexPageState extends State<KardexPage> {
 
   void _applyResponsibleFilter() {
     final raw = _usuarioResponsableController.text.trim();
+
     final parsed = raw.isEmpty ? null : int.tryParse(raw);
+
     _talker.ui(
-      'Se aplico el filtro de responsable en kardex con valor=${parsed ?? 'vacio'}.',
+      'Se aplico el filtro de responsable en kardex '
+      'con valor=${parsed ?? 'vacio'}.',
     );
+
     context.read<KardexCubit>().load(usuarioResponsableIdFilter: parsed);
   }
 
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
+
     final isSigningOut = context.select(
       (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
     );
+
     final permissionCodes = context.select(
       (SecurityAccessCubit cubit) =>
           cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
@@ -106,7 +126,11 @@ class _KardexPageState extends State<KardexPage> {
           ? () {}
           : () => context.read<AuthCubit>().signOut(),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        /*
+        Antes xl.
+        Más compacto para aprovechar pantalla.
+        */
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1440),
@@ -115,63 +139,100 @@ class _KardexPageState extends State<KardexPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    /*
+                    ═══════════════════════════
+                    KPIs
+                    ═══════════════════════════
+                    */
                     _KardexSummary(items: state.items),
-                    const Gap(AppSpacing.lg),
+
+                    const Gap(AppSpacing.md),
+
+                    /*
+                    ═══════════════════════════
+                    FILTROS
+                    ═══════════════════════════
+                    */
                     _KardexFiltersCard(
                       state: state,
                       usuarioResponsableController:
                           _usuarioResponsableController,
+
                       onInsumoChanged: (value) {
                         _talker.ui(
-                          'Se cambio el filtro de insumo en kardex a ${value ?? 'todos'}.',
+                          'Se cambio el filtro de insumo '
+                          'en kardex a ${value ?? 'todos'}.',
                           logLevel: LogLevel.debug,
                         );
+
                         context.read<KardexCubit>().load(
                           selectedInsumoId: value,
                         );
                       },
+
                       onTipoMovimientoChanged: (value) {
                         _talker.ui(
-                          'Se cambio el filtro de tipo de movimiento en kardex a ${_describeState(value)}.',
+                          'Se cambio el filtro de tipo '
+                          'de movimiento en kardex a '
+                          '${_describeState(value)}.',
                           logLevel: LogLevel.debug,
                         );
+
                         context.read<KardexCubit>().load(
                           tipoMovimientoFilter: value,
                         );
                       },
+
                       onDocumentoTipoChanged: (value) {
                         _talker.ui(
-                          'Se cambio el filtro de documento en kardex a ${_describeState(value)}.',
+                          'Se cambio el filtro de documento '
+                          'en kardex a ${_describeState(value)}.',
                           logLevel: LogLevel.debug,
                         );
+
                         context.read<KardexCubit>().load(
                           documentoTipoFilter: value,
                         );
                       },
+
                       onApplyResponsibleFilter: _applyResponsibleFilter,
+
                       onPickStartDate: () =>
                           _pickDate(isStart: true, state: state),
+
                       onPickEndDate: () =>
                           _pickDate(isStart: false, state: state),
+
                       onClearDates: () {
                         _talker.ui(
-                          'Se limpiaron los filtros de fechas en kardex.',
+                          'Se limpiaron los filtros '
+                          'de fechas en kardex.',
                           logLevel: LogLevel.debug,
                         );
+
                         context.read<KardexCubit>().load(
                           fechaDesde: null,
                           fechaHasta: null,
                         );
                       },
                     ),
-                    const Gap(AppSpacing.xl),
+
+                    const Gap(AppSpacing.md),
+
+                    /*
+                    ═══════════════════════════
+                    MOVIMIENTOS + DETALLE
+                    ═══════════════════════════
+                    */
                     Expanded(
                       child: _KardexListPanel(
                         state: state,
                         onRetry: () {
                           _talker.ui(
-                            'Se solicito reintentar la carga del kardex.',
+                            'Se solicito reintentar '
+                            'la carga del kardex.',
                           );
+
                           context.read<KardexCubit>().initialize();
                         },
                       ),
@@ -188,6 +249,7 @@ class _KardexPageState extends State<KardexPage> {
 
   String _describeState(String? value) {
     final normalized = value?.trim();
+
     if (normalized == null || normalized.isEmpty) {
       return 'vacio';
     }
@@ -196,6 +258,12 @@ class _KardexPageState extends State<KardexPage> {
   }
 }
 
+/*
+══════════════════════════════════════════════════
+KPIs
+══════════════════════════════════════════════════
+*/
+
 class _KardexSummary extends StatelessWidget {
   const _KardexSummary({required this.items});
 
@@ -203,22 +271,32 @@ class _KardexSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final entries = items.fold<double>(0, (sum, item) => sum + item.entrada);
+
     final exits = items.fold<double>(0, (sum, item) => sum + item.salida);
+
     final value = items.fold<double>(0, (sum, item) => sum + item.costoTotal);
-    final products = items.map((item) => item.insumoId).toSet().length;
+
+    /*
+    Quitamos "Insumos".
+    Kardex debe enfocarse en movimientos.
+    */
+
     final metrics = [
       ('Movimientos', '${items.length}', Icons.swap_vert_rounded),
-      ('Insumos', '$products', Icons.inventory_2_outlined),
       ('Entradas', _formatQuantity(entries), Icons.south_west_rounded),
       ('Salidas', _formatQuantity(exits), Icons.north_east_rounded),
       ('Valor movido', _formatMoney(value), Icons.payments_outlined),
     ];
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth >= 1000
-            ? (constraints.maxWidth - AppSpacing.md * 4) / 5
-            : 210.0;
+        final width = constraints.maxWidth >= 900
+            ? (constraints.maxWidth - AppSpacing.md * 3) / 4
+            : 220.0;
+
         return Wrap(
           spacing: AppSpacing.md,
           runSpacing: AppSpacing.md,
@@ -227,31 +305,54 @@ class _KardexSummary extends StatelessWidget {
                 (metric) => SizedBox(
                   width: width,
                   child: Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(14),
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                        color: theme.colorScheme.outlineVariant,
                       ),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          width: 42,
+                          height: 42,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primaryContainer,
+                            color: theme.colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(metric.$3, color: Theme.of(context).colorScheme.primary),
+                          child: Icon(
+                            metric.$3,
+                            size: 21,
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
+
                         const Gap(AppSpacing.md),
+
                         Expanded(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(metric.$1, style: Theme.of(context).textTheme.labelMedium),
-                              Text(metric.$2, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                              Text(
+                                metric.$1,
+                                style: theme.textTheme.labelMedium,
+                              ),
+
+                              const Gap(2),
+
+                              Text(
+                                metric.$2,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -267,6 +368,12 @@ class _KardexSummary extends StatelessWidget {
   }
 }
 
+/*
+══════════════════════════════════════════════════
+FILTROS
+══════════════════════════════════════════════════
+*/
+
 class _KardexFiltersCard extends StatelessWidget {
   const _KardexFiltersCard({
     required this.state,
@@ -281,190 +388,323 @@ class _KardexFiltersCard extends StatelessWidget {
   });
 
   final KardexState state;
+
   final TextEditingController usuarioResponsableController;
+
   final ValueChanged<int?> onInsumoChanged;
+
   final ValueChanged<String?> onTipoMovimientoChanged;
+
   final ValueChanged<String?> onDocumentoTipoChanged;
+
   final VoidCallback onApplyResponsibleFilter;
+
   final VoidCallback onPickStartDate;
+
   final VoidCallback onPickEndDate;
+
   final VoidCallback onClearDates;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateLabel = [
-      if (state.fechaDesde != null)
-        'Desde ${DateFormat('dd/MM/yyyy').format(state.fechaDesde!)}',
-      if (state.fechaHasta != null)
-        'Hasta ${DateFormat('dd/MM/yyyy').format(state.fechaHasta!)}',
-    ].join(' · ');
 
     if (usuarioResponsableController.text !=
         (state.usuarioResponsableIdFilter?.toString() ?? '')) {
+      final value = state.usuarioResponsableIdFilter?.toString() ?? '';
+
       usuarioResponsableController.value = TextEditingValue(
-        text: state.usuarioResponsableIdFilter?.toString() ?? '',
-        selection: TextSelection.collapsed(
-          offset: (state.usuarioResponsableIdFilter?.toString() ?? '').length,
-        ),
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
       );
     }
 
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Filtros de trazabilidad', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            'Filtra por insumo, tipo de movimiento, tipo documental, responsable o rango de fechas.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.lg,
+          Row(
             children: [
-              SizedBox(
-                width: 280,
-                child: DropdownButtonFormField<int?>(
-                  isExpanded: true,
-                  initialValue: state.selectedInsumoId,
-                  decoration: const InputDecoration(labelText: 'Insumo'),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Todos'),
-                    ),
-                    ...state.insumos.map(
-                      (item) => DropdownMenuItem<int?>(
-                        value: item.id,
-                        child: Text(
-                          item.displayName,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+              Icon(
+                Icons.filter_alt_outlined,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+
+              const Gap(AppSpacing.sm),
+
+              Text(
+                'Filtros de trazabilidad',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+
+          const Gap(AppSpacing.md),
+
+          /*
+          Todos los filtros juntos
+          en desktop.
+          */
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final insumo = DropdownButtonFormField<int?>(
+                isExpanded: true,
+
+                initialValue: state.selectedInsumoId,
+
+                decoration: const InputDecoration(labelText: 'Insumo'),
+
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('Todos'),
+                  ),
+
+                  ...state.insumos.map(
+                    (item) => DropdownMenuItem<int?>(
+                      value: item.id,
+                      child: Text(
+                        item.displayName,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                  onChanged: onInsumoChanged,
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: state.tipoMovimientoFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de movimiento',
                   ),
-                  items: const [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Todos'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'ENTRADA',
-                      child: Text('Entrada'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'SALIDA',
-                      child: Text('Salida'),
-                    ),
-                  ],
-                  onChanged: onTipoMovimientoChanged,
+                ],
+
+                onChanged: onInsumoChanged,
+              );
+
+              final movement = DropdownButtonFormField<String?>(
+                isExpanded: true,
+
+                initialValue: state.tipoMovimientoFilter,
+
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de movimiento',
                 ),
-              ),
-              SizedBox(
-                width: 220,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: state.documentoTipoFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Documento tipo',
+
+                items: const [
+                  DropdownMenuItem<String?>(value: null, child: Text('Todos')),
+                  DropdownMenuItem<String?>(
+                    value: 'ENTRADA',
+                    child: Text('Entrada'),
                   ),
-                  items: const [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Todos'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'ORDEN_COMPRA',
-                      child: Text('Orden compra'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'ENTRADA_INVENTARIO',
-                      child: Text('Entrada inventario'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'SALIDA_INVENTARIO',
-                      child: Text('Salida inventario'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'AJUSTE_INVENTARIO',
-                      child: Text('Ajuste inventario'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'INVENTARIO_FISICO',
-                      child: Text('Inventario fisico'),
-                    ),
-                  ],
-                  onChanged: onDocumentoTipoChanged,
+                  DropdownMenuItem<String?>(
+                    value: 'SALIDA',
+                    child: Text('Salida'),
+                  ),
+                ],
+
+                onChanged: onTipoMovimientoChanged,
+              );
+
+              final document = DropdownButtonFormField<String?>(
+                isExpanded: true,
+
+                initialValue: state.documentoTipoFilter,
+
+                decoration: const InputDecoration(labelText: 'Documento'),
+
+                items: const [
+                  DropdownMenuItem<String?>(value: null, child: Text('Todos')),
+                  DropdownMenuItem<String?>(
+                    value: 'ORDEN_COMPRA',
+                    child: Text('Orden compra'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'ENTRADA_INVENTARIO',
+                    child: Text('Entrada inventario'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'SALIDA_INVENTARIO',
+                    child: Text('Salida inventario'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'AJUSTE_INVENTARIO',
+                    child: Text('Ajuste inventario'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'INVENTARIO_FISICO',
+                    child: Text('Inventario físico'),
+                  ),
+                ],
+
+                onChanged: onDocumentoTipoChanged,
+              );
+
+              final responsable = TextField(
+                controller: usuarioResponsableController,
+
+                keyboardType: TextInputType.number,
+
+                decoration: const InputDecoration(
+                  labelText: 'Responsable',
+                  hintText: 'Usuario ID',
                 ),
-              ),
-              SizedBox(
-                width: 180,
-                child: TextField(
-                  controller: usuarioResponsableController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Usuario ID'),
-                  onSubmitted: (_) => onApplyResponsibleFilter(),
-                ),
-              ),
-              AppButton.secondary(
-                label: 'Aplicar responsable',
-                icon: Icons.filter_alt_outlined,
-                onPressed: onApplyResponsibleFilter,
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              AppButton.secondary(
+
+                onSubmitted: (_) => onApplyResponsibleFilter(),
+              );
+
+              final startDate = _DateFilterButton(
                 label: 'Fecha desde',
-                icon: Icons.event_outlined,
+                value: state.fechaDesde == null
+                    ? null
+                    : DateFormat('dd/MM/yyyy').format(state.fechaDesde!),
                 onPressed: onPickStartDate,
-              ),
-              AppButton.secondary(
+              );
+
+              final endDate = _DateFilterButton(
                 label: 'Fecha hasta',
-                icon: Icons.event_available_outlined,
+                value: state.fechaHasta == null
+                    ? null
+                    : DateFormat('dd/MM/yyyy').format(state.fechaHasta!),
                 onPressed: onPickEndDate,
-              ),
-              AppButton.secondary(
-                label: 'Limpiar fechas',
-                icon: Icons.backspace_outlined,
-                onPressed: onClearDates,
-              ),
-              if (dateLabel.isNotEmpty)
-                Text(
-                  dateLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              );
+
+              /*
+              DESKTOP
+              */
+
+              if (constraints.maxWidth >= 1100) {
+                return Row(
+                  children: [
+                    Expanded(flex: 5, child: insumo),
+
+                    const Gap(AppSpacing.sm),
+
+                    Expanded(flex: 4, child: movement),
+
+                    const Gap(AppSpacing.sm),
+
+                    Expanded(flex: 4, child: document),
+
+                    const Gap(AppSpacing.sm),
+
+                    Expanded(flex: 4, child: responsable),
+
+                    const Gap(AppSpacing.sm),
+
+                    SizedBox(width: 145, child: startDate),
+
+                    const Gap(AppSpacing.sm),
+
+                    SizedBox(width: 145, child: endDate),
+
+                    const Gap(AppSpacing.sm),
+
+                    FilledButton.icon(
+                      onPressed: onApplyResponsibleFilter,
+                      icon: const Icon(Icons.filter_alt_outlined, size: 17),
+                      label: const Text('Aplicar'),
+                    ),
+
+                    const Gap(AppSpacing.sm),
+
+                    OutlinedButton.icon(
+                      onPressed: onClearDates,
+                      icon: const Icon(Icons.close, size: 17),
+                      label: const Text('Limpiar'),
+                    ),
+                  ],
+                );
+              }
+
+              /*
+              TABLET / PEQUEÑO
+              */
+
+              return Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  SizedBox(width: 230, child: insumo),
+
+                  SizedBox(width: 210, child: movement),
+
+                  SizedBox(width: 210, child: document),
+
+                  SizedBox(width: 180, child: responsable),
+
+                  SizedBox(width: 150, child: startDate),
+
+                  SizedBox(width: 150, child: endDate),
+
+                  AppButton.primary(
+                    label: 'Aplicar',
+                    icon: Icons.filter_alt_outlined,
+                    onPressed: onApplyResponsibleFilter,
                   ),
-                ),
-            ],
+
+                  AppButton.secondary(
+                    label: 'Limpiar',
+                    icon: Icons.close,
+                    onPressed: onClearDates,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 }
+
+/*
+══════════════════════════════════════════════════
+BOTÓN DE FECHA
+══════════════════════════════════════════════════
+*/
+
+class _DateFilterButton extends StatelessWidget {
+  const _DateFilterButton({
+    required this.label,
+    required this.value,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String? value;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      ),
+
+      child: Row(
+        children: [
+          const Icon(Icons.calendar_today_outlined, size: 16),
+
+          const Gap(7),
+
+          Expanded(
+            child: Text(
+              value ?? label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/*
+══════════════════════════════════════════════════
+PANEL PRINCIPAL
+══════════════════════════════════════════════════
+*/
 
 class _KardexListPanel extends StatefulWidget {
   const _KardexListPanel({required this.state, required this.onRetry});
@@ -482,39 +722,73 @@ class _KardexListPanelState extends State<_KardexListPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     final state = widget.state;
-    final selected = state.items.where((item) => item.id == selectedId).firstOrNull;
+
+    KardexRecord? selected;
+
+    for (final item in state.items) {
+      if (item.id == selectedId) {
+        selected = item;
+        break;
+      }
+    }
 
     return AppSurfaceCard(
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /*
+          CABECERA
+          */
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
               AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
             ),
             child: Row(
               children: [
-                Text('Movimientos', style: theme.textTheme.titleMedium),
-                const Spacer(),
+                Icon(
+                  Icons.format_list_bulleted_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+
+                const Gap(AppSpacing.sm),
+
                 Text(
-                  '${state.items.length}',
-                  style: theme.textTheme.labelLarge?.copyWith(
+                  'Movimientos',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+
+                const Spacer(),
+
+                Text(
+                  '${state.items.length} registros',
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          /*
+          CONTENIDO
+          */
           Expanded(
             child: switch (state.status) {
               KardexStatus.loading => const Center(
                 child: CircularProgressIndicator(),
               ),
+
               KardexStatus.error => Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
@@ -527,7 +801,9 @@ class _KardexListPanelState extends State<_KardexListPanel> {
                             state.errorMessage ??
                             'Intenta nuevamente para consultar los movimientos.',
                       ),
-                      const Gap(AppSpacing.lg),
+
+                      const Gap(AppSpacing.md),
+
                       AppButton.secondary(
                         label: 'Reintentar',
                         icon: Icons.refresh_rounded,
@@ -537,6 +813,7 @@ class _KardexListPanelState extends State<_KardexListPanel> {
                   ),
                 ),
               ),
+
               KardexStatus.success =>
                 state.items.isEmpty
                     ? Center(
@@ -552,18 +829,39 @@ class _KardexListPanelState extends State<_KardexListPanel> {
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 980;
+
                           final table = _KardexMovementsTable(
                             items: state.items,
                             selectedId: selectedId,
-                            onSelected: (item) => setState(() => selectedId = item.id),
+                            onSelected: (item) {
+                              setState(() {
+                                selectedId = item.id;
+                              });
+                            },
                           );
-                          if (!wide) return table;
+
+                          if (!wide) {
+                            return table;
+                          }
+
                           return Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(flex: 7, child: table),
-                              const VerticalDivider(width: 1),
-                              SizedBox(
-                                width: 350,
+                              /*
+                              Tabla más ancha.
+                              */
+                              Expanded(flex: 72, child: table),
+
+                              VerticalDivider(
+                                width: 1,
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+
+                              /*
+                              Detalle 28%.
+                              */
+                              Expanded(
+                                flex: 28,
                                 child: _KardexDetailPanel(item: selected),
                               ),
                             ],
@@ -578,69 +876,185 @@ class _KardexListPanelState extends State<_KardexListPanel> {
   }
 }
 
+/*
+══════════════════════════════════════════════════
+TABLA
+══════════════════════════════════════════════════
+*/
+
 class _KardexMovementsTable extends StatelessWidget {
-  const _KardexMovementsTable({required this.items, required this.selectedId, required this.onSelected});
+  const _KardexMovementsTable({
+    required this.items,
+    required this.selectedId,
+    required this.onSelected,
+  });
 
   final List<KardexRecord> items;
+
   final int? selectedId;
+
   final ValueChanged<KardexRecord> onSelected;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
+
         child: Table(
           columnWidths: const {
-            0: FlexColumnWidth(2.6),
-            1: FlexColumnWidth(1.25),
-            2: FlexColumnWidth(1.25),
-            3: FlexColumnWidth(1.05),
-            4: FlexColumnWidth(1.05),
-            5: FlexColumnWidth(1.05),
-            6: FlexColumnWidth(1.25),
+            0: FlexColumnWidth(2.4),
+            1: FlexColumnWidth(1.30),
+            2: FlexColumnWidth(1.40),
+            3: FlexColumnWidth(1.75),
+            4: FlexColumnWidth(1.00),
+            5: FlexColumnWidth(1.00),
+            6: FlexColumnWidth(1.00),
+            7: FlexColumnWidth(1.30),
           },
+
           children: [
-            const TableRow(
-              decoration: BoxDecoration(color: Color(0xFF343437)),
-              children: [
+            /*
+            HEADER
+            */
+            TableRow(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+              ),
+
+              children: const [
                 _KardexHeaderCell('INSUMO'),
                 _KardexHeaderCell('FECHA'),
                 _KardexHeaderCell('MOVIMIENTO'),
+                _KardexHeaderCell('DOCUMENTO'),
                 _KardexHeaderCell('ENTRADA', end: true),
                 _KardexHeaderCell('SALIDA', end: true),
                 _KardexHeaderCell('STOCK', end: true),
-                _KardexHeaderCell('COSTO TOTAL', end: true),
+                _KardexHeaderCell('COSTO', end: true),
               ],
             ),
-            ...items.map(
-              (item) => TableRow(
+
+            /*
+            FILAS
+            */
+            ...items.map((item) {
+              final selected = item.id == selectedId;
+
+              return TableRow(
                 decoration: BoxDecoration(
-                  color: item.id == selectedId
-                      ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: .55)
-                      : Theme.of(context).colorScheme.surface,
+                  color: selected
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: .40,
+                        )
+                      : theme.colorScheme.surface,
                 ),
+
                 children: [
                   _KardexDataCell(
                     onTap: () => onSelected(item),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.insumoCodigo, style: const TextStyle(fontWeight: FontWeight.w800)),
-                        Text(item.insumoNombre, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          item.insumoCodigo,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+
+                        Text(
+                          item.insumoNombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),
-                  _KardexDataCell(onTap: () => onSelected(item), child: Text(DateFormat('dd/MM/yyyy').format(item.fechaMovimiento.toLocal()))),
-                  _KardexDataCell(onTap: () => onSelected(item), child: _MovementBadge(item: item)),
-                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatQuantity(item.entrada))),
-                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatQuantity(item.salida))),
-                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatQuantity(item.stockActual), style: const TextStyle(fontWeight: FontWeight.w800))),
-                  _KardexDataCell(onTap: () => onSelected(item), end: true, child: Text(_formatMoney(item.costoTotal), style: const TextStyle(fontWeight: FontWeight.w700))),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(item.fechaMovimiento.toLocal()),
+                        ),
+
+                        Text(
+                          DateFormat(
+                            'HH:mm',
+                          ).format(item.fechaMovimiento.toLocal()),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    child: _MovementBadge(item: item),
+                  ),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.documentoTipo ?? '-',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+
+                        if (item.documentoId != null)
+                          Text(
+                            item.documentoId.toString(),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    end: true,
+                    child: Text(_formatQuantity(item.entrada)),
+                  ),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    end: true,
+                    child: Text(_formatQuantity(item.salida)),
+                  ),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    end: true,
+                    child: Text(
+                      _formatQuantity(item.stockActual),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+
+                  _KardexDataCell(
+                    onTap: () => onSelected(item),
+                    end: true,
+                    child: Text(
+                      _formatMoney(item.costoTotal),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ],
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),
@@ -648,36 +1062,86 @@ class _KardexMovementsTable extends StatelessWidget {
   }
 }
 
+/*
+══════════════════════════════════════════════════
+HEADER TABLA
+══════════════════════════════════════════════════
+*/
+
 class _KardexHeaderCell extends StatelessWidget {
   const _KardexHeaderCell(this.text, {this.end = false});
+
   final String text;
   final bool end;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-    child: Text(text, textAlign: end ? TextAlign.right : TextAlign.left, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      child: Text(
+        text,
+        textAlign: end ? TextAlign.right : TextAlign.left,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
 }
 
+/*
+══════════════════════════════════════════════════
+CELDA TABLA
+══════════════════════════════════════════════════
+*/
+
 class _KardexDataCell extends StatelessWidget {
-  const _KardexDataCell({required this.child, required this.onTap, this.end = false});
+  const _KardexDataCell({
+    required this.child,
+    required this.onTap,
+    this.end = false,
+  });
+
   final Widget child;
+
   final VoidCallback onTap;
+
   final bool end;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    child: Container(
-      alignment: end ? Alignment.centerRight : Alignment.centerLeft,
-      constraints: const BoxConstraints(minHeight: 58),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
-      child: child,
-    ),
-  );
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+
+      child: Container(
+        alignment: end ? Alignment.centerRight : Alignment.centerLeft,
+
+        constraints: const BoxConstraints(minHeight: 52),
+
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+        ),
+
+        child: child,
+      ),
+    );
+  }
 }
+
+/*
+══════════════════════════════════════════════════
+BADGE MOVIMIENTO
+══════════════════════════════════════════════════
+*/
 
 class _MovementBadge extends StatelessWidget {
   const _MovementBadge({required this.item});
@@ -687,111 +1151,368 @@ class _MovementBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final badgeColor = item.isEntrada
+
+    final type = item.tipoMovimiento.toUpperCase();
+
+    final isInitial = type.contains('STOCK_INICIAL');
+
+    final badgeColor = isInitial
+        ? const Color(0xFFE7EDF3)
+        : item.isEntrada
         ? const Color(0xFFE2F6E8)
-        : const Color(0xFFF7E0DF);
-    final badgeForeground = item.isEntrada
+        : const Color(0xFFFFE3DF);
+
+    final foreground = isInitial
+        ? const Color(0xFF54616E)
+        : item.isEntrada
         ? const Color(0xFF20633A)
-        : const Color(0xFF8A2F22);
+        : const Color(0xFFB93825);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+
       decoration: BoxDecoration(
         color: badgeColor,
+
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(item.tipoMovimiento, style: theme.textTheme.labelSmall?.copyWith(color: badgeForeground, fontWeight: FontWeight.w800)),
+
+      child: Text(
+        item.tipoMovimiento,
+
+        maxLines: 1,
+
+        overflow: TextOverflow.ellipsis,
+
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
+
+/*
+══════════════════════════════════════════════════
+PANEL DERECHO
+══════════════════════════════════════════════════
+*/
 
 class _KardexDetailPanel extends StatelessWidget {
   const _KardexDetailPanel({required this.item});
+
   final KardexRecord? item;
-
-  @override
-  Widget build(BuildContext context) {
-    if (item == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.touch_app_outlined, size: 36),
-              Gap(AppSpacing.md),
-              Text('Selecciona un movimiento', style: TextStyle(fontWeight: FontWeight.w800)),
-              Gap(AppSpacing.xs),
-              Text('Haz clic en una fila para ampliar su trazabilidad.', textAlign: TextAlign.center),
-            ],
-          ),
-        ),
-      );
-    }
-    final record = item!;
-    final fields = [
-      ('Documento', record.documentoTipo ?? 'Sin documento'),
-      ('Documento ID', record.documentoId?.toString() ?? '-'),
-      ('Fecha y hora', DateFormat('dd/MM/yyyy hh:mm a').format(record.fechaMovimiento.toLocal())),
-      ('Entrada', _formatQuantity(record.entrada)),
-      ('Salida', _formatQuantity(record.salida)),
-      ('Stock resultante', _formatQuantity(record.stockActual)),
-      ('Costo unitario', _formatMoney(record.costoUnitario)),
-      ('Costo total', _formatMoney(record.costoTotal)),
-      ('Responsable', record.usuarioResponsable ?? 'Sin responsable'),
-      ('Observacion', record.observacion ?? 'Sin observacion'),
-    ];
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [Expanded(child: Text(record.insumoCodigo, style: Theme.of(context).textTheme.headlineSmall)), _MovementBadge(item: record)]),
-          const Gap(AppSpacing.xs),
-          Text(record.insumoNombre, style: Theme.of(context).textTheme.titleMedium),
-          const Gap(AppSpacing.lg),
-          ...fields.map((field) => Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
-            child: Row(children: [Expanded(child: Text(field.$1, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), const Gap(AppSpacing.md), Flexible(child: Text(field.$2, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w700)))]),
-          )),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineInfo extends StatelessWidget {
-  const _InlineInfo({required this.label, required this.value});
-
-  final String label;
-  final String value;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return RichText(
-      text: TextSpan(
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurface,
-        ),
-        children: [
-          TextSpan(
-            text: '$label: ',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+    if (item == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.description_outlined,
+                  size: 34,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+
+              const Gap(AppSpacing.md),
+
+              const Text(
+                'Selecciona un movimiento',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+
+              const Gap(AppSpacing.xs),
+
+              Text(
+                'Haz clic en una fila para revisar su trazabilidad.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          TextSpan(text: value),
+        ),
+      );
+    }
+
+    final record = item!;
+
+    /*
+    Stock anterior derivado:
+    anterior + entrada - salida = actual
+
+    Por lo tanto:
+    anterior = actual - entrada + salida
+    */
+
+    final previousStock = record.stockActual - record.entrada + record.salida;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /*
+          CABECERA
+          */
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+
+              const Gap(AppSpacing.md),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.insumoCodigo,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    Text(
+                      record.insumoNombre,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              _MovementBadge(item: record),
+            ],
+          ),
+
+          const Gap(AppSpacing.lg),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          const Gap(AppSpacing.sm),
+
+          /*
+          DOCUMENTO
+          */
+          _DetailRow(
+            label: 'Documento',
+            value: record.documentoTipo ?? 'Sin documento',
+          ),
+
+          _DetailRow(
+            label: 'Documento ID',
+            value: record.documentoId?.toString() ?? '-',
+          ),
+
+          _DetailRow(
+            label: 'Fecha y hora',
+            value: DateFormat(
+              'dd/MM/yyyy HH:mm',
+            ).format(record.fechaMovimiento.toLocal()),
+          ),
+
+          const Gap(AppSpacing.sm),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          const Gap(AppSpacing.sm),
+
+          /*
+          MOVIMIENTO
+          */
+          _DetailRow(
+            label: 'Entrada',
+            value: '${_formatQuantity(record.entrada)} KG',
+          ),
+
+          _DetailRow(
+            label: 'Salida',
+            value: '${_formatQuantity(record.salida)} KG',
+          ),
+
+          _DetailRow(
+            label: 'Stock anterior',
+            value: '${_formatQuantity(previousStock)} KG',
+          ),
+
+          _DetailRow(
+            label: 'Stock resultante',
+            value: '${_formatQuantity(record.stockActual)} KG',
+            strong: true,
+          ),
+
+          const Gap(AppSpacing.sm),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          const Gap(AppSpacing.sm),
+
+          /*
+          COSTOS
+          */
+          _DetailRow(
+            label: 'Costo unitario',
+            value: _formatMoney(record.costoUnitario),
+          ),
+
+          _DetailRow(
+            label: 'Costo total',
+            value: _formatMoney(record.costoTotal),
+            strong: true,
+          ),
+
+          const Gap(AppSpacing.sm),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          const Gap(AppSpacing.sm),
+
+          _DetailRow(
+            label: 'Responsable',
+            value: record.usuarioResponsable ?? 'Sin responsable',
+          ),
+
+          _DetailRow(
+            label: 'Observación',
+            value: record.observacion ?? 'Sin observación',
+          ),
         ],
       ),
     );
   }
 }
 
-String _formatQuantity(double value) =>
-    NumberFormat('#,##0.##', 'es_PE').format(value);
+/*
+══════════════════════════════════════════════════
+FILA DEL DETALLE
+══════════════════════════════════════════════════
+*/
 
-String _formatMoney(double value) =>
-    NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ').format(value);
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.strong = false,
+  });
+
+  final String label;
+  final String value;
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+
+          const Gap(AppSpacing.sm),
+
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/*
+══════════════════════════════════════════════════
+FORMATOS
+══════════════════════════════════════════════════
+*/
+
+/*
+IMPORTANTE:
+
+ANTES:
+1000 -> 1.000
+
+AHORA:
+1000 -> 1000
+15.695 -> 15.70 si realmente es decimal.
+
+No usamos separador de miles en cantidades.
+*/
+String _formatQuantity(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toStringAsFixed(0);
+  }
+
+  /*
+  Hasta 2 decimales,
+  eliminando ceros finales.
+  */
+
+  var result = value.toStringAsFixed(2);
+
+  result = result.replaceFirst(RegExp(r'\.?0+$'), '');
+
+  return result;
+}
+
+/*
+Dinero:
+3500 -> S/ 3,500.00
+1360 -> S/ 1,360.00
+3.5  -> S/ 3.50
+*/
+String _formatMoney(double value) {
+  return NumberFormat.currency(
+    locale: 'en_US',
+    symbol: 'S/ ',
+    decimalDigits: 2,
+  ).format(value);
+}

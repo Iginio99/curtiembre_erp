@@ -2,19 +2,26 @@ import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
+
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/domain/entities/salida_detail.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/domain/entities/salida_record.dart';
+
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/cubit/salidas_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/cubit/salidas_state.dart';
+
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/widgets/salida_upsert_dialog.dart';
+
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
+
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -30,25 +37,30 @@ class SalidasPage extends StatefulWidget {
 
 class _SalidasPageState extends State<SalidasPage> {
   final _searchController = TextEditingController();
+
   final Talker _talker = getIt<Talker>();
 
   @override
   void initState() {
     super.initState();
+
     _talker.ui('Se abrio la pantalla de salidas.');
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+
     super.dispose();
   }
 
   void _applySearch() {
     FocusScope.of(context).unfocus();
+
     _talker.ui(
       'Se aplico la busqueda de salidas con texto=${_describeText(_searchController.text)}.',
     );
+
     context.read<SalidasCubit>().load(
       searchTerm: _searchController.text.trim(),
     );
@@ -59,8 +71,12 @@ class _SalidasPageState extends State<SalidasPage> {
       'Se selecciono la salida $id desde el listado.',
       logLevel: LogLevel.debug,
     );
+
     context.read<SalidasCubit>().selectSalida(id);
-    if (!openMobileDetail) return;
+
+    if (!openMobileDetail) {
+      return;
+    }
 
     showModalBottomSheet<void>(
       context: context,
@@ -88,6 +104,7 @@ class _SalidasPageState extends State<SalidasPage> {
         'Este flujo sigue disponible para regularizaciones operativas directas.',
       ),
     };
+
     _talker.ui(
       'Se abrio el dialogo para ${_describeDraftType(type)}.',
       logLevel: LogLevel.warning,
@@ -108,14 +125,19 @@ class _SalidasPageState extends State<SalidasPage> {
         'Se cerro el dialogo de ${_describeDraftType(type)} sin confirmar.',
         logLevel: LogLevel.debug,
       );
+
       return;
     }
+
     _talker.ui(
-      'Se confirmo ${_describeDraftType(type)} con motivo=${_describeText(payload.motivo)} y ${payload.detalles.length} detalles.',
+      'Se confirmo ${_describeDraftType(type)} '
+      'con motivo=${_describeText(payload.motivo)} '
+      'y ${payload.detalles.length} detalles.',
       logLevel: LogLevel.warning,
     );
 
     final cubit = context.read<SalidasCubit>();
+
     final result = switch (type) {
       SalidaDraftType.general => await cubit.registerGeneral(
         motivo: payload.motivo,
@@ -134,7 +156,10 @@ class _SalidasPageState extends State<SalidasPage> {
       ),
     };
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
+
     _showActionResult(result);
   }
 
@@ -145,8 +170,11 @@ class _SalidasPageState extends State<SalidasPage> {
           : 'La accion en salidas fallo: ${result.message}',
       logLevel: result.success ? LogLevel.debug : LogLevel.error,
     );
+
     final messenger = ScaffoldMessenger.of(context);
+
     messenger.hideCurrentSnackBar();
+
     messenger.showSnackBar(
       SnackBar(
         content: Text(result.message),
@@ -159,9 +187,11 @@ class _SalidasPageState extends State<SalidasPage> {
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
+
     final isSigningOut = context.select(
       (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
     );
+
     final permissionCodes = context.select(
       (SecurityAccessCubit cubit) =>
           cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
@@ -184,16 +214,21 @@ class _SalidasPageState extends State<SalidasPage> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           return Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
+            /*
+            Más compacto que xl.
+            */
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1440),
                 child: BlocBuilder<SalidasCubit, SalidasState>(
                   builder: (context, state) {
                     final isWide = constraints.maxWidth >= 1040;
+
                     final isMobile =
                         constraints.maxWidth < AppBreakpoints.mobileLarge;
-                    final compactHeight = constraints.maxHeight < 860;
+
+                    final compactHeight = constraints.maxHeight < 820;
 
                     if (_searchController.text != state.searchTerm) {
                       _searchController.value = TextEditingValue(
@@ -210,6 +245,7 @@ class _SalidasPageState extends State<SalidasPage> {
                         _talker.ui(
                           'Se solicito reintentar la carga del listado de salidas.',
                         );
+
                         context.read<SalidasCubit>().initialize();
                       },
                       onSelectSalida: (id) =>
@@ -222,42 +258,49 @@ class _SalidasPageState extends State<SalidasPage> {
                         _talker.ui(
                           'Se solicito reintentar el detalle de la salida seleccionada.',
                         );
+
                         context.read<SalidasCubit>().retryDetail();
                       },
                     );
 
-                    final headerAndFilters = <Widget>[
-                      Text(
-                        'Registra y consulta consumos, devoluciones y ajustes negativos con trazabilidad por insumo.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    /*
+                    ═══════════════════════════════
+                    FILTROS SUPERIORES
+                    ═══════════════════════════════
+
+                    Quitamos el texto explicativo
+                    largo que ocupaba espacio.
+                    */
+
+                    final filters = _SalidasFiltersCard(
+                      state: state,
+                      controller: _searchController,
+                      onSearch: _applySearch,
+                      onTipoSalidaChanged: (value) {
+                        _talker.ui(
+                          'Se cambio el filtro de tipo de salida a ${_describeType(value)}.',
+                          logLevel: LogLevel.debug,
+                        );
+
+                        context.read<SalidasCubit>().load(
+                          tipoSalidaFilter: value,
+                        );
+                      },
+                      onCreateGeneral: () =>
+                          _openDialog(SalidaDraftType.general, state),
+                      onCreateSupplierReturn: () => _openDialog(
+                        SalidaDraftType.devolucionProveedor,
+                        state,
                       ),
-                      const Gap(AppSpacing.xl),
-                      _SalidasFiltersCard(
-                        state: state,
-                        controller: _searchController,
-                        onSearch: _applySearch,
-                        onTipoSalidaChanged: (value) {
-                          _talker.ui(
-                            'Se cambio el filtro de tipo de salida a ${_describeType(value)}.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context.read<SalidasCubit>().load(
-                            tipoSalidaFilter: value,
-                          );
-                        },
-                        onCreateGeneral: () =>
-                            _openDialog(SalidaDraftType.general, state),
-                        onCreateSupplierReturn: () => _openDialog(
-                          SalidaDraftType.devolucionProveedor,
-                          state,
-                        ),
-                        onCreateNegativeAdjustment: () =>
-                            _openDialog(SalidaDraftType.ajusteNegativo, state),
-                      ),
-                      const Gap(AppSpacing.xl),
-                    ];
+                      onCreateNegativeAdjustment: () =>
+                          _openDialog(SalidaDraftType.ajusteNegativo, state),
+                    );
+
+                    /*
+                    ═══════════════════════════════
+                    PANTALLA BAJA
+                    ═══════════════════════════════
+                    */
 
                     if (compactHeight) {
                       if (isWide) {
@@ -265,13 +308,20 @@ class _SalidasPageState extends State<SalidasPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ...headerAndFilters,
+                              filters,
+
+                              const Gap(AppSpacing.md),
+
                               SizedBox(
-                                height: 620,
+                                height: 610,
                                 child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     Expanded(flex: 9, child: listPanel),
-                                    const Gap(AppSpacing.xl),
+
+                                    const Gap(AppSpacing.md),
+
                                     Expanded(flex: 8, child: detailPanel),
                                   ],
                                 ),
@@ -285,10 +335,15 @@ class _SalidasPageState extends State<SalidasPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ...headerAndFilters,
+                            filters,
+
+                            const Gap(AppSpacing.md),
+
                             SizedBox(height: 560, child: listPanel),
+
                             if (!isMobile) ...[
-                              const Gap(AppSpacing.xl),
+                              const Gap(AppSpacing.md),
+
                               SizedBox(height: 560, child: detailPanel),
                             ],
                           ],
@@ -296,16 +351,29 @@ class _SalidasPageState extends State<SalidasPage> {
                       );
                     }
 
+                    /*
+                    ═══════════════════════════════
+                    PANTALLA NORMAL
+                    ═══════════════════════════════
+                    */
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...headerAndFilters,
+                        filters,
+
+                        const Gap(AppSpacing.md),
+
                         Expanded(
                           child: isWide
                               ? Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     Expanded(flex: 9, child: listPanel),
-                                    const Gap(AppSpacing.xl),
+
+                                    const Gap(AppSpacing.md),
+
                                     Expanded(flex: 8, child: detailPanel),
                                   ],
                                 )
@@ -314,7 +382,9 @@ class _SalidasPageState extends State<SalidasPage> {
                               : Column(
                                   children: [
                                     Expanded(child: listPanel),
-                                    const Gap(AppSpacing.xl),
+
+                                    const Gap(AppSpacing.md),
+
                                     Expanded(child: detailPanel),
                                   ],
                                 ),
@@ -333,6 +403,7 @@ class _SalidasPageState extends State<SalidasPage> {
 
   String _describeText(String? value) {
     final normalized = value?.trim();
+
     if (normalized == null || normalized.isEmpty) {
       return 'vacio';
     }
@@ -342,6 +413,7 @@ class _SalidasPageState extends State<SalidasPage> {
 
   String _describeType(String? value) {
     final normalized = value?.trim();
+
     if (normalized == null || normalized.isEmpty) {
       return 'vacio';
     }
@@ -358,6 +430,12 @@ class _SalidasPageState extends State<SalidasPage> {
   }
 }
 
+/*
+══════════════════════════════════════════════════════════════
+FILTROS + ACCIONES
+══════════════════════════════════════════════════════════════
+*/
+
 class _SalidasFiltersCard extends StatelessWidget {
   const _SalidasFiltersCard({
     required this.state,
@@ -370,11 +448,17 @@ class _SalidasFiltersCard extends StatelessWidget {
   });
 
   final SalidasState state;
+
   final TextEditingController controller;
+
   final VoidCallback onSearch;
+
   final ValueChanged<String?> onTipoSalidaChanged;
+
   final VoidCallback onCreateGeneral;
+
   final VoidCallback onCreateSupplierReturn;
+
   final VoidCallback onCreateNegativeAdjustment;
 
   @override
@@ -382,116 +466,161 @@ class _SalidasFiltersCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      /*
+      Antes AppSpacing.lg.
+      */
+      padding: const EdgeInsets.all(AppSpacing.md),
+
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Operaciones disponibles', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.sm),
-          Text(
-            'Filtra por codigo o tipo de salida y registra nuevos movimientos desde el mismo panel.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.lg,
-            children: [
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  controller: controller,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => onSearch(),
-                  decoration: const InputDecoration(
-                    labelText: 'Buscar salida',
-                    hintText: 'Ej. SI-000001',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
+          /*
+          ═══════════════════════════════
+          FILA FILTROS
+          ═══════════════════════════════
+          */
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final search = TextField(
+                controller: controller,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => onSearch(),
+                decoration: const InputDecoration(
+                  hintText: 'Buscar salida',
+                  prefixIcon: Icon(Icons.search_rounded, size: 18),
                 ),
-              ),
-              SizedBox(
-                width: 260,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: state.tipoSalidaFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de salida',
+              );
+
+              final type = DropdownButtonFormField<String?>(
+                isExpanded: true,
+                initialValue: state.tipoSalidaFilter,
+                decoration: const InputDecoration(labelText: 'Tipo de salida'),
+                items: const [
+                  DropdownMenuItem<String?>(value: null, child: Text('Todas')),
+                  DropdownMenuItem<String?>(
+                    value: 'GENERAL',
+                    child: Text('General'),
                   ),
-                  items: const [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Todas'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'GENERAL',
-                      child: Text('General'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'DEVOLUCION_PROVEEDOR',
-                      child: Text('Devolucion proveedor'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'AJUSTE_NEGATIVO',
-                      child: Text('Ajuste negativo'),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'PROCESO',
-                      child: Text('Proceso'),
-                    ),
-                  ],
-                  onChanged: onTipoSalidaChanged,
-                ),
-              ),
-              AppButton.secondary(
-                label: 'Buscar',
-                icon: Icons.filter_alt_outlined,
+                  DropdownMenuItem<String?>(
+                    value: 'DEVOLUCION_PROVEEDOR',
+                    child: Text('Devolución proveedor'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'AJUSTE_NEGATIVO',
+                    child: Text('Ajuste negativo'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'PROCESO',
+                    child: Text('Proceso'),
+                  ),
+                ],
+                onChanged: onTipoSalidaChanged,
+              );
+
+              final button = FilledButton.icon(
                 onPressed: onSearch,
-              ),
-            ],
+                icon: const Icon(Icons.search_rounded, size: 17),
+                label: const Text('Buscar'),
+              );
+
+              /*
+              Desktop
+              */
+
+              if (constraints.maxWidth >= 760) {
+                return Row(
+                  children: [
+                    Expanded(flex: 5, child: search),
+
+                    const Gap(AppSpacing.md),
+
+                    Expanded(flex: 4, child: type),
+
+                    const Gap(AppSpacing.md),
+
+                    SizedBox(width: 130, child: button),
+                  ],
+                );
+              }
+
+              /*
+              Tablet/móvil
+              */
+
+              return Column(
+                children: [
+                  search,
+
+                  const Gap(AppSpacing.sm),
+
+                  type,
+
+                  const Gap(AppSpacing.sm),
+
+                  Align(alignment: Alignment.centerRight, child: button),
+                ],
+              );
+            },
           ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              AppButton.primary(
-                label: 'Salida general',
-                icon: Icons.outbox_outlined,
-                expand: false,
-                onPressed: state.isSubmittingAction ? null : onCreateGeneral,
-              ),
-              AppButton.secondary(
-                label: 'Devolucion a proveedor',
-                icon: Icons.assignment_return_outlined,
-                onPressed: state.isSubmittingAction
-                    ? null
-                    : onCreateSupplierReturn,
-              ),
-              AppButton.secondary(
-                label: 'Ajuste negativo',
-                icon: Icons.remove_circle_outline,
-                onPressed: state.isSubmittingAction
-                    ? null
-                    : onCreateNegativeAdjustment,
-              ),
-              Tooltip(
-                message: 'Pendiente de integracion real con Produccion.',
-                child: AppButton.secondary(
-                  label: 'Salida por proceso',
-                  icon: Icons.settings_input_component_outlined,
-                  onPressed: null,
+
+          const Gap(AppSpacing.sm),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          const Gap(AppSpacing.sm),
+
+          /*
+          ═══════════════════════════════
+          ACCIONES
+          ═══════════════════════════════
+          */
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                FilledButton(
+                  onPressed: state.isSubmittingAction ? null : onCreateGeneral,
+                  child: const Text('Salida general'),
                 ),
-              ),
-            ],
+
+                OutlinedButton(
+                  onPressed: state.isSubmittingAction
+                      ? null
+                      : onCreateSupplierReturn,
+                  child: const Text('Devolución a proveedor'),
+                ),
+
+                OutlinedButton(
+                  onPressed: state.isSubmittingAction
+                      ? null
+                      : onCreateNegativeAdjustment,
+                  child: const Text('Ajuste negativo'),
+                ),
+
+                Tooltip(
+                  message: 'Pendiente de integración con Producción.',
+                  child: OutlinedButton(
+                    onPressed: null,
+                    child: const Text('Salida por proceso'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+/*
+══════════════════════════════════════════════════════════════
+LISTADO
+══════════════════════════════════════════════════════════════
+*/
 
 class _SalidasListPanel extends StatelessWidget {
   const _SalidasListPanel({
@@ -501,11 +630,15 @@ class _SalidasListPanel extends StatelessWidget {
   });
 
   final SalidasState state;
+
   final VoidCallback onRetry;
+
   final ValueChanged<int> onSelectSalida;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (state.status == SalidasStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -518,7 +651,9 @@ class _SalidasListPanel extends StatelessWidget {
             title: 'No pudimos cargar las salidas',
             message: state.errorMessage ?? 'Intenta nuevamente.',
           ),
-          const Gap(AppSpacing.lg),
+
+          const Gap(AppSpacing.md),
+
           AppButton.secondary(
             label: 'Reintentar',
             icon: Icons.refresh_rounded,
@@ -531,30 +666,76 @@ class _SalidasListPanel extends StatelessWidget {
     if (state.items.isEmpty) {
       return const AppMessageCard.info(
         title: 'Sin salidas registradas',
-        message:
-            'Todavia no hay movimientos que coincidan con los filtros actuales.',
+        message: 'No hay movimientos que coincidan con los filtros actuales.',
       );
     }
 
     return AppSurfaceCard(
       padding: EdgeInsets.zero,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        itemCount: state.items.length,
-        separatorBuilder: (_, index) => const Gap(AppSpacing.md),
-        itemBuilder: (context, index) {
-          final item = state.items[index];
-          final selected = state.selectedSalidaId == item.id;
-          return _SalidaListTile(
-            item: item,
-            selected: selected,
-            onTap: () => onSelectSalida(item.id),
-          );
-        },
+      child: Column(
+        children: [
+          /*
+          CABECERA LISTA
+          */
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Listado de salidas',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+
+                Text(
+                  '${state.items.length} salidas',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              itemCount: state.items.length,
+              separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final item = state.items[index];
+
+                final selected = state.selectedSalidaId == item.id;
+
+                return _SalidaListTile(
+                  item: item,
+                  selected: selected,
+                  onTap: () => onSelectSalida(item.id),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+/*
+══════════════════════════════════════════════════════════════
+ITEM DEL LISTADO
+══════════════════════════════════════════════════════════════
+*/
 
 class _SalidaListTile extends StatelessWidget {
   const _SalidaListTile({
@@ -564,7 +745,9 @@ class _SalidaListTile extends StatelessWidget {
   });
 
   final SalidaRecord item;
+
   final bool selected;
+
   final VoidCallback onTap;
 
   @override
@@ -572,52 +755,109 @@ class _SalidaListTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        duration: const Duration(milliseconds: 160),
+
+        padding: const EdgeInsets.all(AppSpacing.md),
+
         decoration: BoxDecoration(
           color: selected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.48)
+              ? theme.colorScheme.primaryContainer.withValues(alpha: .30)
               : theme.colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(20),
+
+          borderRadius: BorderRadius.circular(12),
+
           border: Border.all(
             color: selected
                 ? theme.colorScheme.primary
                 : theme.colorScheme.outlineVariant,
+            width: selected ? 1.25 : 1,
           ),
         ),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /*
+            CÓDIGO + TIPO + FLECHA
+            */
             Row(
               children: [
                 Expanded(
-                  child: Text(item.codigo, style: theme.textTheme.titleMedium),
+                  child: Text(
+                    item.codigo,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-                _StatusPill(label: item.tipoSalida),
+
+                _StatusPill(label: item.tipoSalida, highlighted: selected),
+
+                const Gap(AppSpacing.xs),
+
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: selected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
-            const Gap(AppSpacing.sm),
+
+            const Gap(AppSpacing.xs),
+
+            /*
+            MOTIVO
+            */
             Text(
               item.motivo ?? 'Sin motivo registrado',
-              style: theme.textTheme.bodyLarge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
+
             const Gap(AppSpacing.sm),
+
+            /*
+            METADATOS EN LÍNEA
+            */
             Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: AppSpacing.xs,
               children: [
-                _InfoChip(
-                  label: DateFormat('dd/MM/yyyy').format(item.fechaSalida),
+                _InlineInfo(
+                  value: DateFormat('dd/MM/yyyy').format(item.fechaSalida),
                 ),
-                _InfoChip(label: '${item.totalItems} items'),
-                _InfoChip(
-                  label: 'Cant. ${item.cantidadTotal.toStringAsFixed(2)}',
+
+                const _MetaDivider(),
+
+                _InlineInfo(
+                  value:
+                      '${item.totalItems} '
+                      '${item.totalItems == 1 ? 'ítem' : 'ítems'}',
                 ),
-                _InfoChip(label: 'Monto ${item.montoTotal.toStringAsFixed(2)}'),
-                _InfoChip(label: item.estado),
+
+                const _MetaDivider(),
+
+                _InlineInfo(
+                  value: 'Cant. ${item.cantidadTotal.toStringAsFixed(2)}',
+                ),
+
+                const _MetaDivider(),
+
+                _InlineInfo(
+                  value: 'Monto ${item.montoTotal.toStringAsFixed(2)}',
+                ),
+
+                const _MetaDivider(),
+
+                _InlineInfo(value: item.estado, strong: true),
               ],
             ),
           ],
@@ -627,17 +867,24 @@ class _SalidaListTile extends StatelessWidget {
   }
 }
 
+/*
+══════════════════════════════════════════════════════════════
+DETALLE MÓVIL
+══════════════════════════════════════════════════════════════
+*/
+
 class _MobileSalidaDetailSheet extends StatelessWidget {
   const _MobileSalidaDetailSheet();
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+
     return FractionallySizedBox(
-      heightFactor: 0.88,
+      heightFactor: .88,
       child: Material(
         color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
           top: false,
@@ -658,7 +905,9 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
+
                 const Gap(AppSpacing.sm),
+
                 Row(
                   children: [
                     Expanded(
@@ -667,6 +916,7 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
+
                     IconButton(
                       tooltip: 'Cerrar detalle',
                       onPressed: () => Navigator.of(context).pop(),
@@ -674,7 +924,9 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
                     ),
                   ],
                 ),
+
                 const Gap(AppSpacing.sm),
+
                 Expanded(
                   child: BlocBuilder<SalidasCubit, SalidasState>(
                     builder: (context, state) => _SalidaDetailPanel(
@@ -692,15 +944,23 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
   }
 }
 
+/*
+══════════════════════════════════════════════════════════════
+PANEL DETALLE
+══════════════════════════════════════════════════════════════
+*/
+
 class _SalidaDetailPanel extends StatelessWidget {
   const _SalidaDetailPanel({required this.state, required this.onRetry});
 
   final SalidasState state;
+
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     final detail = state.selectedSalida;
 
     if (state.isDetailLoading) {
@@ -718,7 +978,9 @@ class _SalidaDetailPanel extends StatelessWidget {
             title: 'No pudimos cargar el detalle',
             message: state.detailErrorMessage!,
           ),
-          const Gap(AppSpacing.lg),
+
+          const Gap(AppSpacing.md),
+
           AppButton.secondary(
             label: 'Reintentar',
             icon: Icons.refresh_rounded,
@@ -731,66 +993,172 @@ class _SalidaDetailPanel extends StatelessWidget {
     if (detail == null) {
       return const AppMessageCard.info(
         title: 'Selecciona una salida',
-        message:
-            'Elige un movimiento para revisar su detalle y las lineas afectadas.',
+        message: 'Elige un movimiento para revisar su detalle.',
       );
     }
 
     return AppSurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /*
+          HEADER
+          */
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  detail.codigo,
-                  style: theme.textTheme.headlineSmall,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      detail.codigo,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    const Gap(AppSpacing.xs),
+
+                    Text(
+                      detail.motivo ?? 'Sin motivo',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ],
                 ),
               ),
-              _StatusPill(label: detail.estado),
+
+              _StatusPill(label: detail.estado, highlighted: true),
             ],
           ),
-          const Gap(AppSpacing.sm),
-          Text(
-            detail.motivo ?? 'Sin motivo',
-            style: theme.textTheme.titleMedium,
+
+          const Gap(AppSpacing.lg),
+
+          /*
+          RESUMEN HORIZONTAL
+          */
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLowest,
+
+              borderRadius: BorderRadius.circular(10),
+
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final items = <Widget>[
+                  _DetailInfo(label: 'Tipo', value: detail.tipoSalida),
+
+                  _DetailInfo(
+                    label: 'Fecha',
+                    value: DateFormat(
+                      'dd/MM/yyyy HH:mm',
+                    ).format(detail.fechaSalida),
+                  ),
+
+                  if (detail.ordenProduccionId != null)
+                    _DetailInfo(
+                      label: 'OP',
+                      value: 'OP ${detail.ordenProduccionId}',
+                    ),
+
+                  if (detail.ordenProcesoId != null)
+                    _DetailInfo(
+                      label: 'Proceso',
+                      value: '${detail.ordenProcesoId}',
+                    ),
+                ];
+
+                if (constraints.maxWidth < 560) {
+                  return Wrap(
+                    spacing: AppSpacing.lg,
+                    runSpacing: AppSpacing.md,
+                    children: items
+                        .map((item) => SizedBox(width: 145, child: item))
+                        .toList(),
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (int index = 0; index < items.length; index++) ...[
+                      Expanded(child: items[index]),
+
+                      if (index < items.length - 1)
+                        Container(
+                          width: 1,
+                          height: 38,
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                    ],
+                  ],
+                );
+              },
+            ),
           ),
-          const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _InfoChip(label: detail.tipoSalida),
-              _InfoChip(
-                label: DateFormat(
-                  'dd/MM/yyyy HH:mm',
-                ).format(detail.fechaSalida),
-              ),
-              if (detail.ordenProduccionId != null)
-                _InfoChip(label: 'OP ${detail.ordenProduccionId}'),
-              if (detail.ordenProcesoId != null)
-                _InfoChip(label: 'Proceso ${detail.ordenProcesoId}'),
-            ],
-          ),
+
+          /*
+          OBSERVACIÓN
+          */
           if (detail.observacion != null &&
               detail.observacion!.trim().isNotEmpty) ...[
-            const Gap(AppSpacing.lg),
+            const Gap(AppSpacing.md),
+
             Text(
               detail.observacion!,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
-          const Gap(AppSpacing.xl),
-          Text('Lineas afectadas', style: theme.textTheme.titleLarge),
+
+          const Gap(AppSpacing.lg),
+
+          /*
+          LÍNEAS AFECTADAS
+          */
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Líneas afectadas',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+
+              Text(
+                '${detail.detalles.length} '
+                '${detail.detalles.length == 1 ? 'ítem' : 'ítems'}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+
           const Gap(AppSpacing.md),
+
           Expanded(
             child: ListView.separated(
               itemCount: detail.detalles.length,
-              separatorBuilder: (_, index) => const Gap(AppSpacing.md),
+
+              separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
+
               itemBuilder: (context, index) =>
                   _SalidaDetailLineTile(line: detail.detalles[index]),
             ),
@@ -800,6 +1168,12 @@ class _SalidaDetailPanel extends StatelessWidget {
     );
   }
 }
+
+/*
+══════════════════════════════════════════════════════════════
+LÍNEA AFECTADA
+══════════════════════════════════════════════════════════════
+*/
 
 class _SalidaDetailLineTile extends StatelessWidget {
   const _SalidaDetailLineTile({required this.line});
@@ -811,41 +1185,96 @@ class _SalidaDetailLineTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
+
+        borderRadius: BorderRadius.circular(12),
+
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /*
+          INSUMO
+          */
           Text(
             '${line.insumoCodigo} - ${line.insumoNombre}',
-            style: theme.textTheme.titleMedium,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const Gap(AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _InfoChip(
-                label:
-                    '${line.cantidad.toStringAsFixed(2)} ${line.unidadMedidaCodigo}',
-              ),
-              _InfoChip(
-                label: 'Costo ${line.costoUnitario.toStringAsFixed(2)}',
-              ),
-              _InfoChip(label: 'Total ${line.costoTotal.toStringAsFixed(2)}'),
-              _InfoChip(label: 'Stock ${line.stockActual.toStringAsFixed(2)}'),
-            ],
+
+          const Gap(AppSpacing.md),
+
+          /*
+          DATOS
+          */
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final values = <Widget>[
+                _DetailInfo(
+                  label: 'Cantidad',
+                  value:
+                      '${line.cantidad.toStringAsFixed(2)} ${line.unidadMedidaCodigo}',
+                ),
+
+                _DetailInfo(
+                  label: 'Costo',
+                  value: line.costoUnitario.toStringAsFixed(2),
+                ),
+
+                _DetailInfo(
+                  label: 'Total',
+                  value: line.costoTotal.toStringAsFixed(2),
+                  strong: true,
+                ),
+
+                _DetailInfo(
+                  label: 'Stock actual',
+                  value: line.stockActual.toStringAsFixed(2),
+                ),
+              ];
+
+              if (constraints.maxWidth < 500) {
+                return Wrap(
+                  spacing: AppSpacing.lg,
+                  runSpacing: AppSpacing.md,
+                  children: values
+                      .map((item) => SizedBox(width: 120, child: item))
+                      .toList(),
+                );
+              }
+
+              return Row(
+                children: [
+                  for (int index = 0; index < values.length; index++) ...[
+                    Expanded(child: values[index]),
+
+                    if (index < values.length - 1)
+                      Container(
+                        width: 1,
+                        height: 34,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                        ),
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                  ],
+                ],
+              );
+            },
           ),
+
           if (line.observacion != null &&
               line.observacion!.trim().isNotEmpty) ...[
             const Gap(AppSpacing.sm),
+
             Text(
               line.observacion!,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -856,53 +1285,137 @@ class _SalidaDetailLineTile extends StatelessWidget {
   }
 }
 
+/*
+══════════════════════════════════════════════════════════════
+STATUS
+══════════════════════════════════════════════════════════════
+*/
+
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label});
+  const _StatusPill({required this.label, this.highlighted = false});
 
   final String label;
+
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
+        color: highlighted
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHighest,
+
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onPrimaryContainer,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+
+          color: highlighted
+              ? theme.colorScheme.onPrimaryContainer
+              : theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label});
+/*
+══════════════════════════════════════════════════════════════
+INFO INLINE
+══════════════════════════════════════════════════════════════
+*/
 
-  final String label;
+class _InlineInfo extends StatelessWidget {
+  const _InlineInfo({required this.value, this.strong = false});
+
+  final String value;
+
+  final bool strong;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+    return Text(
+      value,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+
+        fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
       ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(999),
+    );
+  }
+}
+
+class _MetaDivider extends StatelessWidget {
+  const _MetaDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      child: Container(
+        width: 1,
+        height: 14,
+        color: theme.colorScheme.outlineVariant,
       ),
-      child: Text(label, style: theme.textTheme.labelMedium),
+    );
+  }
+}
+
+/*
+══════════════════════════════════════════════════════════════
+INFO DEL DETALLE
+══════════════════════════════════════════════════════════════
+*/
+
+class _DetailInfo extends StatelessWidget {
+  const _DetailInfo({
+    required this.label,
+    required this.value,
+    this.strong = false,
+  });
+
+  final String label;
+
+  final String value;
+
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+
+        const Gap(3),
+
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
