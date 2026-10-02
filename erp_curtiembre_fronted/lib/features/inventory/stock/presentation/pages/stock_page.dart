@@ -1,24 +1,22 @@
+import 'dart:async';
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/insumos/domain/constants/insumo_tipo_bien_options.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/stock/domain/entities/stock_record.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/stock/presentation/cubit/stock_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/stock/presentation/cubit/stock_state.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
-import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
+import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+
+const _accent = Color(0xFFE8590C);
+const _green = Color(0xFF138348);
 
 class StockPage extends StatefulWidget {
   const StockPage({super.key});
@@ -30,6 +28,9 @@ class StockPage extends StatefulWidget {
 class _StockPageState extends State<StockPage> {
   final _searchController = TextEditingController();
   final Talker _talker = getIt<Talker>();
+  Timer? _debounce;
+  int _page = 0;
+  int _pageSize = 10;
 
   @override
   void initState() {
@@ -39,47 +40,53 @@ class _StockPageState extends State<StockPage> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _applySearch() {
-    FocusScope.of(context).unfocus();
-    _talker.ui(
-      'Se aplico la busqueda de stock con texto=${_describeText(_searchController.text)}.',
-    );
-    context.read<StockCubit>().load(searchTerm: _searchController.text.trim());
+  void _search() {
+    _debounce?.cancel();
+    if (!mounted) return;
+    setState(() => _page = 0);
+    final term = _searchController.text.trim();
+    _talker.ui('Busqueda de stock: ${term.length} caracteres.');
+    context.read<StockCubit>().load(searchTerm: term);
   }
 
-  void _selectInsumo(int insumoId, {required bool openMobileDetail}) {
-    _talker.ui(
-      'Se selecciono el insumo $insumoId desde el listado de stock.',
-      logLevel: LogLevel.debug,
-    );
+  void _scheduleSearch(String _) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 420), _search);
+  }
+
+  void _select(int insumoId, {required bool mobile}) {
+    _talker.ui('Insumo seleccionado: $insumoId.', logLevel: LogLevel.debug);
     context.read<StockCubit>().selectInsumo(insumoId);
-
-    if (!openMobileDetail) return;
-
+    if (!mobile) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (sheetContext) => BlocProvider.value(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (_) => BlocProvider.value(
         value: context.read<StockCubit>(),
-        child: const _MobileStockDetailSheet(),
+        child: const FractionallySizedBox(
+          heightFactor: .85,
+          child: _MobileDetailSheet(),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final session = context.select((AuthCubit cubit) => cubit.state.session);
-    final isSigningOut = context.select(
-      (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
+    final session = context.select((AuthCubit c) => c.state.session);
+    final signingOut = context.select(
+      (AuthCubit c) => c.state.status == AuthStatus.signingOut,
     );
-    final permissionCodes = context.select(
-      (SecurityAccessCubit cubit) =>
-          cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
+    final permissions = context.select(
+      (SecurityAccessCubit c) =>
+          c.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
     );
 
     if (session == null) {
@@ -92,521 +99,193 @@ class _StockPageState extends State<StockPage> {
       breadcrumbs: const ['Inicio', 'Inventario', 'Stock actual'],
       userName: session.nombreCompleto,
       roleName: session.rolNombre,
-      accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
-      onSignOut: isSigningOut
-          ? () {}
-          : () => context.read<AuthCubit>().signOut(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1440),
-                child: BlocBuilder<StockCubit, StockState>(
-                  builder: (context, state) {
-                    final isWide = constraints.maxWidth >= 1040;
-                    final isMobile =
-                        constraints.maxWidth < AppBreakpoints.mobileLarge;
-                    final compactHeight = constraints.maxHeight < 860;
+      accessibleRoutes: AppAccessRoutes.forPermissions(permissions),
+      onSignOut: signingOut ? () {} : () => context.read<AuthCubit>().signOut(),
+      child: BlocBuilder<StockCubit, StockState>(
+        builder: (context, state) => LayoutBuilder(
+          builder: (context, constraints) {
+            final mobile = constraints.maxWidth < 760;
+            final sideBySide = constraints.maxWidth >= 1080;
+            final pages = state.items.isEmpty
+                ? 1
+                : (state.items.length / _pageSize).ceil();
+            final safePage = _page.clamp(0, pages - 1).toInt();
+            final start = safePage * _pageSize;
+            final end = (start + _pageSize)
+                .clamp(0, state.items.length)
+                .toInt();
+            final visible = state.items.sublist(start, end);
 
-                    if (_searchController.text != state.searchTerm) {
-                      _searchController.value = TextEditingValue(
-                        text: state.searchTerm,
-                        selection: TextSelection.collapsed(
-                          offset: state.searchTerm.length,
-                        ),
-                      );
-                    }
+            Widget list = _StockListPanel(
+              items: visible,
+              total: state.items.length,
+              status: state.status,
+              error: state.errorMessage,
+              selectedId: state.selectedInsumoId,
+              page: safePage,
+              totalPages: pages,
+              pageSize: _pageSize,
+              start: start,
+              end: end,
+              compact: !sideBySide,
+              onSelect: (id) => _select(id, mobile: mobile),
+              onRetry: () => context.read<StockCubit>().initialize(),
+              onPage: (p) => setState(() => _page = p),
+              onPageSize: (size) => setState(() {
+                _pageSize = size;
+                _page = 0;
+              }),
+            );
+            final detail = _StockDetailPanel(
+              state: state,
+              onRetry: () => context.read<StockCubit>().retryDetail(),
+            );
 
-                    final listPanel = _StockListPanel(
-                      state: state,
-                      showTable: isWide,
-                      onRetry: () {
-                        _talker.ui(
-                          'Se solicito reintentar la carga del listado de stock.',
-                        );
-                        context.read<StockCubit>().initialize();
-                      },
-                      onSelectInsumo: (id) {
-                        _selectInsumo(id, openMobileDetail: isMobile);
-                      },
-                    );
-
-                    final detailPanel = _StockDetailPanelV2(
-                      state: state,
-                      onRetry: () {
-                        _talker.ui(
-                          'Se solicito reintentar el detalle del stock seleccionado.',
-                        );
-                        context.read<StockCubit>().retryDetail();
-                      },
-                    );
-
-                    final headerAndFilters = <Widget>[
-                      Text(
-                        'Consulta cantidades disponibles, stock mínimo y costo promedio vigente.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const Gap(AppSpacing.lg),
-                      _StockFiltersCard(
+            return Padding(
+              padding: EdgeInsets.all(mobile ? 12 : 20),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _StockFilters(
                         state: state,
                         controller: _searchController,
-                        isCompact:
-                            constraints.maxWidth < AppBreakpoints.mobileLarge,
-                        isLoading: state.status == StockStatus.loading,
-                        onSearch: _applySearch,
-                        onActivityFilterChanged: (filter) {
-                          _talker.ui(
-                            'Se cambio el filtro de actividad de stock a ${_describeActivityFilter(filter)}.',
-                            logLevel: LogLevel.debug,
-                          );
+                        mobile: mobile,
+                        onSearch: _search,
+                        onChanged: _scheduleSearch,
+                        onActivity: (value) {
+                          setState(() => _page = 0);
                           context.read<StockCubit>().load(
-                            activityFilter: filter,
+                            activityFilter: value,
                           );
                         },
-                        onLowStockChanged: (value) {
-                          _talker.ui(
-                            'Se cambio el filtro de stock bajo a $value.',
-                            logLevel: LogLevel.debug,
-                          );
-                          context.read<StockCubit>().load(lowStockOnly: value);
-                        },
-                        onTipoBienChanged: (value) {
-                          _talker.ui(
-                            'Se cambio el filtro de tipo de bien en stock a ${_describeType(value)}.',
-                            logLevel: LogLevel.debug,
-                          );
+                        onType: (value) {
+                          setState(() => _page = 0);
                           context.read<StockCubit>().load(
                             tipoBienFilter: value,
                           );
                         },
+                        onLow: (value) {
+                          setState(() => _page = 0);
+                          context.read<StockCubit>().load(lowStockOnly: value);
+                        },
                       ),
-                      const Gap(AppSpacing.xl),
-                    ];
-
-                    if (compactHeight) {
-                      if (isWide) {
-                        return SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ...headerAndFilters,
-                              SizedBox(
-                                height: 620,
-                                child: Row(
-                                  children: [
-                                    Expanded(flex: 9, child: listPanel),
-                                    const Gap(AppSpacing.xl),
-                                    Expanded(flex: 8, child: detailPanel),
-                                  ],
-                                ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: sideBySide
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(flex: 13, child: list),
+                                  const SizedBox(width: 12),
+                                  Expanded(flex: 7, child: detail),
+                                ],
+                              )
+                            : mobile
+                            ? list
+                            : Column(
+                                children: [
+                                  Expanded(flex: 11, child: list),
+                                  const SizedBox(height: 14),
+                                  Expanded(flex: 9, child: detail),
+                                ],
                               ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ...headerAndFilters,
-                            SizedBox(height: 520, child: listPanel),
-                            const Gap(AppSpacing.xl),
-                            if (!isMobile) ...[
-                              const Gap(AppSpacing.xl),
-                              SizedBox(height: 560, child: detailPanel),
-                            ],
-                          ],
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ...headerAndFilters,
-                        Expanded(
-                          child: isWide
-                              ? Row(
-                                  children: [
-                                    Expanded(flex: 9, child: listPanel),
-                                    const Gap(AppSpacing.xl),
-                                    Expanded(flex: 8, child: detailPanel),
-                                  ],
-                                )
-                              : isMobile
-                              ? listPanel
-                              : Column(
-                                  children: [
-                                    Expanded(child: listPanel),
-                                    const Gap(AppSpacing.xl),
-                                    Expanded(child: detailPanel),
-                                  ],
-                                ),
-                        ),
-                      ],
-                    );
-                  },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  String _describeText(String? value) {
-    final normalized = value?.trim();
-    if (normalized == null || normalized.isEmpty) {
-      return 'vacio';
-    }
-
-    return '${normalized.length} caracteres';
-  }
-
-  String _describeType(String? value) {
-    final normalized = value?.trim();
-    if (normalized == null || normalized.isEmpty) {
-      return 'vacio';
-    }
-
-    return normalized;
-  }
-
-  String _describeActivityFilter(StockActivityFilter value) {
-    return switch (value) {
-      StockActivityFilter.active => 'activos',
-      StockActivityFilter.inactive => 'inactivos',
-      StockActivityFilter.all => 'todos',
-    };
-  }
-}
-
-class _StockFiltersCard extends StatelessWidget {
-  const _StockFiltersCard({
-    required this.state,
-    required this.controller,
-    required this.isCompact,
-    required this.isLoading,
-    required this.onSearch,
-    required this.onActivityFilterChanged,
-    required this.onLowStockChanged,
-    required this.onTipoBienChanged,
-  });
-
-  final StockState state;
-  final TextEditingController controller;
-  final bool isCompact;
-  final bool isLoading;
-  final VoidCallback onSearch;
-  final ValueChanged<StockActivityFilter> onActivityFilterChanged;
-  final ValueChanged<bool> onLowStockChanged;
-  final ValueChanged<String?> onTipoBienChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: isCompact
-          ? _MobileStockFilters(
-              state: state,
-              controller: controller,
-              isLoading: isLoading,
-              onSearch: onSearch,
-              onActivityFilterChanged: onActivityFilterChanged,
-              onLowStockChanged: onLowStockChanged,
-              onTipoBienChanged: onTipoBienChanged,
-            )
-          : _DesktopStockFilters(
-              state: state,
-              controller: controller,
-              isLoading: isLoading,
-              onSearch: onSearch,
-              onActivityFilterChanged: onActivityFilterChanged,
-              onLowStockChanged: onLowStockChanged,
-              onTipoBienChanged: onTipoBienChanged,
-            ),
-    );
-  }
-}
-
-class _DesktopStockFilters extends StatelessWidget {
-  const _DesktopStockFilters({
-    required this.state,
-    required this.controller,
-    required this.isLoading,
-    required this.onSearch,
-    required this.onActivityFilterChanged,
-    required this.onLowStockChanged,
-    required this.onTipoBienChanged,
-  });
-
-  final StockState state;
-  final TextEditingController controller;
-  final bool isLoading;
-  final VoidCallback onSearch;
-  final ValueChanged<StockActivityFilter> onActivityFilterChanged;
-  final ValueChanged<bool> onLowStockChanged;
-  final ValueChanged<String?> onTipoBienChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final horizontal = constraints.maxWidth >= 900;
-        final search = _StockSearchField(
-          controller: controller,
-          onSearch: onSearch,
-          isLoading: isLoading,
-        );
-        final typeFilter = SizedBox(
-          width: horizontal ? 190 : 220,
-          child: _TipoBienFilter(
-            value: state.tipoBienFilter,
-            onChanged: onTipoBienChanged,
-            compact: true,
-          ),
-        );
-        final filters = [
-          typeFilter,
-          _ActivityFilterSegment(
-            value: state.activityFilter,
-            onChanged: onActivityFilterChanged,
-          ),
-          _LowStockToggle(
-            value: state.lowStockOnly,
-            onChanged: onLowStockChanged,
-          ),
-        ];
-
-        if (horizontal) {
-          return Row(
-            children: [
-              Expanded(child: search),
-              const Gap(AppSpacing.md),
-              ...filters.expand((widget) => [widget, const Gap(AppSpacing.md)]),
-            ]..removeLast(),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            search,
-            const Gap(AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.md,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: filters,
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MobileStockFilters extends StatelessWidget {
-  const _MobileStockFilters({
-    required this.state,
-    required this.controller,
-    required this.isLoading,
-    required this.onSearch,
-    required this.onActivityFilterChanged,
-    required this.onLowStockChanged,
-    required this.onTipoBienChanged,
-  });
-
-  final StockState state;
-  final TextEditingController controller;
-  final bool isLoading;
-  final VoidCallback onSearch;
-  final ValueChanged<StockActivityFilter> onActivityFilterChanged;
-  final ValueChanged<bool> onLowStockChanged;
-  final ValueChanged<String?> onTipoBienChanged;
-
-  int get _activeFilterCount =>
-      (state.tipoBienFilter == null ? 0 : 1) +
-      (state.activityFilter == StockActivityFilter.active ? 0 : 1) +
-      (state.lowStockOnly ? 1 : 0);
-
-  void _openFilters(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (_) => _StockFiltersSheet(
-        state: state,
-        isLoading: isLoading,
-        onApply: () {
-          Navigator.of(context).pop();
-          onSearch();
-        },
-        onActivityFilterChanged: onActivityFilterChanged,
-        onLowStockChanged: onLowStockChanged,
-        onTipoBienChanged: onTipoBienChanged,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Expanded(
-          child: _StockSearchField(controller: controller, onSearch: onSearch),
+            );
+          },
         ),
-        const Gap(AppSpacing.sm),
-        Badge(
-          isLabelVisible: _activeFilterCount > 0,
-          label: Text('$_activeFilterCount'),
-          child: IconButton.outlined(
-            tooltip: 'Abrir filtros',
-            onPressed: () => _openFilters(context),
-            icon: Icon(Icons.tune_rounded, color: colors.primary),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _StockFiltersSheet extends StatelessWidget {
-  const _StockFiltersSheet({
+class _StockFilters extends StatelessWidget {
+  const _StockFilters({
     required this.state,
-    required this.isLoading,
-    required this.onApply,
-    required this.onActivityFilterChanged,
-    required this.onLowStockChanged,
-    required this.onTipoBienChanged,
+    required this.controller,
+    required this.mobile,
+    required this.onSearch,
+    required this.onChanged,
+    required this.onActivity,
+    required this.onType,
+    required this.onLow,
   });
 
   final StockState state;
-  final bool isLoading;
-  final VoidCallback onApply;
-  final ValueChanged<StockActivityFilter> onActivityFilterChanged;
-  final ValueChanged<bool> onLowStockChanged;
-  final ValueChanged<String?> onTipoBienChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              height: 4,
-              width: 40,
-              decoration: BoxDecoration(
-                color: colors.outlineVariant,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          Text('Filtros', style: Theme.of(context).textTheme.titleLarge),
-          const Gap(AppSpacing.lg),
-          _TipoBienFilter(
-            value: state.tipoBienFilter,
-            onChanged: onTipoBienChanged,
-          ),
-          const Gap(AppSpacing.lg),
-          Text('Estado', style: Theme.of(context).textTheme.labelLarge),
-          const Gap(AppSpacing.sm),
-          _ActivityFilterSegment(
-            value: state.activityFilter,
-            onChanged: onActivityFilterChanged,
-            expand: true,
-          ),
-          const Gap(AppSpacing.lg),
-          _LowStockToggle(
-            value: state.lowStockOnly,
-            onChanged: onLowStockChanged,
-          ),
-          const Gap(AppSpacing.xl),
-          AppButton.primary(
-            label: 'Aplicar búsqueda',
-            icon: Icons.search_rounded,
-            isLoading: isLoading,
-            onPressed: onApply,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StockSearchField extends StatelessWidget {
-  const _StockSearchField({
-    required this.controller,
-    required this.onSearch,
-    this.isLoading = false,
-  });
-
   final TextEditingController controller;
+  final bool mobile;
   final VoidCallback onSearch;
-  final bool isLoading;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<StockActivityFilter> onActivity;
+  final ValueChanged<String?> onType;
+  final ValueChanged<bool> onLow;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    final color = Theme.of(context).colorScheme;
+    final search = TextField(
       controller: controller,
       textInputAction: TextInputAction.search,
+      onChanged: onChanged,
       onSubmitted: (_) => onSearch(),
       decoration: InputDecoration(
         isDense: true,
-        hintText: 'Buscar por código o nombre...',
+        hintText: 'Buscar por código o nombre de insumo...',
         prefixIcon: const Icon(Icons.search_rounded),
-        suffixIcon: isLoading
-            ? const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : IconButton(
-                tooltip: 'Aplicar búsqueda',
-                onPressed: onSearch,
-                icon: const Icon(Icons.arrow_forward_rounded),
-              ),
+        suffixIcon: IconButton(
+          tooltip: controller.text.isEmpty ? 'Buscar' : 'Limpiar búsqueda',
+          icon: Icon(
+            controller.text.isEmpty
+                ? Icons.arrow_forward_rounded
+                : Icons.close_rounded,
+          ),
+          onPressed: () {
+            if (controller.text.isNotEmpty) controller.clear();
+            onSearch();
+          },
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 15,
+          horizontal: 12,
+        ),
       ),
     );
-  }
-}
-
-class _ActivityFilterSegment extends StatelessWidget {
-  const _ActivityFilterSegment({
-    required this.value,
-    required this.onChanged,
-    this.expand = false,
-  });
-
-  final StockActivityFilter value;
-  final ValueChanged<StockActivityFilter> onChanged;
-  final bool expand;
-
-  @override
-  Widget build(BuildContext context) {
-    final segment = SegmentedButton<StockActivityFilter>(
+    final type = DropdownMenu<String>(
+      width: mobile ? 260 : 190,
+      enableFilter: true,
+      enableSearch: true,
+      requestFocusOnTap: true,
+      key: ValueKey(state.tipoBienFilter ?? '__all__'),
+      initialSelection: state.tipoBienFilter ?? '__all__',
+      label: const Text('Tipo de bien'),
+      dropdownMenuEntries: [
+        const DropdownMenuEntry(value: '__all__', label: 'Todos los tipos'),
+        ...inventoryInsumoTipoBienOptions.map(
+          (o) => DropdownMenuEntry(value: o.value, label: o.label),
+        ),
+      ],
+      onSelected: (value) => onType(value == '__all__' ? null : value),
+    );
+    final activity = SegmentedButton<StockActivityFilter>(
       showSelectedIcon: false,
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? _accent : null,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.white
+              : color.onSurface,
+        ),
+      ),
       segments: const [
         ButtonSegment(value: StockActivityFilter.all, label: Text('Todos')),
         ButtonSegment(
@@ -618,36 +297,380 @@ class _ActivityFilterSegment extends StatelessWidget {
           label: Text('Inactivos'),
         ),
       ],
-      selected: {value},
-      onSelectionChanged: (selection) {
-        final filter = selection.firstOrNull;
-        if (filter != null) onChanged(filter);
-      },
+      selected: {state.activityFilter},
+      onSelectionChanged: (values) => onActivity(values.first),
+    );
+    final low = InkWell(
+      onTap: () => onLow(!state.lowStockOnly),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch(
+            value: state.lowStockOnly,
+            activeThumbColor: _accent,
+            onChanged: onLow,
+          ),
+          const Text('Solo stock bajo', style: TextStyle(fontSize: 12)),
+        ],
+      ),
     );
 
-    return expand ? SizedBox(width: double.infinity, child: segment) : segment;
+    return _Surface(
+      padding: const EdgeInsets.all(12),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          if (box.maxWidth >= 1120) {
+            return Row(
+              children: [
+                Expanded(child: search),
+                const SizedBox(width: 12),
+                type,
+                const SizedBox(width: 12),
+                activity,
+                const SizedBox(width: 12),
+                low,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              search,
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [type, activity, low],
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 
-class _LowStockToggle extends StatelessWidget {
-  const _LowStockToggle({required this.value, required this.onChanged});
+class _StockListPanel extends StatelessWidget {
+  const _StockListPanel({
+    required this.items,
+    required this.total,
+    required this.status,
+    required this.error,
+    required this.selectedId,
+    required this.page,
+    required this.totalPages,
+    required this.pageSize,
+    required this.start,
+    required this.end,
+    required this.compact,
+    required this.onSelect,
+    required this.onRetry,
+    required this.onPage,
+    required this.onPageSize,
+  });
 
-  final bool value;
-  final ValueChanged<bool> onChanged;
+  final List<StockRecord> items;
+  final int total;
+  final StockStatus status;
+  final String? error;
+  final int? selectedId;
+  final int page, totalPages, pageSize, start, end;
+  final bool compact;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onRetry;
+  final ValueChanged<int> onPage;
+  final ValueChanged<int> onPageSize;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => onChanged(!value),
+    final scheme = Theme.of(context).colorScheme;
+    return _Surface(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                const _SectionIcon(Icons.inventory_2_outlined),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Lista de insumos',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                ),
+                Text(
+                  '$total resultados',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: scheme.outlineVariant),
+          Expanded(
+            child: switch (status) {
+              StockStatus.loading => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              StockStatus.error => _Message(
+                icon: Icons.error_outline,
+                title: 'No pudimos cargar el stock',
+                detail: error ?? 'Intenta nuevamente.',
+                onRetry: onRetry,
+              ),
+              StockStatus.success =>
+                total == 0
+                    ? const _Message(
+                        icon: Icons.search_off_rounded,
+                        title: 'No hay resultados',
+                        detail: 'Prueba con otros filtros.',
+                      )
+                    : compact
+                    ? ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: scheme.outlineVariant),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          final selected = item.insumoId == selectedId;
+                          return Material(
+                            color: selected
+                                ? _accent.withValues(alpha: .07)
+                                : Colors.transparent,
+                            child: ListTile(
+                              selected: selected,
+                              onTap: () => onSelect(item.insumoId),
+                              title: Text(
+                                item.nombre,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${item.codigo} · ${_tipoBienLabel(item.tipoBien)}',
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${item.cantidadActual.toStringAsFixed(2)} ${item.unidadMedidaCodigo}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  _Tag(
+                                    item.stockBajo ? 'Stock bajo' : 'Normal',
+                                    warning: item.stockBajo,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : LayoutBuilder(
+                        builder: (context, box) => SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(
+                            width: box.maxWidth < 740 ? 740 : box.maxWidth,
+                            child: Column(
+                              children: [
+                                _tableHead(context),
+                                Expanded(
+                                  child: ListView.builder(
+                                    itemCount: items.length,
+                                    itemBuilder: (context, index) =>
+                                        _tableRow(context, items[index]),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+            },
+          ),
+          Divider(height: 1, color: scheme.outlineVariant),
+          _pager(context),
+        ],
+      ),
+    );
+  }
+
+  static const widths = [95.0, 165.0, 124.0, 100.0, 85.0, 90.0, 80.0, 74.0];
+
+  Widget _tableHead(BuildContext context) {
+    final theme = Theme.of(context);
+    const headers = [
+      'Código',
+      'Insumo',
+      'Tipo de bien',
+      'Actual',
+      'Mín.',
+      'Costo prom.',
+      'Nivel',
+      'Estado',
+    ];
+    return Container(
+      color: theme.colorScheme.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      child: Row(
+        children: [
+          for (var i = 0; i < headers.length; i++)
+            Expanded(
+              flex: widths[i].round(),
+              child: Text(
+                headers[i],
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableRow(BuildContext context, StockRecord item) {
+    final selected = item.insumoId == selectedId;
+    final color = Theme.of(context).colorScheme;
+    Widget cell(String value, int i, {bool bold = false}) => Expanded(
+      flex: widths[i].round(),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.only(right: 5),
+        child: Text(
+          value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+            color: bold && selected ? _accent : color.onSurface,
+          ),
+        ),
+      ),
+    );
+    return Material(
+      color: selected ? _accent.withValues(alpha: .085) : Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelect(item.insumoId),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: selected ? _accent : Colors.transparent,
+                width: 3,
+              ),
+              bottom: BorderSide(
+                color: color.outlineVariant.withValues(alpha: .65),
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              cell(item.codigo, 0),
+              cell(item.nombre, 1, bold: true),
+              cell(_tipoBienLabel(item.tipoBien), 2),
+              cell(item.cantidadActual.toStringAsFixed(2), 3, bold: true),
+              cell(item.stockMinimo.toStringAsFixed(2), 4),
+              cell('S/ ${item.costoPromedioActual.toStringAsFixed(2)}', 5),
+              Expanded(
+                flex: widths[6].round(),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _Tag(
+                    item.stockBajo ? 'Bajo' : 'Normal',
+                    warning: item.stockBajo,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: widths[7].round(),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _Tag(
+                    item.activo ? 'Activo' : 'Inactivo',
+                    muted: !item.activo,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pager(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: LayoutBuilder(
+        builder: (context, box) => Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 8,
+          runSpacing: 5,
           children: [
-            Switch(value: value, onChanged: onChanged),
-            const Gap(AppSpacing.xs),
-            const Text('Solo stock bajo'),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Mostrar ', style: TextStyle(fontSize: 11)),
+                DropdownButton<int>(
+                  value: pageSize,
+                  isDense: true,
+                  underline: const SizedBox.shrink(),
+                  items: const [10, 20, 50]
+                      .map((v) => DropdownMenuItem(value: v, child: Text('$v')))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) onPageSize(v);
+                  },
+                ),
+                const Text(' por página', style: TextStyle(fontSize: 11)),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  total == 0 ? '0 resultados' : '${start + 1}–$end de $total',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Página anterior',
+                  onPressed: page == 0 ? null : () => onPage(page - 1),
+                  icon: const Icon(Icons.chevron_left_rounded),
+                ),
+                Text(
+                  '${page + 1} / $totalPages',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Página siguiente',
+                  onPressed: page + 1 >= totalPages
+                      ? null
+                      : () => onPage(page + 1),
+                  icon: const Icon(Icons.chevron_right_rounded),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -655,942 +678,447 @@ class _LowStockToggle extends StatelessWidget {
   }
 }
 
-class _TipoBienFilter extends StatelessWidget {
-  const _TipoBienFilter({
-    required this.value,
-    required this.onChanged,
-    this.compact = false,
-  });
-
-  final String? value;
-  final ValueChanged<String?> onChanged;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String?>(
-      isExpanded: true,
-      initialValue: value,
-      decoration: InputDecoration(
-        isDense: compact,
-        labelText: compact ? null : 'Tipo de bien',
-        hintText: compact ? 'Tipo de bien' : null,
-      ),
-      items: [
-        const DropdownMenuItem<String?>(value: null, child: Text('Todos')),
-        ...inventoryInsumoTipoBienOptions.map(
-          (option) => DropdownMenuItem<String?>(
-            value: option.value,
-            child: Text(
-              option.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-      ],
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _StockListPanel extends StatelessWidget {
-  const _StockListPanel({
-    required this.state,
-    required this.showTable,
-    required this.onRetry,
-    required this.onSelectInsumo,
-  });
-
+class _StockDetailPanel extends StatelessWidget {
+  const _StockDetailPanel({required this.state, required this.onRetry});
   final StockState state;
-  final bool showTable;
   final VoidCallback onRetry;
-  final ValueChanged<int> onSelectInsumo;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return AppSurfaceCard(
+    final color = Theme.of(context).colorScheme;
+    final detail = state.selectedStock;
+    return _Surface(
       padding: EdgeInsets.zero,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Text('Resultados', style: theme.textTheme.titleMedium),
-                const Spacer(),
-                Text(
-                  '${state.items.length}',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                const _SectionIcon(Icons.inventory_rounded),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Detalle del insumo',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                 ),
               ],
             ),
           ),
+          Divider(height: 1, color: color.outlineVariant),
           Expanded(
-            child: switch (state.status) {
-              StockStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              StockStatus.error => _CenteredMessage(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppMessageCard.error(
-                      title: 'No pudimos cargar el stock',
-                      message:
-                          state.errorMessage ??
-                          'Intenta nuevamente para consultar el inventario.',
-                    ),
-                    const Gap(AppSpacing.lg),
-                    AppButton.secondary(
-                      label: 'Reintentar',
-                      icon: Icons.refresh_rounded,
-                      onPressed: onRetry,
-                    ),
-                  ],
-                ),
-              ),
-              StockStatus.success =>
-                state.items.isEmpty
-                    ? const _CenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message:
-                              'No encontramos stock con los filtros actuales.',
-                        ),
-                      )
-                    : showTable
-                    ? _StockTable(
-                        items: state.items,
-                        selectedInsumoId: state.selectedInsumoId,
-                        onSelectInsumo: onSelectInsumo,
-                      )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _StockListTileCard(
-                            item: item,
-                            isSelected: item.insumoId == state.selectedInsumoId,
-                            onTap: () => onSelectInsumo(item.insumoId),
-                          );
-                        },
-                      ),
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StockTable extends StatelessWidget {
-  const _StockTable({
-    required this.items,
-    required this.selectedInsumoId,
-    required this.onSelectInsumo,
-  });
-
-  final List<StockRecord> items;
-  final int? selectedInsumoId;
-  final ValueChanged<int> onSelectInsumo;
-
-  static const _columnWidths = <int, TableColumnWidth>{
-    0: FlexColumnWidth(0.95),
-    1: FlexColumnWidth(1.7),
-    2: FlexColumnWidth(1.15),
-    3: FlexColumnWidth(0.8),
-    4: FlexColumnWidth(0.8),
-    5: FlexColumnWidth(0.95),
-    6: FlexColumnWidth(0.85),
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListView.separated(
-      itemCount: items.length + 1,
-      separatorBuilder: (_, index) =>
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Container(
-            color: theme.colorScheme.surfaceContainerLow,
-            child: Table(
-              columnWidths: _columnWidths,
-              children: [
-                TableRow(
-                  children: [
-                    _StockTableHeaderCell('Código'),
-                    _StockTableHeaderCell('Insumo'),
-                    _StockTableHeaderCell('Tipo de bien'),
-                    _StockTableHeaderCell('Actual', alignEnd: true),
-                    _StockTableHeaderCell('Mín.', alignEnd: true),
-                    _StockTableHeaderCell('Costo', alignEnd: true),
-                    _StockTableHeaderCell('Nivel', centered: true),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }
-
-        final item = items[index - 1];
-        final selected = item.insumoId == selectedInsumoId;
-        return Material(
-          color: selected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.42)
-              : Colors.transparent,
-          child: InkWell(
-            onTap: () => onSelectInsumo(item.insumoId),
-            child: Table(
-              columnWidths: _columnWidths,
-              children: [
-                TableRow(
-                  children: [
-                    _StockTableCell(item.codigo),
-                    _StockTableCell(
-                      item.nombre,
-                      emphasize: true,
-                      trailing: item.stockBajo
-                          ? const Padding(
-                              padding: EdgeInsets.only(top: AppSpacing.xs),
-                              child: _InlineStockLowIndicator(),
-                            )
-                          : null,
-                    ),
-                    _StockTableCell(_tipoBienLabel(item.tipoBien)),
-                    _StockTableCell(
-                      item.cantidadActual.toStringAsFixed(2),
-                      alignEnd: true,
-                    ),
-                    _StockTableCell(
-                      item.stockMinimo.toStringAsFixed(2),
-                      alignEnd: true,
-                    ),
-                    _StockTableCell(
-                      'S/ ${item.costoPromedioActual.toStringAsFixed(2)}',
-                      alignEnd: true,
-                    ),
-                    _StockStateCell(item: item),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _StockTableHeaderCell extends StatelessWidget {
-  const _StockTableHeaderCell(
-    this.label, {
-    this.alignEnd = false,
-    this.centered = false,
-  });
-
-  final String label;
-  final bool alignEnd;
-  final bool centered;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Text(
-        label,
-        textAlign: centered
-            ? TextAlign.center
-            : alignEnd
-            ? TextAlign.end
-            : TextAlign.start,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-class _StockTableCell extends StatelessWidget {
-  const _StockTableCell(
-    this.value, {
-    this.alignEnd = false,
-    this.emphasize = false,
-    this.trailing,
-  });
-
-  final String value;
-  final bool alignEnd;
-  final bool emphasize;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: alignEnd
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-          if (trailing case final Widget trailing) trailing,
-        ],
-      ),
-    );
-  }
-}
-
-class _StockStateCell extends StatelessWidget {
-  const _StockStateCell({required this.item});
-
-  final StockRecord item;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Center(
-        child: Tooltip(
-          message: item.stockBajo ? 'Stock bajo' : 'Nivel disponible',
-          child: Semantics(
-            label: item.stockBajo ? 'Nivel: stock bajo' : 'Nivel: disponible',
-            child: Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: item.stockBajo
-                    ? colors.errorContainer
-                    : colors.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                item.stockBajo
-                    ? Icons.warning_amber_rounded
-                    : Icons.check_circle_outline_rounded,
-                size: 19,
-                color: item.stockBajo
-                    ? colors.onErrorContainer
-                    : colors.onPrimaryContainer,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InlineStockLowIndicator extends StatelessWidget {
-  const _InlineStockLowIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.warning_amber_rounded,
-          size: 14,
-          color: Theme.of(context).colorScheme.error,
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        Text(
-          'Stock bajo',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.error,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StockDetailPanelV2 extends StatelessWidget {
-  const _StockDetailPanelV2({
-    required this.state,
-    required this.onRetry,
-    this.framed = true,
-  });
-
-  final StockState state;
-  final VoidCallback onRetry;
-  final bool framed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final detail = state.selectedStock;
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Text(
-            'Detalle de stock',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant),
-        Expanded(
-          child: Builder(
-            builder: (context) {
-              if (state.isDetailLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (state.detailErrorMessage != null) {
-                return _CenteredMessage(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppMessageCard.error(
-                        title: 'No pudimos cargar el detalle',
-                        message: state.detailErrorMessage!,
-                      ),
-                      const Gap(AppSpacing.lg),
-                      AppButton.secondary(
-                        label: 'Reintentar detalle',
-                        icon: Icons.refresh_rounded,
-                        onPressed: onRetry,
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              if (detail == null) {
-                return const _CenteredMessage(
-                  child: AppMessageCard.info(
+            child: state.isDetailLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.detailErrorMessage != null
+                ? _Message(
+                    icon: Icons.error_outline_rounded,
+                    title: 'No pudimos cargar el detalle',
+                    detail: state.detailErrorMessage!,
+                    onRetry: onRetry,
+                  )
+                : detail == null
+                ? const _Message(
+                    icon: Icons.touch_app_outlined,
                     title: 'Selecciona un insumo',
-                    message:
-                        'Escoge un registro del listado para revisar sus existencias vigentes.',
-                  ),
-                );
-              }
-
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CÓDIGO: ${detail.codigo}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const Gap(AppSpacing.xs),
-                    Text(
-                      detail.nombre,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Gap(AppSpacing.md),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
+                    detail:
+                        'Haz clic en una fila para visualizar las existencias.',
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _StatusPill(
-                          label: detail.activo ? 'Activo' : 'Inactivo',
-                          background: detail.activo
-                              ? theme.colorScheme.primaryContainer
-                              : theme.colorScheme.surfaceContainerHighest,
-                          foreground: detail.activo
-                              ? theme.colorScheme.onPrimaryContainer
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                        if (detail.stockBajo)
-                          _StatusPill(
-                            label: 'Stock bajo',
-                            background: theme.colorScheme.errorContainer,
-                            foreground: theme.colorScheme.onErrorContainer,
+                        _detailBanner(context, detail),
+                        Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _sectionTitle(
+                                'Información general',
+                                Icons.info_outline_rounded,
+                              ),
+                              const SizedBox(height: 9),
+                              _attribute(
+                                context,
+                                'Tipo de bien',
+                                _tipoBienLabel(detail.tipoBien),
+                              ),
+                              _attribute(
+                                context,
+                                'Unidad de medida',
+                                '${detail.unidadMedidaNombre} (${detail.unidadMedidaCodigo})',
+                              ),
+                              _attribute(
+                                context,
+                                'Última actualización',
+                                DateFormat(
+                                  'dd/MM/yyyy HH:mm',
+                                ).format(detail.actualizadoEn.toLocal()),
+                              ),
+                              const SizedBox(height: 17),
+                              _sectionTitle(
+                                'Existencias',
+                                Icons.inventory_2_outlined,
+                              ),
+                              const SizedBox(height: 9),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _metric(
+                                      context,
+                                      'Stock actual',
+                                      '${detail.cantidadActual.toStringAsFixed(2)} ${detail.unidadMedidaCodigo}',
+                                      _accent,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _metric(
+                                      context,
+                                      'Stock mínimo',
+                                      '${detail.stockMinimo.toStringAsFixed(2)} ${detail.unidadMedidaCodigo}',
+                                      color.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              _sectionTitle(
+                                'Costo promedio',
+                                Icons.payments_outlined,
+                              ),
+                              const SizedBox(height: 9),
+                              _metric(
+                                context,
+                                'Costo unitario vigente',
+                                'S/ ${detail.costoPromedioActual.toStringAsFixed(2)}',
+                                color.onSurface,
+                              ),
+                              const SizedBox(height: 15),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Nivel de stock',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  _Tag(
+                                    detail.stockBajo ? 'Stock bajo' : 'Normal',
+                                    warning: detail.stockBajo,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(30),
+                                child: LinearProgressIndicator(
+                                  value: detail.stockMinimo <= 0
+                                      ? 1
+                                      : (detail.cantidadActual /
+                                                detail.stockMinimo)
+                                            .clamp(0.0, 1.0)
+                                            .toDouble(),
+                                  minHeight: 7,
+                                  color: detail.stockBajo ? _accent : _green,
+                                  backgroundColor: color.outlineVariant,
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
-                    const Gap(AppSpacing.lg),
-                    _StockDetailSection(
-                      title: 'Existencias',
-                      icon: Icons.inventory_2_outlined,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final current = _StockDetailMetric(
-                            label: 'Stock actual',
-                            value: detail.cantidadActual.toStringAsFixed(2),
-                            emphasize: true,
-                          );
-                          final minimum = _StockDetailMetric(
-                            label: 'Stock minimo',
-                            value: detail.stockMinimo.toStringAsFixed(2),
-                          );
-                          if (constraints.maxWidth < 300) {
-                            return Column(
-                              children: [
-                                current,
-                                const Gap(AppSpacing.sm),
-                                minimum,
-                              ],
-                            );
-                          }
-                          return Row(
-                            children: [
-                              Expanded(child: current),
-                              const Gap(AppSpacing.sm),
-                              Expanded(child: minimum),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    const Gap(AppSpacing.lg),
-                    _StockDetailSection(
-                      title: 'Costo y actualización',
-                      icon: Icons.payments_outlined,
-                      child: Column(
-                        children: [
-                          _StockDetailAttribute(
-                            label: 'Unidad de medida',
-                            value:
-                                '${detail.unidadMedidaNombre} (${detail.unidadMedidaCodigo})',
-                          ),
-                          _StockDetailAttribute(
-                            label: 'Costo promedio',
-                            value:
-                                'S/ ${detail.costoPromedioActual.toStringAsFixed(2)}',
-                          ),
-                          _StockDetailAttribute(
-                            label: 'Última actualización',
-                            value: DateFormat(
-                              'dd/MM/yyyy HH:mm',
-                            ).format(detail.actualizadoEn.toLocal()),
-                            isLast: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailBanner(BuildContext context, StockRecord item) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF3D261A), Color(0xFF9B4D25)],
         ),
-      ],
-    );
-
-    return framed
-        ? AppSurfaceCard(padding: EdgeInsets.zero, child: content)
-        : content;
-  }
-}
-
-class _StockDetailSection extends StatelessWidget {
-  const _StockDetailSection({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 19, color: theme.colorScheme.primary),
-              const Gap(AppSpacing.sm),
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          const Gap(AppSpacing.md),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _StockDetailMetric extends StatelessWidget {
-  const _StockDetailMetric({
-    required this.label,
-    required this.value,
-    this.emphasize = false,
-  });
-
-  final String label;
-  final String value;
-  final bool emphasize;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Container(
+            height: 54,
+            width: 54,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: const Icon(Icons.science_outlined, color: _accent, size: 29),
           ),
-          const Gap(AppSpacing.xs),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
-              color: emphasize ? theme.colorScheme.primary : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StockDetailAttribute extends StatelessWidget {
-  const _StockDetailAttribute({
-    required this.label,
-    required this.value,
-    this.isLast = false,
-  });
-
-  final String label;
-  final String value;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        runSpacing: AppSpacing.xs,
-        spacing: AppSpacing.md,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Text(
-            value,
-            textAlign: TextAlign.end,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MobileStockDetailSheet extends StatelessWidget {
-  const _MobileStockDetailSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return FractionallySizedBox(
-      heightFactor: 0.86,
-      child: Material(
-        color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        clipBehavior: Clip.antiAlias,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
+          const SizedBox(width: 13),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.outlineVariant,
-                    borderRadius: BorderRadius.circular(99),
+                Text(
+                  'CÓDIGO: ${item.codigo}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFFE7CBB9),
+                    letterSpacing: .6,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Detalle de stock',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Cerrar detalle',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Expanded(
-                  child: BlocBuilder<StockCubit, StockState>(
-                    builder: (context, state) => _StockDetailPanelV2(
-                      state: state,
-                      onRetry: () => context.read<StockCubit>().retryDetail(),
-                      framed: false,
-                    ),
+                const SizedBox(height: 5),
+                Text(
+                  item.nombre,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
+                const SizedBox(height: 8),
+                _Tag(item.activo ? 'Activo' : 'Inactivo', muted: !item.activo),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
-}
 
-class _StockListTileCard extends StatelessWidget {
-  const _StockListTileCard({
-    required this.item,
-    required this.isSelected,
-    required this.onTap,
-  });
+  Widget _sectionTitle(String title, IconData icon) => Row(
+    children: [
+      Icon(icon, size: 17, color: _accent),
+      const SizedBox(width: 7),
+      Text(
+        title,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+      ),
+    ],
+  );
 
-  final StockRecord item;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.48)
-                : theme.colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.42)
-                  : theme.colorScheme.outlineVariant,
+  Widget _attribute(BuildContext context, String label, String value) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 11.5, color: colors.onSurfaceVariant),
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: item.stockBajo
-                      ? theme.colorScheme.errorContainer
-                      : theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  item.stockBajo
-                      ? Icons.warning_amber_rounded
-                      : Icons.inventory_2_outlined,
-                  size: 18,
-                  color: item.stockBajo
-                      ? theme.colorScheme.onErrorContainer
-                      : theme.colorScheme.onPrimaryContainer,
-                ),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
               ),
-              const Gap(AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.codigo,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Gap(AppSpacing.xs),
-                    Text(
-                      item.nombre,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const Gap(AppSpacing.xs),
-                    Text(
-                      _tipoBienLabel(item.tipoBien),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(AppSpacing.sm),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${item.cantidadActual.toStringAsFixed(2)} ${item.unidadMedidaCodigo}',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: item.stockBajo ? theme.colorScheme.error : null,
-                    ),
-                  ),
-                  const Gap(AppSpacing.xs),
-                  Text(
-                    'Mín. ${item.stockMinimo.toStringAsFixed(2)}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (item.stockBajo) ...[
-                    const Gap(AppSpacing.xs),
-                    Text(
-                      'Stock bajo',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metric(
+    BuildContext context,
+    String label,
+    String value,
+    Color valueColor,
+  ) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: colors.surfaceContainerLowest,
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 19,
+                color: valueColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileDetailSheet extends StatelessWidget {
+  const _MobileDetailSheet();
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Detalle de stock',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Cerrar',
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ],
+        ),
+        Expanded(
+          child: BlocBuilder<StockCubit, StockState>(
+            builder: (context, state) => _StockDetailPanel(
+              state: state,
+              onRetry: () => context.read<StockCubit>().retryDetail(),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Surface extends StatelessWidget {
+  const _Surface({required this.child, required this.padding});
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.outlineVariant),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionIcon extends StatelessWidget {
+  const _SectionIcon(this.icon);
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 31,
+    height: 31,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: _accent.withValues(alpha: .11),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Icon(icon, size: 18, color: _accent),
+  );
+}
+
+class _Tag extends StatelessWidget {
+  const _Tag(this.text, {this.warning = false, this.muted = false});
+  final String text;
+  final bool warning, muted;
+  @override
+  Widget build(BuildContext context) {
+    final bg = warning
+        ? const Color(0xFFFFE7D5)
+        : muted
+        ? const Color(0xFFE9E9ED)
+        : const Color(0xFFDDF5E5);
+    final fg = warning
+        ? const Color(0xFFB54C13)
+        : muted
+        ? const Color(0xFF666875)
+        : const Color(0xFF116A38);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: fg,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.label,
-    required this.background,
-    required this.foreground,
+class _Message extends StatelessWidget {
+  const _Message({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    this.onRetry,
   });
-
-  final String label;
-  final Color background;
-  final Color foreground;
-
+  final IconData icon;
+  final String title, detail;
+  final VoidCallback? onRetry;
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelMedium?.copyWith(color: foreground),
-      ),
-    );
-  }
-}
-
-class _CenteredMessage extends StatelessWidget {
-  const _CenteredMessage({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: child,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: c.onSurfaceVariant, size: 36),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              detail,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: c.onSurfaceVariant, fontSize: 12),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

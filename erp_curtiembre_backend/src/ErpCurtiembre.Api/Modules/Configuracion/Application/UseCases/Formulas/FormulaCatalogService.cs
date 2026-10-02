@@ -310,13 +310,6 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
             return UseCaseResult<FormulaDetalleItemDto>.Fail(ConfiguracionErrorCodes.NotFound, "No se encontro la version de formula.");
         }
 
-        if (version.Vigente)
-        {
-            return UseCaseResult<FormulaDetalleItemDto>.Fail(
-                ConfiguracionErrorCodes.Conflict,
-                "No se puede modificar el detalle de una version vigente.");
-        }
-
         var errors = await ValidateDetailRequestAsync(versionId, request.InsumoId, request.Porcentaje, request.Observacion, null, cancellationToken);
         if (errors.Count > 0)
         {
@@ -355,13 +348,6 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
         if (version is null)
         {
             return UseCaseResult<FormulaDetalleItemDto>.Fail(ConfiguracionErrorCodes.NotFound, "No se encontro la version de formula.");
-        }
-
-        if (version.Vigente)
-        {
-            return UseCaseResult<FormulaDetalleItemDto>.Fail(
-                ConfiguracionErrorCodes.Conflict,
-                "No se puede modificar el detalle de una version vigente.");
         }
 
         var errors = await ValidateDetailRequestAsync(
@@ -406,13 +392,6 @@ public sealed class FormulaCatalogService(IFormulaRepository formulaRepository)
         if (version is null)
         {
             return UseCaseResult<FormulaDetalleItemDto>.Fail(ConfiguracionErrorCodes.NotFound, "No se encontro la version de formula.");
-        }
-
-        if (version.Vigente)
-        {
-            return UseCaseResult<FormulaDetalleItemDto>.Fail(
-                ConfiguracionErrorCodes.Conflict,
-                "No se puede eliminar detalle de una version vigente.");
         }
 
         await formulaRepository.SoftDeleteDetailAsync(id, cancellationToken);

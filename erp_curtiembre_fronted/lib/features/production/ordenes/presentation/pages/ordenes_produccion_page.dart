@@ -1158,9 +1158,136 @@ class _OrdenesFiltersCard extends StatelessWidget {
   final ValueChanged<int?> onClienteChanged;
   final ValueChanged<int?> onLoteChanged;
 
+  static const _estados = <String, String>{
+    '': 'Todos los estados',
+    'PROGRAMADA': 'Programadas',
+    'ESPERANDO_MATERIALES': 'Esperando materiales',
+    'LISTA_PARA_INICIAR': 'Lista para iniciar',
+    'EN_PROCESO': 'En proceso',
+    'FINALIZADA': 'Finalizadas',
+    'ANULADA': 'Anuladas',
+    'CANCELADA': 'Canceladas',
+  };
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final clientId = state.selectedClienteId;
+    final visibleLotes = clientId == null
+        ? state.loteOptions
+        : state.loteOptions.where((x) => x.clienteId == clientId).toList();
+    final selectedLoteId = visibleLotes.any((x) => x.id == state.selectedLoteId)
+        ? state.selectedLoteId
+        : null;
+    final months = List.generate(18, (index) {
+      final now = DateTime.now();
+      return DateTime(now.year, now.month - index);
+    });
+
+    Widget search() => TextField(
+      controller: searchController,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (_) => onApply(),
+      onChanged: onSearchChanged,
+      decoration: const InputDecoration(
+        hintText: 'Buscar orden, cliente o lote...',
+        prefixIcon: Icon(Icons.search_rounded, size: 20),
+      ),
+    );
+
+    Widget client() => LayoutBuilder(
+      builder: (context, constraints) => DropdownMenu<int>(
+        key: ValueKey('cliente_filtro_$clientId'),
+        width: constraints.maxWidth,
+        initialSelection: clientId ?? -1,
+        enableFilter: true,
+        enableSearch: true,
+        requestFocusOnTap: true,
+        menuHeight: 240,
+        label: const Text('Cliente'),
+        leadingIcon: const Icon(Icons.groups_2_outlined, size: 19),
+        dropdownMenuEntries: [
+          const DropdownMenuEntry<int>(value: -1, label: 'Todos los clientes'),
+          ...state.clienteOptions.map(
+            (x) => DropdownMenuEntry<int>(value: x.id, label: x.label),
+          ),
+        ],
+        onSelected: (id) {
+          if (id == null) return;
+          onClienteChanged(id == -1 ? null : id);
+          if (selectedLoteId != null && id != clientId) onLoteChanged(null);
+        },
+      ),
+    );
+
+    Widget lote() => LayoutBuilder(
+      builder: (context, constraints) => DropdownMenu<int>(
+        key: ValueKey('lote_filtro_${clientId}_$selectedLoteId'),
+        width: constraints.maxWidth,
+        initialSelection: selectedLoteId ?? -1,
+        enableFilter: true,
+        enableSearch: true,
+        requestFocusOnTap: true,
+        menuHeight: 240,
+        label: const Text('Lote'),
+        leadingIcon: const Icon(Icons.inventory_2_outlined, size: 19),
+        dropdownMenuEntries: [
+          const DropdownMenuEntry<int>(value: -1, label: 'Todos los lotes'),
+          ...visibleLotes.map(
+            (x) => DropdownMenuEntry<int>(value: x.id, label: x.label),
+          ),
+        ],
+        onSelected: (id) {
+          if (id != null) onLoteChanged(id == -1 ? null : id);
+        },
+      ),
+    );
+
+    Widget status() => LayoutBuilder(
+      builder: (context, constraints) => DropdownMenu<String>(
+        key: ValueKey('estado_filtro_${estadoController.text}'),
+        width: constraints.maxWidth,
+        initialSelection: estadoController.text,
+        enableFilter: true,
+        enableSearch: true,
+        requestFocusOnTap: true,
+        menuHeight: 245,
+        label: const Text('Estado'),
+        leadingIcon: const Icon(Icons.check_circle_outline_rounded, size: 19),
+        dropdownMenuEntries: _estados.entries
+            .map(
+              (entry) =>
+                  DropdownMenuEntry(value: entry.key, label: entry.value),
+            )
+            .toList(),
+        onSelected: (value) {
+          if (value == null) return;
+          estadoController.text = value;
+          onSearchChanged(value);
+        },
+      ),
+    );
+
+    Widget month() => LayoutBuilder(
+      builder: (context, constraints) => DropdownMenu<DateTime>(
+        key: ValueKey(
+          'mes_filtro_${selectedMonth.year}_${selectedMonth.month}',
+        ),
+        width: constraints.maxWidth,
+        initialSelection: selectedMonth,
+        enableFilter: true,
+        enableSearch: true,
+        requestFocusOnTap: true,
+        menuHeight: 245,
+        label: const Text('Mes'),
+        leadingIcon: const Icon(Icons.calendar_month_outlined, size: 19),
+        dropdownMenuEntries: months
+            .map((x) => DropdownMenuEntry(value: x, label: _formatMonth(x)))
+            .toList(),
+        onSelected: onMonthChanged,
+      ),
+    );
 
     return AppSurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -1169,123 +1296,104 @@ class _OrdenesFiltersCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              Container(
+                height: 49,
+                width: 49,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.factory_outlined,
+                  color: colors.primary,
+                  size: 25,
+                ),
+              ),
+              const Gap(AppSpacing.md),
               Expanded(
-                child: Text('Órdenes', style: theme.textTheme.titleMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Órdenes de producción',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Gestiona y visualiza el estado de las órdenes.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               AppButton.primary(
                 label: 'Nueva orden',
                 icon: Icons.add_rounded,
                 isLoading: state.isSubmittingAction,
-                onPressed: onCreate,
+                onPressed: state.isSubmittingAction ? null : onCreate,
                 expand: false,
               ),
             ],
           ),
           const Gap(AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                flex: 6,
-                child: TextField(
-                  controller: searchController,
-                  textInputAction: TextInputAction.search,
-                  onChanged: onSearchChanged,
-                  decoration: const InputDecoration(
-                    labelText: 'Buscar orden',
-                    hintText: 'Ej. OP-0001 o cliente',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
-                ),
-              ),
-              const Gap(AppSpacing.sm),
-              Expanded(
-                flex: 5,
-                child: DropdownButtonFormField<int?>(
-                  isExpanded: true,
-                  initialValue: state.selectedClienteId,
-                  decoration: const InputDecoration(labelText: 'Cliente'),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Todos los clientes'),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= 1050) {
+                return Row(
+                  children: [
+                    Expanded(flex: 6, child: search()),
+                    const Gap(AppSpacing.sm),
+                    Expanded(flex: 5, child: client()),
+                    const Gap(AppSpacing.sm),
+                    Expanded(flex: 5, child: lote()),
+                    const Gap(AppSpacing.sm),
+                    Expanded(flex: 4, child: status()),
+                    const Gap(AppSpacing.sm),
+                    Expanded(flex: 4, child: month()),
+                  ],
+                );
+              }
+              if (constraints.maxWidth >= 630) {
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(flex: 2, child: search()),
+                        const Gap(AppSpacing.sm),
+                        Expanded(child: client()),
+                      ],
                     ),
-                    ...state.clienteOptions.map(
-                      (option) => DropdownMenuItem<int?>(
-                        value: option.id,
-                        child: Text(
-                          option.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                    const Gap(AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(child: lote()),
+                        const Gap(AppSpacing.sm),
+                        Expanded(child: status()),
+                        const Gap(AppSpacing.sm),
+                        Expanded(child: month()),
+                      ],
                     ),
                   ],
-                  onChanged: onClienteChanged,
-                ),
-              ),
-              const Gap(AppSpacing.sm),
-              Expanded(
-                flex: 5,
-                child: DropdownButtonFormField<int?>(
-                  isExpanded: true,
-                  initialValue: state.selectedLoteId,
-                  decoration: const InputDecoration(labelText: 'Lote'),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Todos los lotes'),
-                    ),
-                    ...state.loteOptions.map(
-                      (option) => DropdownMenuItem<int?>(
-                        value: option.id,
-                        child: Text(
-                          option.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                  onChanged: onLoteChanged,
-                ),
-              ),
-              const Gap(AppSpacing.sm),
-              Expanded(
-                flex: 4,
-                child: TextField(
-                  controller: estadoController,
-                  onChanged: onSearchChanged,
-                  decoration: const InputDecoration(
-                    labelText: 'Estado',
-                    hintText: 'Ej. EN_PROCESO',
-                  ),
-                ),
-              ),
-              const Gap(AppSpacing.sm),
-              Expanded(
-                flex: 4,
-                child: DropdownButtonFormField<DateTime>(
-                  isExpanded: true,
-                  initialValue: selectedMonth,
-                  decoration: const InputDecoration(
-                    labelText: 'Mes',
-                    prefixIcon: Icon(Icons.calendar_month_outlined),
-                  ),
-                  items: List.generate(18, (index) {
-                    final now = DateTime.now();
-                    final month = DateTime(now.year, now.month - index);
-                    return DropdownMenuItem<DateTime>(
-                      value: month,
-                      child: Text(
-                        _formatMonth(month),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }),
-                  onChanged: onMonthChanged,
-                ),
-              ),
-            ],
+                );
+              }
+              return Column(
+                children: [
+                  search(),
+                  const Gap(AppSpacing.sm),
+                  client(),
+                  const Gap(AppSpacing.sm),
+                  lote(),
+                  const Gap(AppSpacing.sm),
+                  status(),
+                  const Gap(AppSpacing.sm),
+                  month(),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1624,6 +1732,10 @@ class _OrdenDetailPanel extends StatelessWidget {
   }
 }
 
+// ============================================================================
+// TABLERO KANBAN DE ÓRDENES - SOLO VISUALIZACIÓN, SIN DRAG & DROP
+// ============================================================================
+
 class _OrdersPipelineBoard extends StatelessWidget {
   const _OrdersPipelineBoard({
     required this.state,
@@ -1635,16 +1747,52 @@ class _OrdersPipelineBoard extends StatelessWidget {
   final VoidCallback onRetry;
   final ValueChanged<int> onSelectOrden;
 
-  static const _stages = <({String title, Set<String> states})>[
-    (title: 'Programadas', states: {'PROGRAMADA'}),
-    (
-      title: 'Preparación',
-      states: {'ESPERANDO_MATERIALES', 'LISTA_PARA_INICIAR'},
-    ),
-    (title: 'En proceso', states: {'EN_PROCESO'}),
-    (title: 'Finalizadas', states: {'FINALIZADA'}),
-    (title: 'Anuladas', states: {'ANULADA', 'CANCELADA'}),
-  ];
+  static const _stages =
+      <
+        ({
+          String title,
+          Set<String> states,
+          Color tone,
+          IconData icon,
+          String emptyText,
+        })
+      >[
+        (
+          title: 'Programadas',
+          states: {'PROGRAMADA'},
+          tone: Color(0xFFF05A14),
+          icon: Icons.event_note_outlined,
+          emptyText: 'Las órdenes programadas aparecerán aquí.',
+        ),
+        (
+          title: 'Preparación',
+          states: {'ESPERANDO_MATERIALES', 'LISTA_PARA_INICIAR'},
+          tone: Color(0xFF2479D6),
+          icon: Icons.settings_outlined,
+          emptyText: 'Las órdenes en preparación aparecerán aquí.',
+        ),
+        (
+          title: 'En proceso',
+          states: {'EN_PROCESO'},
+          tone: Color(0xFFF3A414),
+          icon: Icons.play_arrow_rounded,
+          emptyText: 'Las órdenes en proceso aparecerán aquí.',
+        ),
+        (
+          title: 'Finalizadas',
+          states: {'FINALIZADA'},
+          tone: Color(0xFF15A363),
+          icon: Icons.check_rounded,
+          emptyText: 'Las órdenes finalizadas aparecerán aquí.',
+        ),
+        (
+          title: 'Anuladas',
+          states: {'ANULADA', 'CANCELADA'},
+          tone: Color(0xFFE53945),
+          icon: Icons.close_rounded,
+          emptyText: 'Las órdenes anuladas aparecerán aquí.',
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -1657,7 +1805,7 @@ class _OrdersPipelineBoard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppMessageCard.error(
-              title: 'No pudimos cargar las ordenes',
+              title: 'No pudimos cargar las órdenes',
               message: state.errorMessage ?? 'Intenta nuevamente.',
             ),
             const Gap(AppSpacing.md),
@@ -1671,23 +1819,37 @@ class _OrdersPipelineBoard extends StatelessWidget {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final stage in _stages) ...[
-            _OrderPipelineColumn(
-              title: stage.title,
-              items: state.items
-                  .where((item) => stage.states.contains(item.estado))
-                  .toList(growable: false),
-              onSelectOrden: onSelectOrden,
-            ),
-            const Gap(AppSpacing.md),
-          ],
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 12.0;
+        // Reparte toda la anchura cuando hay espacio; en pantallas angostas,
+        // permite desplazamiento horizontal en lugar de aplastar las tarjetas.
+        final colWidth = ((constraints.maxWidth - 4 * gap) / 5)
+            .clamp(245.0, 500.0)
+            .toDouble();
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < _stages.length; i++) ...[
+                _OrderPipelineColumn(
+                  title: _stages[i].title,
+                  tone: _stages[i].tone,
+                  icon: _stages[i].icon,
+                  emptyText: _stages[i].emptyText,
+                  width: colWidth,
+                  items: state.items
+                      .where((item) => _stages[i].states.contains(item.estado))
+                      .toList(growable: false),
+                  onSelectOrden: onSelectOrden,
+                ),
+                if (i != _stages.length - 1) const SizedBox(width: gap),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1695,69 +1857,130 @@ class _OrdersPipelineBoard extends StatelessWidget {
 class _OrderPipelineColumn extends StatelessWidget {
   const _OrderPipelineColumn({
     required this.title,
+    required this.tone,
+    required this.icon,
+    required this.emptyText,
+    required this.width,
     required this.items,
     required this.onSelectOrden,
   });
 
   final String title;
+  final Color tone;
+  final IconData icon;
+  final String emptyText;
+  final double width;
   final List<OrdenProduccionRecord> items;
   final ValueChanged<int> onSelectOrden;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Container(
-      width: 240,
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      width: width,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: Color.alphaBlend(tone.withValues(alpha: 0.025), colors.surface),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: colors.outlineVariant),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  shape: BoxShape.circle,
+          Container(height: 5, color: tone.withValues(alpha: 0.32)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(
+                tone.withValues(alpha: 0.09),
+                colors.surface,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: tone,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const Gap(AppSpacing.sm),
-              Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
-              _MiniPill(
-                label: '${items.length}',
-                background: theme.colorScheme.surfaceContainerHighest,
-                foreground: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
+                const Gap(AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tone.withValues(alpha: 0.11),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${items.length}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: tone,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Gap(AppSpacing.sm),
           Expanded(
             child: items.isEmpty
                 ? Center(
-                    child: Text(
-                      'Sin ordenes',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: tone.withValues(alpha: 0.10),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, color: tone, size: 29),
+                          ),
+                          const Gap(AppSpacing.md),
+                          Text(
+                            'Sin órdenes',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Gap(AppSpacing.xs),
+                          Text(
+                            emptyText,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )
                 : ListView.separated(
+                    padding: const EdgeInsets.all(10),
                     itemCount: items.length,
-                    separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return _OrdenListTileCard(
-                        item: item,
-                        isSelected: false,
-                        onTap: () => onSelectOrden(item.id),
-                      );
-                    },
+                    separatorBuilder: (_, __) => const Gap(AppSpacing.sm),
+                    itemBuilder: (context, index) => _OrdenListTileCard(
+                      item: items[index],
+                      isSelected: false,
+                      tone: tone,
+                      onTap: () => onSelectOrden(items[index].id),
+                    ),
                   ),
           ),
         ],
@@ -1771,63 +1994,126 @@ class _OrdenListTileCard extends StatelessWidget {
     required this.item,
     required this.isSelected,
     required this.onTap,
+    this.tone,
   });
 
   final OrdenProduccionRecord item;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color? tone;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    final colors = theme.colorScheme;
+    final accent = tone ?? colors.primary;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(13),
         onTap: onTap,
         child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.68)
-                : theme.colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(14),
+            color: isSelected ? accent.withValues(alpha: 0.08) : colors.surface,
+            borderRadius: BorderRadius.circular(13),
             border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.42)
-                  : theme.colorScheme.outlineVariant,
+              color: isSelected ? accent : colors.outlineVariant,
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.sm,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              Row(
                 children: [
-                  Text(item.codigo, style: theme.textTheme.titleSmall),
-                  _MiniPill(
-                    label: _humanizeStatus(item.estado),
-                    background: theme.colorScheme.primaryContainer,
-                    foreground: theme.colorScheme.onPrimaryContainer,
+                  Expanded(
+                    child: Text(
+                      item.codigo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const Gap(5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _humanizeStatus(item.estado),
+                      maxLines: 1,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, size: 16),
+                ],
+              ),
+              const Gap(9),
+              Text(
+                item.clienteRazonSocial,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Gap(3),
+              Text(
+                item.loteCodigo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const Gap(11),
+              Row(
+                children: [
+                  Icon(
+                    Icons.account_tree_outlined,
+                    size: 15,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  const Gap(5),
+                  Text(
+                    '${item.procesosFinalizados}/${item.procesosTotales} procesos',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
-              const Gap(AppSpacing.sm),
-              Text(
-                '${item.clienteRazonSocial} · ${item.loteCodigo}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const Gap(AppSpacing.sm),
-              Text(
-                '${item.procesosFinalizados}/${item.procesosTotales} procesos · fin ${_formatDate(item.fechaFinEstimada)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              const Gap(5),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  const Gap(5),
+                  Expanded(
+                    child: Text(
+                      'Fin: ${_formatDate(item.fechaFinEstimada)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

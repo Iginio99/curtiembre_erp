@@ -1,13 +1,7 @@
-import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/inputs/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gap/gap.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,11 +12,39 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _userNameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  // =========================================================
+  // CONTROLADORES Y ESTADO
+  // =========================================================
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _userNameController = TextEditingController();
+
+  final TextEditingController _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
+
   late final Future<String> _appVersionFuture;
+
+  // =========================================================
+  // PALETA DE COLORES
+  // =========================================================
+
+  static const Color _primary = Color(0xFFE8590C);
+  static const Color _copper = Color(0xFFC47740);
+
+  static const Color _background = Color(0xFF17191C);
+  static const Color _cardBackground = Color(0xF21C1F23);
+  static const Color _fieldBackground = Color(0xFF24272C);
+
+  static const Color _white = Color(0xFFFFFFFF);
+  static const Color _muted = Color(0xFFAEB0B7);
+
+  static const Color _softOrange = Color(0xFFFFA36A);
+
+  // =========================================================
+  // CICLO DE VIDA
+  // =========================================================
 
   @override
   void initState() {
@@ -37,43 +59,64 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // =========================================================
+  // VERSION DEL SISTEMA
+  // =========================================================
+
   Future<String> _loadAppVersion() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      return 'Version ${packageInfo.version}+${packageInfo.buildNumber}';
+
+      return 'Versión ${packageInfo.version}+${packageInfo.buildNumber}';
     } catch (_) {
-      return 'Version no disponible';
+      return 'Versión no disponible';
     }
   }
 
+  // =========================================================
+  // AUTENTICACION
+  // =========================================================
+
   void _submit() {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) {
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    context.read<AuthCubit>().signIn(
+    final authCubit = context.read<AuthCubit>();
+
+    if (authCubit.state.status == AuthStatus.authenticating) {
+      return;
+    }
+
+    authCubit.signIn(
       userName: _userNameController.text.trim(),
       password: _passwordController.text,
     );
   }
 
+  // =========================================================
+  // VISTA PRINCIPAL
+  // =========================================================
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocConsumer<AuthCubit, AuthState>(
       listenWhen: (previous, current) =>
           previous.noticeMessage != current.noticeMessage &&
           current.noticeMessage != null,
       listener: (context, state) {
         final noticeMessage = state.noticeMessage;
+
         if (noticeMessage == null) {
           return;
         }
 
         final messenger = ScaffoldMessenger.of(context);
+
         messenger.hideCurrentSnackBar();
+
         messenger.showSnackBar(
           SnackBar(
             content: Text(noticeMessage),
@@ -87,534 +130,832 @@ class _LoginPageState extends State<LoginPage> {
         final isSubmitting = state.status == AuthStatus.authenticating;
 
         return Scaffold(
-          body: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.surfaceContainerLowest,
-                  theme.scaffoldBackgroundColor,
-                  theme.colorScheme.primary.withValues(alpha: 0.08),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide =
-                      constraints.maxWidth >= AppBreakpoints.mobileLarge;
-                  final isDesktop =
-                      constraints.maxWidth >= AppBreakpoints.tablet;
-
-                  if (isDesktop) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Expanded(
-                          flex: 5,
-                          child: _LoginBrandPanel(fullBleed: true),
+          backgroundColor: _background,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              // =============================================
+              // IMAGEN INDUSTRIAL DE FONDO
+              // =============================================
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/curtiembre_login_bg.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fondo alternativo mientras se añade
+                    // la fotografía a los assets.
+                    return const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF3C281C),
+                            Color(0xFF26211F),
+                            Color(0xFF17191C),
+                          ],
                         ),
-                        Expanded(
-                          flex: 7,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerLowest,
-                            ),
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 420,
-                                ),
-                                child: _LoginFormCard(
-                                  formKey: _formKey,
-                                  userNameController: _userNameController,
-                                  passwordController: _passwordController,
-                                  obscurePassword: _obscurePassword,
-                                  errorMessage: state.errorMessage,
-                                  isSubmitting: isSubmitting,
-                                  appVersionFuture: _appVersionFuture,
-                                  onTogglePassword: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                  onSubmit: _submit,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1160),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isWide ? AppSpacing.xl : AppSpacing.lg,
-                          vertical: AppSpacing.lg,
-                        ),
-                        child: isWide
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    flex: 8,
-                                    child: const _LoginBrandPanel(),
-                                  ),
-                                  const Gap(AppSpacing.xl),
-                                  Expanded(
-                                    flex: 12,
-                                    child: Center(
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 420,
-                                        ),
-                                        child: _LoginFormCard(
-                                          formKey: _formKey,
-                                          userNameController:
-                                              _userNameController,
-                                          passwordController:
-                                              _passwordController,
-                                          obscurePassword: _obscurePassword,
-                                          errorMessage: state.errorMessage,
-                                          isSubmitting: isSubmitting,
-                                          appVersionFuture: _appVersionFuture,
-                                          onTogglePassword: () {
-                                            setState(() {
-                                              _obscurePassword =
-                                                  !_obscurePassword;
-                                            });
-                                          },
-                                          onSubmit: _submit,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : SingleChildScrollView(
-                                child: Column(
-                                  children: [
-                                    const _CompactHeader(),
-                                    const Gap(AppSpacing.xl),
-                                    _LoginFormCard(
-                                      formKey: _formKey,
-                                      userNameController: _userNameController,
-                                      passwordController: _passwordController,
-                                      obscurePassword: _obscurePassword,
-                                      errorMessage: state.errorMessage,
-                                      isSubmitting: isSubmitting,
-                                      appVersionFuture: _appVersionFuture,
-                                      onTogglePassword: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
-                                      onSubmit: _submit,
-                                    ),
-                                  ],
-                                ),
-                              ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
+
+              // =============================================
+              // DEGRADADO OSCURO SOBRE LA FOTOGRAFIA
+              // =============================================
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: [0.0, 0.42, 0.72, 1.0],
+                      colors: [
+                        Color(0xA6110E0C),
+                        Color(0xA61A1613),
+                        Color(0xD9181A1D),
+                        Color(0xF2181A1D),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // =============================================
+              // CONTENIDO RESPONSIVE
+              // =============================================
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= 1050;
+
+                    if (isDesktop) {
+                      return _buildDesktop(
+                        state: state,
+                        isSubmitting: isSubmitting,
+                      );
+                    }
+
+                    return _buildCompact(
+                      state: state,
+                      isSubmitting: isSubmitting,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
-}
 
-class _LoginBrandPanel extends StatelessWidget {
-  const _LoginBrandPanel({this.fullBleed = false});
+  // =========================================================
+  // DISTRIBUCION PARA ESCRITORIO
+  // =========================================================
 
-  final bool fullBleed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      constraints: fullBleed ? null : const BoxConstraints(minHeight: 560),
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
-        borderRadius: BorderRadius.circular(fullBleed ? 0 : 14),
-      ),
+  Widget _buildDesktop({required AuthState state, required bool isSubmitting}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 65, vertical: 38),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              'ERP Curtiembre · Seguridad',
-              style: theme.textTheme.labelLarge?.copyWith(color: Colors.white),
+          // Logo superior.
+          _buildBrandHeader(),
+
+          // Contenido central.
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // =========================================
+                // PANEL IZQUIERDO
+                // =========================================
+                Expanded(flex: 11, child: _buildHeroSection()),
+
+                const SizedBox(width: 55),
+
+                // =========================================
+                // PANEL DERECHO - FORMULARIO
+                // =========================================
+                Expanded(
+                  flex: 9,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 505),
+                      child: SingleChildScrollView(
+                        child: _buildLoginCard(
+                          state: state,
+                          isSubmitting: isSubmitting,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const Gap(AppSpacing.xxl),
-          Text(
-            'Controla el acceso con una entrada clara, segura y lista para operar.',
-            style: theme.textTheme.displaySmall?.copyWith(
-              color: Colors.white,
-              height: 1.15,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          Text(
-            'Ingresa con tu usuario autorizado para continuar con las operaciones del sistema.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.88),
-              height: 1.5,
-            ),
-          ),
-          const Gap(AppSpacing.xl),
-          Column(
+
+          // Pie de página.
+          _buildFooter(),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // DISTRIBUCION TABLET Y MOVIL
+  // =========================================================
+
+  Widget _buildCompact({required AuthState state, required bool isSubmitting}) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 27),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 510),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              _InsightChip(
-                label: 'Acceso seguro',
-                description: 'Autenticación encriptada para todo el personal.',
-                icon: Icons.fingerprint_rounded,
-              ),
-              Gap(AppSpacing.lg),
-              _InsightChip(
-                label: 'Auditoría completa',
-                description:
-                    'Registro detallado de transacciones y modificaciones.',
-                icon: Icons.history_edu_outlined,
-              ),
-              Gap(AppSpacing.lg),
-              _InsightChip(
-                label: 'Roles estrictos',
-                description:
-                    'Control de acceso basado en responsabilidades operativas.',
-                icon: Icons.admin_panel_settings_outlined,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+            children: [
+              _buildBrandHeader(compact: true),
 
-class _CompactHeader extends StatelessWidget {
-  const _CompactHeader();
+              const SizedBox(height: 45),
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.factory_outlined,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const Gap(AppSpacing.sm),
-          Text(
-            'ERP Curtiembre',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const Gap(AppSpacing.sm),
-          Text(
-            'CITEccal Trujillo',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const Gap(AppSpacing.xs),
-          Text(
-            'Acceso seguro para operar el sistema.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoginFormCard extends StatelessWidget {
-  const _LoginFormCard({
-    required this.formKey,
-    required this.userNameController,
-    required this.passwordController,
-    required this.obscurePassword,
-    required this.errorMessage,
-    required this.isSubmitting,
-    required this.appVersionFuture,
-    required this.onTogglePassword,
-    required this.onSubmit,
-  });
-
-  final GlobalKey<FormState> formKey;
-  final TextEditingController userNameController;
-  final TextEditingController passwordController;
-  final bool obscurePassword;
-  final String? errorMessage;
-  final bool isSubmitting;
-  final Future<String> appVersionFuture;
-  final VoidCallback onTogglePassword;
-  final VoidCallback onSubmit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
-          child: AutofillGroup(
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Iniciar sesion', style: theme.textTheme.headlineSmall),
-                  const Gap(AppSpacing.sm),
-                  Text(
-                    'Ingresa tus credenciales para acceder al sistema.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (errorMessage != null) ...[
-                    const Gap(AppSpacing.xl),
-                    AppMessageCard.error(
-                      title: 'No pudimos acceder',
-                      message: errorMessage!,
-                    ),
-                  ],
-                  const Gap(AppSpacing.xl),
-                  AppTextField(
-                    controller: userNameController,
-                    label: 'Usuario',
-                    hintText: 'Ej. admin.seguridad',
-                    prefixIcon: Icons.person_outline,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.username],
-                    validator: (value) {
-                      final text = value?.trim() ?? '';
-                      if (text.isEmpty) {
-                        return 'Ingresa tu usuario para continuar.';
-                      }
-
-                      if (text.length < 3) {
-                        return 'Ingresa un usuario valido.';
-                      }
-
-                      return null;
-                    },
-                  ),
-                  const Gap(AppSpacing.lg),
-                  AppTextField(
-                    controller: passwordController,
-                    label: 'Contrasena',
-                    hintText: 'Minimo 8 caracteres',
-                    prefixIcon: Icons.lock_outline,
-                    obscureText: obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    autofillHints: const [AutofillHints.password],
-                    onSubmitted: (_) => onSubmit(),
-                    suffixIcon: IconButton(
-                      tooltip: obscurePassword
-                          ? 'Mostrar contrasena'
-                          : 'Ocultar contrasena',
-                      onPressed: onTogglePassword,
-                      icon: Icon(
-                        obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                    ),
-                    validator: (value) {
-                      final text = value ?? '';
-                      if (text.isEmpty) {
-                        return 'Ingresa tu contrasena para continuar.';
-                      }
-
-                      if (text.length < 8) {
-                        return 'La contrasena debe tener al menos 8 caracteres.';
-                      }
-
-                      return null;
-                    },
-                  ),
-                  const Gap(AppSpacing.xs),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        'Mínimo 8 caracteres',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(AppSpacing.xl),
-                  AppButton.primary(
-                    label: 'Ingresar al sistema',
-                    isLoading: isSubmitting,
-                    onPressed: onSubmit,
-                    icon: Icons.login_rounded,
-                  ),
-                  const Gap(AppSpacing.md),
-                  Text(
-                    'Si no recuerdas tus datos de acceso, solicita apoyo al administrador del sistema.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const Gap(AppSpacing.lg),
-                  FutureBuilder<String>(
-                    future: appVersionFuture,
-                    builder: (context, snapshot) {
-                      final versionText =
-                          snapshot.data ?? 'Cargando version...';
-                      return Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          versionText,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (isSubmitting)
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha: 0.74),
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(
-                        theme.colorScheme.primary,
-                      ),
-                    ),
-                    const Gap(AppSpacing.md),
-                    Text(
-                      'Validando credenciales...',
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ],
+              const Text(
+                'Gestión inteligente\npara tu curtiembre.',
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.2,
                 ),
               ),
+
+              const SizedBox(height: 14),
+
+              const Text(
+                'Producción, inventario, calidad y trazabilidad '
+                'en un solo sistema.',
+                style: TextStyle(
+                  color: Color(0xFFD0CBC7),
+                  fontSize: 14,
+                  height: 1.6,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              _buildLoginCard(state: state, isSubmitting: isSubmitting),
+
+              const SizedBox(height: 38),
+
+              _buildFooter(compact: true),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // LOGO / IDENTIDAD DEL ERP
+  // =========================================================
+
+  Widget _buildBrandHeader({bool compact = false}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          height: compact ? 43 : 55,
+          width: compact ? 43 : 55,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: _primary.withValues(alpha: 0.13),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(
+              color: _copper.withValues(alpha: 0.7),
+              width: 1.5,
             ),
           ),
+          child: Icon(
+            Icons.workspace_premium_outlined,
+            color: _softOrange,
+            size: compact ? 26 : 33,
+          ),
+        ),
+
+        const SizedBox(width: 15),
+
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'CITEccal Trujillo ERP',
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                fontSize: compact ? 19 : 25,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+
+            const SizedBox(height: 5),
+
+            Text(
+              'GESTIÓN DE CURTIEMBRE',
+              style: TextStyle(
+                color: const Color(0xFFD9AA87),
+                fontSize: compact ? 9 : 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2.1,
+              ),
+            ),
+          ],
+        ),
+
+        if (!compact) ...[
+          const SizedBox(width: 26),
+
+          Container(
+            height: 42,
+            width: 1,
+            color: Colors.white.withValues(alpha: 0.35),
+          ),
+
+          const SizedBox(width: 24),
+
+          const Text(
+            'PRODUCCIÓN · INVENTARIO\n'
+            'CALIDAD · TRAZABILIDAD',
+            style: TextStyle(
+              fontSize: 10,
+              color: Color(0xFFDDD3CA),
+              letterSpacing: 1.7,
+              height: 1.7,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ],
     );
   }
-}
 
-class _InsightChip extends StatelessWidget {
-  const _InsightChip({
-    required this.label,
-    required this.description,
-    required this.icon,
-  });
+  // =========================================================
+  // PANEL IZQUIERDO: PRESENTACION
+  // =========================================================
 
-  final String label;
-  final String description;
-  final IconData icon;
+  Widget _buildHeroSection() {
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 740),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Controla tu curtiembre',
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                color: Colors.white,
+                fontSize: 48,
+                height: 1.14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -1.2,
+              ),
+            ),
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+            const Text(
+              'con visión de futuro',
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                color: _softOrange,
+                fontSize: 48,
+                height: 1.17,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -1.2,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Una entrada segura al sistema para gestionar '
+              'todas las operaciones de tu curtiembre.',
+              style: TextStyle(
+                color: Color(0xFFE0DBD6),
+                fontSize: 18,
+                height: 1.6,
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            _buildFeatureItem(
+              icon: Icons.shield_outlined,
+              title: 'Acceso seguro',
+              description: 'Autenticación protegida para todo el personal.',
+            ),
+
+            const SizedBox(height: 24),
+
+            _buildFeatureItem(
+              icon: Icons.receipt_long_outlined,
+              title: 'Auditoría completa',
+              description:
+                  'Registro detallado de transacciones y modificaciones.',
+            ),
+
+            const SizedBox(height: 24),
+
+            _buildFeatureItem(
+              icon: Icons.groups_2_outlined,
+              title: 'Roles y permisos',
+              description:
+                  'Control de acceso basado en responsabilidades operativas.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // ELEMENTOS INFORMATIVOS
+  // =========================================================
+
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          height: 48,
+          width: 48,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
+            color: _primary.withValues(alpha: 0.19),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: _copper.withValues(alpha: 0.2)),
           ),
-          child: Icon(icon, color: Colors.white, size: 19),
+          child: Icon(icon, color: _softOrange, size: 24),
         ),
-        const SizedBox(width: AppSpacing.md),
+
+        const SizedBox(width: 17),
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label,
-                style: theme.textTheme.titleSmall?.copyWith(
+                title,
+                style: const TextStyle(
                   color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+
+              const SizedBox(height: 4),
+
               Text(
                 description,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.78),
+                style: const TextStyle(
+                  color: Color(0xFFC8C2BD),
+                  fontSize: 13,
+                  height: 1.4,
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // TARJETA PRINCIPAL DE LOGIN
+  // =========================================================
+
+  Widget _buildLoginCard({
+    required AuthState state,
+    required bool isSubmitting,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 37),
+      decoration: BoxDecoration(
+        color: _cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.24),
+            blurRadius: 38,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // =========================================
+              // ENCABEZADO DEL LOGIN
+              // =========================================
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Iniciar sesión',
+                          style: TextStyle(
+                            fontFamily: 'Georgia',
+                            color: _white,
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        SizedBox(height: 10),
+
+                        Text(
+                          'Accede al sistema de gestión de curtiembre.',
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Icon(
+                    Icons.workspace_premium_outlined,
+                    color: Color(0x665C371F),
+                    size: 42,
+                  ),
+                ],
+              ),
+
+              // =========================================
+              // MENSAJE DE ERROR
+              // =========================================
+              if (state.errorMessage != null) ...[
+                const SizedBox(height: 23),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF592B2B),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF9F4B4B)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: Color(0xFFFFB4AB),
+                        size: 20,
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: Text(
+                          state.errorMessage!,
+                          style: const TextStyle(
+                            color: Color(0xFFFFD4CE),
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 30),
+
+              // =========================================
+              // USUARIO
+              // =========================================
+              _buildInput(
+                controller: _userNameController,
+                hint: 'Usuario',
+                icon: Icons.person_outline_rounded,
+                action: TextInputAction.next,
+                autofillHints: const [AutofillHints.username],
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+
+                  if (text.isEmpty) {
+                    return 'Ingresa tu usuario para continuar.';
+                  }
+
+                  if (text.length < 3) {
+                    return 'Ingresa un usuario válido.';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 17),
+
+              // =========================================
+              // CONTRASEÑA
+              // =========================================
+              _buildInput(
+                controller: _passwordController,
+                hint: 'Contraseña',
+                icon: Icons.lock_outline_rounded,
+                obscure: _obscurePassword,
+                action: TextInputAction.done,
+                autofillHints: const [AutofillHints.password],
+                onSubmitted: (_) => _submit(),
+                suffix: IconButton(
+                  tooltip: _obscurePassword
+                      ? 'Mostrar contraseña'
+                      : 'Ocultar contraseña',
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 19,
+                    color: _muted,
+                  ),
+                ),
+                validator: (value) {
+                  final text = value ?? '';
+
+                  if (text.isEmpty) {
+                    return 'Ingresa tu contraseña.';
+                  }
+
+                  if (text.length < 8) {
+                    return 'La contraseña debe tener al menos 8 caracteres.';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 9),
+
+              // =========================================
+              // INDICACION DE CONTRASEÑA
+              // =========================================
+              const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 14, color: _muted),
+
+                  SizedBox(width: 6),
+
+                  Text(
+                    'Mínimo 8 caracteres',
+                    style: TextStyle(fontSize: 11, color: _muted),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 31),
+
+              // =========================================
+              // BOTON INGRESAR
+              // =========================================
+              SizedBox(
+                width: double.infinity,
+                height: 49,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0xFFE78A43), Color(0xFFB85D28)],
+                    ),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: isSubmitting ? null : _submit,
+                    icon: isSubmitting
+                        ? const SizedBox(
+                            height: 17,
+                            width: 17,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.login_rounded, size: 19),
+                    label: Text(
+                      isSubmitting
+                          ? 'Validando credenciales...'
+                          : 'Ingresar al sistema',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      disabledBackgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white70,
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              Divider(height: 1, color: Colors.white.withValues(alpha: 0.13)),
+
+              const SizedBox(height: 20),
+
+              // =========================================
+              // TEXTO DE SOPORTE
+              // =========================================
+              const SizedBox(
+                width: double.infinity,
+                child: Text(
+                  'Si no recuerdas tus datos de acceso, '
+                  'solicita apoyo al administrador del sistema.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11.5, color: _muted, height: 1.5),
+                ),
+              ),
+
+              const SizedBox(height: 29),
+
+              Divider(height: 1, color: Colors.white.withValues(alpha: 0.13)),
+
+              const SizedBox(height: 19),
+
+              // =========================================
+              // VERSION DEL ERP
+              // =========================================
+              FutureBuilder<String>(
+                future: _appVersionFuture,
+                builder: (context, snapshot) {
+                  final version = snapshot.data ?? 'Cargando versión...';
+
+                  return Center(
+                    child: Text(
+                      version,
+                      style: const TextStyle(
+                        color: Color(0xFF93969C),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // CAMPO PERSONALIZADO
+  // =========================================================
+
+  Widget _buildInput({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputAction? action,
+    Iterable<String>? autofillHints,
+    bool obscure = false,
+    Widget? suffix,
+    String? Function(String?)? validator,
+    ValueChanged<String>? onSubmitted,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      textInputAction: action,
+      autofillHints: autofillHints,
+      onFieldSubmitted: onSubmitted,
+      validator: validator,
+      cursorColor: _softOrange,
+      style: const TextStyle(color: _white, fontSize: 13),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFF93969F), fontSize: 12),
+        prefixIcon: Icon(icon, color: _muted, size: 19),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: _fieldBackground,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 17,
+        ),
+        errorStyle: const TextStyle(color: Color(0xFFFFA69C), fontSize: 11),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9),
+          borderSide: const BorderSide(color: Color(0xFF41454B)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9),
+          borderSide: const BorderSide(color: Color(0xFF41454B)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9),
+          borderSide: const BorderSide(color: _primary, width: 1.4),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9),
+          borderSide: const BorderSide(color: Color(0xFFD96C62)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(9),
+          borderSide: const BorderSide(color: Color(0xFFD96C62), width: 1.4),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // PIE DE PAGINA
+  // =========================================================
+
+  Widget _buildFooter({bool compact = false}) {
+    if (compact) {
+      return const Center(
+        child: Text(
+          'MATERIA PRIMA  ·  PROCESOS  ·  CALIDAD\n'
+          'CITEccal TRUJILLO ERP',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 9,
+            letterSpacing: 1.4,
+            height: 2,
+            color: Color(0xFFCEB4A0),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Container(width: 43, height: 1.5, color: _copper),
+
+        const SizedBox(width: 16),
+
+        const Text(
+          'MATERIA PRIMA   |   PROCESOS   |   '
+          'CALIDAD   |   PRODUCTO FINAL',
+          style: TextStyle(
+            color: Color(0xFFCEBDB0),
+            fontSize: 9,
+            letterSpacing: 1.8,
+          ),
+        ),
+
+        const SizedBox(width: 25),
+
+        Expanded(
+          child: Container(height: 1, color: _copper.withValues(alpha: 0.55)),
+        ),
+
+        const SizedBox(width: 23),
+
+        const Text(
+          'TRADICIÓN QUE PRODUCE VALOR',
+          style: TextStyle(
+            color: _softOrange,
+            fontSize: 9,
+            letterSpacing: 2.1,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

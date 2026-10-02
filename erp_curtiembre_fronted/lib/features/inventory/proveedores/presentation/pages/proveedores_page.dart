@@ -1,7 +1,8 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/proveedores/domain/entities/proveedor_record.dart';
@@ -10,15 +11,31 @@ import 'package:erp_curtiembre_fronted/features/inventory/proveedores/presentati
 import 'package:erp_curtiembre_fronted/features/inventory/proveedores/presentation/widgets/proveedor_upsert_dialog.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+
+// =============================================================
+// COLORES DEL MODULO
+// =============================================================
+
+const Color _orange = Color(0xFFE8590C);
+const Color _orangeSoft = Color(0xFFFFE8DA);
+
+const Color _brown = Color(0xFF362016);
+const Color _brownMedium = Color(0xFF71371E);
+const Color _brownLight = Color(0xFFA4512B);
+
+const Color _greenSoft = Color(0xFFE0F5E7);
+
+const Color _graySoft = Color(0xFFEEEEF0);
+
+// =============================================================
+// PAGINA PRINCIPAL
+// =============================================================
 
 class ProveedoresPage extends StatefulWidget {
   const ProveedoresPage({super.key});
@@ -28,36 +45,85 @@ class ProveedoresPage extends StatefulWidget {
 }
 
 class _ProveedoresPageState extends State<ProveedoresPage> {
-  final _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+
   final Talker _talker = getIt<Talker>();
+
+  Timer? _debounce;
+
+  int _page = 0;
+  int _pageSize = 10;
 
   @override
   void initState() {
     super.initState();
+
     _talker.ui('Se abrio la pantalla de proveedores.');
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
+
     super.dispose();
   }
 
+  // ===========================================================
+  // BUSQUEDA INCREMENTAL
+  // ===========================================================
+
+  void _searchAsYouType(String value) {
+    _debounce?.cancel();
+
+    setState(() {
+      _page = 0;
+    });
+
+    _debounce = Timer(const Duration(milliseconds: 380), () {
+      if (!mounted) return;
+
+      final searchTerm = value.trim();
+
+      final cubit = context.read<ProveedoresCubit>();
+
+      if (searchTerm == cubit.state.searchTerm) {
+        return;
+      }
+
+      _talker.ui(
+        'Busqueda de proveedores: ${searchTerm.length} caracteres.',
+        logLevel: LogLevel.debug,
+      );
+
+      cubit.load(searchTerm: searchTerm);
+    });
+  }
+
   void _applySearch() {
-    FocusScope.of(context).unfocus();
-    _talker.ui(
-      'Se aplico la busqueda de proveedores con texto=${_describeText(_searchController.text)}.',
-    );
+    _debounce?.cancel();
+
+    if (!mounted) return;
+
+    setState(() {
+      _page = 0;
+    });
+
     context.read<ProveedoresCubit>().load(
       searchTerm: _searchController.text.trim(),
     );
   }
 
+  // ===========================================================
+  // SELECCIONAR PROVEEDOR
+  // ===========================================================
+
   void _selectProveedor(int proveedorId, {required bool openMobileDetail}) {
     _talker.ui(
-      'Se selecciono el proveedor $proveedorId desde el listado.',
+      'Se selecciono el proveedor $proveedorId.',
       logLevel: LogLevel.debug,
     );
+
     context.read<ProveedoresCubit>().selectProveedor(proveedorId);
 
     if (!openMobileDetail) return;
@@ -66,28 +132,44 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => BlocProvider.value(
-        value: context.read<ProveedoresCubit>(),
-        child: _MobileProveedorDetailSheet(
-          onEdit: () {
-            final state = context.read<ProveedoresCubit>().state;
-            final proveedor = state.selectedProveedor;
-            if (proveedor != null) _openEditDialog(state, proveedor);
-          },
-          onToggleState: () {
-            final proveedor = context
-                .read<ProveedoresCubit>()
-                .state
-                .selectedProveedor;
-            if (proveedor != null) _toggleState(proveedor);
-          },
-        ),
-      ),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (_) {
+        return BlocProvider.value(
+          value: context.read<ProveedoresCubit>(),
+          child: _MobileProveedorDetailSheet(
+            onEdit: () {
+              final state = context.read<ProveedoresCubit>().state;
+
+              final proveedor = state.selectedProveedor;
+
+              if (proveedor != null) {
+                Navigator.of(context).pop();
+                _openEditDialog(state, proveedor);
+              }
+            },
+            onToggleState: () {
+              final proveedor = context
+                  .read<ProveedoresCubit>()
+                  .state
+                  .selectedProveedor;
+
+              if (proveedor != null) {
+                _toggleState(proveedor);
+              }
+            },
+          ),
+        );
+      },
     );
   }
 
+  // ===========================================================
+  // NUEVO PROVEEDOR
+  // ===========================================================
+
   Future<void> _openCreateDialog(ProveedoresState state) async {
-    _talker.ui('Se abrio el dialogo para crear un proveedor.');
+    _talker.ui('Se abrio el formulario para crear un proveedor.');
+
     final payload = await showDialog<ProveedorUpsertFormData>(
       context: context,
       builder: (_) => ProveedorUpsertDialog(
@@ -108,17 +190,24 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
       contacto: payload.contacto,
     );
 
-    if (mounted) _showActionResult(result);
+    if (!mounted) return;
+
+    _showActionResult(result);
   }
+
+  // ===========================================================
+  // EDITAR PROVEEDOR
+  // ===========================================================
 
   Future<void> _openEditDialog(
     ProveedoresState state,
     ProveedorRecord proveedor,
   ) async {
     _talker.ui(
-      'Se abrio el dialogo para editar el proveedor ${proveedor.id}.',
+      'Se abrio la edicion del proveedor ${proveedor.id}.',
       logLevel: LogLevel.warning,
     );
+
     final payload = await showDialog<ProveedorUpsertFormData>(
       context: context,
       builder: (_) => ProveedorUpsertDialog(
@@ -142,24 +231,43 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
           contacto: payload.contacto,
         );
 
-    if (mounted) _showActionResult(result);
+    if (!mounted) return;
+
+    _showActionResult(result);
   }
 
+  // ===========================================================
+  // ACTIVAR / INACTIVAR PROVEEDOR
+  // ===========================================================
+
   Future<void> _toggleState(ProveedorRecord proveedor) async {
+    if (context.read<ProveedoresCubit>().state.isSubmittingAction) {
+      return;
+    }
+
     _talker.ui(
-      'Se solicito ${proveedor.activo ? 'inactivar' : 'activar'} el proveedor ${proveedor.id}.',
+      'Se solicito el cambio de estado del proveedor ${proveedor.id}.',
       logLevel: LogLevel.warning,
     );
+
     final result = await context
         .read<ProveedoresCubit>()
         .setSelectedProveedorActive(!proveedor.activo);
 
-    if (mounted) _showActionResult(result);
+    if (!mounted) return;
+
+    _showActionResult(result);
   }
+
+  // ===========================================================
+  // RESULTADO DE LAS OPERACIONES
+  // ===========================================================
 
   void _showActionResult(ProveedoresActionResult result) {
     final messenger = ScaffoldMessenger.of(context);
+
     messenger.hideCurrentSnackBar();
+
     messenger.showSnackBar(
       SnackBar(
         content: Text(result.message),
@@ -169,12 +277,18 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
     );
   }
 
+  // ===========================================================
+  // CONSTRUCCION DE LA PANTALLA
+  // ===========================================================
+
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
-    final isSigningOut = context.select(
+
+    final signingOut = context.select(
       (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
     );
+
     final permissionCodes = context.select(
       (SecurityAccessCubit cubit) =>
           cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
@@ -191,434 +305,824 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
       userName: session.nombreCompleto,
       roleName: session.rolNombre,
       accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
-      onSignOut: isSigningOut
-          ? () {}
-          : () => context.read<AuthCubit>().signOut(),
-      child: LayoutBuilder(
-        builder: (context, constraints) => Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1440),
-              child: BlocBuilder<ProveedoresCubit, ProveedoresState>(
-                builder: (context, state) {
-                  final isWide = constraints.maxWidth >= 1040;
-                  final isMobile =
-                      constraints.maxWidth < AppBreakpoints.mobileLarge;
-                  final compactHeight = constraints.maxHeight < 860;
+      onSignOut: signingOut ? () {} : () => context.read<AuthCubit>().signOut(),
+      child: BlocBuilder<ProveedoresCubit, ProveedoresState>(
+        builder: (context, state) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final mobile = constraints.maxWidth < 760;
 
-                  if (_searchController.text != state.searchTerm) {
-                    _searchController.value = TextEditingValue(
-                      text: state.searchTerm,
-                      selection: TextSelection.collapsed(
-                        offset: state.searchTerm.length,
-                      ),
-                    );
-                  }
+              final sideBySide = constraints.maxWidth >= 1080;
 
-                  final listPanel = _ProveedoresListPanel(
-                    state: state,
-                    onRetry: () =>
-                        context.read<ProveedoresCubit>().initialize(),
-                    onSelectProveedor: (id) =>
-                        _selectProveedor(id, openMobileDetail: isMobile),
-                  );
-                  final detailPanel = _ProveedorDetailPanel(
-                    state: state,
-                    onRetry: () =>
-                        context.read<ProveedoresCubit>().retryDetail(),
-                    onEdit: state.selectedProveedor == null
-                        ? null
-                        : () =>
-                              _openEditDialog(state, state.selectedProveedor!),
-                    onToggleState: state.selectedProveedor == null
-                        ? null
-                        : () => _toggleState(state.selectedProveedor!),
-                  );
-                  final headerAndFilters = <Widget>[
-                    Text(
-                      'Administra el catálogo de proveedores y sus datos de contacto para las compras.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Gap(AppSpacing.lg),
-                    _ProveedoresFiltersCard(
-                      state: state,
-                      controller: _searchController,
-                      isCompact: isMobile,
-                      isLoading: state.status == ProveedoresStatus.loading,
-                      isSubmittingAction: state.isSubmittingAction,
-                      onSearch: _applySearch,
-                      onCreateProveedor: () => _openCreateDialog(state),
-                      onActivityFilterChanged: (filter) =>
-                          context.read<ProveedoresCubit>().load(filter: filter),
-                    ),
-                    const Gap(AppSpacing.xl),
-                  ];
+              final total = state.items.length;
 
-                  if (compactHeight) {
-                    return SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...headerAndFilters,
-                          SizedBox(
-                            height: isWide ? 620 : 560,
-                            child: isWide
-                                ? Row(
-                                    children: [
-                                      Expanded(flex: 9, child: listPanel),
-                                      const Gap(AppSpacing.xl),
-                                      Expanded(flex: 8, child: detailPanel),
-                                    ],
-                                  )
-                                : listPanel,
-                          ),
-                          if (!isWide && !isMobile) ...[
-                            const Gap(AppSpacing.xl),
-                            SizedBox(height: 560, child: detailPanel),
-                          ],
-                        ],
-                      ),
-                    );
-                  }
+              final totalPages = math.max(1, (total / _pageSize).ceil());
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...headerAndFilters,
-                      Expanded(
-                        child: isWide
-                            ? Row(
-                                children: [
-                                  Expanded(flex: 9, child: listPanel),
-                                  const Gap(AppSpacing.xl),
-                                  Expanded(flex: 8, child: detailPanel),
-                                ],
-                              )
-                            : isMobile
-                            ? listPanel
-                            : Column(
-                                children: [
-                                  Expanded(child: listPanel),
-                                  const Gap(AppSpacing.xl),
-                                  Expanded(child: detailPanel),
-                                ],
-                              ),
-                      ),
-                    ],
-                  );
+              final safePage = _page.clamp(0, totalPages - 1).toInt();
+
+              final start = safePage * _pageSize;
+
+              final end = math.min(start + _pageSize, total);
+
+              final visibleItems = state.items.sublist(start, end);
+
+              // ===========================================
+              // LISTADO
+              // ===========================================
+
+              final listPanel = _ProveedoresListPanel(
+                items: visibleItems,
+                total: total,
+                status: state.status,
+                error: state.errorMessage,
+                selectedId: state.selectedProveedorId,
+                page: safePage,
+                totalPages: totalPages,
+                pageSize: _pageSize,
+                start: start,
+                end: end,
+                compact: mobile,
+                onSelect: (id) =>
+                    _selectProveedor(id, openMobileDetail: mobile),
+                onRetry: () => context.read<ProveedoresCubit>().initialize(),
+                onPage: (value) {
+                  setState(() {
+                    _page = value;
+                  });
                 },
-              ),
-            ),
-          ),
-        ),
+                onPageSize: (value) {
+                  setState(() {
+                    _pageSize = value;
+                    _page = 0;
+                  });
+                },
+              );
+
+              // ===========================================
+              // DETALLE
+              // ===========================================
+
+              final detailPanel = _ProveedorDetailPanel(
+                state: state,
+                onRetry: () => context.read<ProveedoresCubit>().retryDetail(),
+                onEdit:
+                    state.selectedProveedor == null || state.isSubmittingAction
+                    ? null
+                    : () => _openEditDialog(state, state.selectedProveedor!),
+                onToggleState:
+                    state.selectedProveedor == null || state.isSubmittingAction
+                    ? null
+                    : () => _toggleState(state.selectedProveedor!),
+              );
+
+              // ===========================================
+              // DISTRIBUCION GENERAL
+              // ===========================================
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  mobile ? 12 : 18,
+                  mobile ? 12 : 14,
+                  mobile ? 12 : 18,
+                  mobile ? 12 : 16,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1600),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ProveedoresFilters(
+                          state: state,
+                          controller: _searchController,
+                          mobile: mobile,
+                          onChanged: _searchAsYouType,
+                          onSearch: _applySearch,
+                          onCreate: () => _openCreateDialog(state),
+                          onActivity: (value) {
+                            setState(() {
+                              _page = 0;
+                            });
+
+                            context.read<ProveedoresCubit>().load(
+                              filter: value,
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        Expanded(
+                          child: sideBySide
+                              ? Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(flex: 12, child: listPanel),
+
+                                    const SizedBox(width: 14),
+
+                                    Expanded(flex: 8, child: detailPanel),
+                                  ],
+                                )
+                              : mobile
+                              ? listPanel
+                              : SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      SizedBox(height: 480, child: listPanel),
+
+                                      const SizedBox(height: 14),
+
+                                      SizedBox(height: 650, child: detailPanel),
+                                    ],
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
-
-  String _describeText(String? value) {
-    final normalized = value?.trim();
-    return normalized == null || normalized.isEmpty
-        ? 'vacio'
-        : '${normalized.length} caracteres';
-  }
 }
 
-class _ProveedoresFiltersCard extends StatelessWidget {
-  const _ProveedoresFiltersCard({
+// =============================================================
+// BARRA DE BUSQUEDA Y FILTROS
+// =============================================================
+
+class _ProveedoresFilters extends StatelessWidget {
+  const _ProveedoresFilters({
     required this.state,
     required this.controller,
-    required this.isCompact,
-    required this.isLoading,
-    required this.isSubmittingAction,
+    required this.mobile,
+    required this.onChanged,
     required this.onSearch,
-    required this.onCreateProveedor,
-    required this.onActivityFilterChanged,
+    required this.onCreate,
+    required this.onActivity,
   });
 
   final ProveedoresState state;
   final TextEditingController controller;
-  final bool isCompact;
-  final bool isLoading;
-  final bool isSubmittingAction;
+  final bool mobile;
+
+  final ValueChanged<String> onChanged;
   final VoidCallback onSearch;
-  final VoidCallback onCreateProveedor;
-  final ValueChanged<ProveedorActivityFilter> onActivityFilterChanged;
+  final VoidCallback onCreate;
+
+  final ValueChanged<ProveedorActivityFilter> onActivity;
 
   @override
   Widget build(BuildContext context) {
-    final activityFilter = _ProveedorActivityFilter(
-      value: state.filter,
-      onChanged: onActivityFilterChanged,
-    );
-    final search = _ProveedoresSearchField(
+    final colors = Theme.of(context).colorScheme;
+
+    // ===========================================
+    // BUSCADOR
+    // ===========================================
+
+    final search = TextField(
       controller: controller,
-      isLoading: isLoading,
-      onSearch: onSearch,
-    );
-
-    return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: isCompact
-          ? Row(
-              children: [
-                Expanded(child: search),
-                const Gap(AppSpacing.sm),
-                IconButton.outlined(
-                  tooltip: 'Filtros',
-                  onPressed: () => _openFilters(context, activityFilter),
-                  icon: const Icon(Icons.tune_rounded),
-                ),
-                const Gap(AppSpacing.xs),
-                IconButton.filled(
-                  tooltip: 'Nuevo proveedor',
-                  onPressed: isSubmittingAction ? null : onCreateProveedor,
-                  icon: const Icon(Icons.add_rounded),
-                ),
-              ],
-            )
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                final action = FilledButton.icon(
-                  onPressed: isSubmittingAction ? null : onCreateProveedor,
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Nuevo proveedor'),
-                );
-                if (constraints.maxWidth >= 760) {
-                  return Row(
-                    children: [
-                      Expanded(child: search),
-                      const Gap(AppSpacing.md),
-                      activityFilter,
-                      const Gap(AppSpacing.md),
-                      action,
-                    ],
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: search),
-                        const Gap(AppSpacing.md),
-                        action,
-                      ],
-                    ),
-                    const Gap(AppSpacing.md),
-                    activityFilter,
-                  ],
-                );
-              },
-            ),
-    );
-  }
-
-  void _openFilters(BuildContext context, Widget activityFilter) {
-    showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
+      onChanged: onChanged,
+      onSubmitted: (_) => onSearch(),
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: 'Buscar por RUC, razón social o contacto...',
+        prefixIcon: const Icon(Icons.search_rounded, size: 21),
+        suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                height: 4,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(99),
-                ),
+            if (controller.text.isNotEmpty)
+              IconButton(
+                tooltip: 'Limpiar búsqueda',
+                onPressed: () {
+                  controller.clear();
+                  onChanged('');
+                },
+                icon: const Icon(Icons.close_rounded, size: 19),
               ),
-            ),
-            const Gap(AppSpacing.lg),
-            Text('Filtros', style: Theme.of(context).textTheme.titleLarge),
-            const Gap(AppSpacing.lg),
-            Text('Estado', style: Theme.of(context).textTheme.labelLarge),
-            const Gap(AppSpacing.sm),
-            SizedBox(width: double.infinity, child: activityFilter),
+
+            if (state.status == ProveedoresStatus.loading)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                tooltip: 'Aplicar búsqueda',
+                onPressed: onSearch,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+              ),
           ],
         ),
+        filled: true,
+        fillColor: colors.surface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 13,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.outlineVariant),
+        ),
+      ),
+    );
+
+    // ===========================================
+    // FILTRO DE ESTADO
+    // ===========================================
+
+    final activity = SegmentedButton<ProveedorActivityFilter>(
+      showSelectedIcon: false,
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? _orange : null,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.white
+              : colors.onSurface,
+        ),
+      ),
+      segments: const [
+        ButtonSegment(value: ProveedorActivityFilter.all, label: Text('Todos')),
+        ButtonSegment(
+          value: ProveedorActivityFilter.active,
+          label: Text('Activos'),
+        ),
+        ButtonSegment(
+          value: ProveedorActivityFilter.inactive,
+          label: Text('Inactivos'),
+        ),
+      ],
+      selected: {state.filter},
+      onSelectionChanged: (selection) {
+        onActivity(selection.first);
+      },
+    );
+
+    // ===========================================
+    // NUEVO PROVEEDOR
+    // ===========================================
+
+    final createButton = FilledButton.icon(
+      onPressed: state.isSubmittingAction ? null : onCreate,
+      icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+      label: const Text('Nuevo proveedor'),
+      style: FilledButton.styleFrom(
+        backgroundColor: _orange,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 17),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+
+    // ===========================================
+    // DISTRIBUCION RESPONSIVE
+    // ===========================================
+
+    return _PanelSurface(
+      padding: const EdgeInsets.all(12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 900) {
+            return Row(
+              children: [
+                Expanded(child: search),
+                const SizedBox(width: 12),
+                activity,
+                const SizedBox(width: 12),
+                createButton,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              search,
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [activity, createButton],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _ProveedorActivityFilter extends StatelessWidget {
-  const _ProveedorActivityFilter({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final ProveedorActivityFilter value;
-  final ValueChanged<ProveedorActivityFilter> onChanged;
-
-  @override
-  Widget build(BuildContext context) =>
-      SegmentedButton<ProveedorActivityFilter>(
-        showSelectedIcon: false,
-        segments: const [
-          ButtonSegment(
-            value: ProveedorActivityFilter.active,
-            label: Text('Activos'),
-          ),
-          ButtonSegment(
-            value: ProveedorActivityFilter.inactive,
-            label: Text('Inactivos'),
-          ),
-          ButtonSegment(
-            value: ProveedorActivityFilter.all,
-            label: Text('Todos'),
-          ),
-        ],
-        selected: {value},
-        onSelectionChanged: (selection) {
-          final selected = selection.firstOrNull;
-          if (selected != null) onChanged(selected);
-        },
-      );
-}
-
-class _ProveedoresSearchField extends StatelessWidget {
-  const _ProveedoresSearchField({
-    required this.controller,
-    required this.isLoading,
-    required this.onSearch,
-  });
-
-  final TextEditingController controller;
-  final bool isLoading;
-  final VoidCallback onSearch;
-
-  @override
-  Widget build(BuildContext context) => TextField(
-    controller: controller,
-    textInputAction: TextInputAction.search,
-    onSubmitted: (_) => onSearch(),
-    decoration: InputDecoration(
-      isDense: true,
-      hintText: 'Buscar por RUC, razón social o contacto...',
-      prefixIcon: const Icon(Icons.search_rounded),
-      suffixIcon: isLoading
-          ? const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          : IconButton(
-              tooltip: 'Aplicar búsqueda',
-              onPressed: onSearch,
-              icon: const Icon(Icons.arrow_forward_rounded),
-            ),
-    ),
-  );
-}
+// =============================================================
+// LISTADO DE PROVEEDORES
+// =============================================================
 
 class _ProveedoresListPanel extends StatelessWidget {
   const _ProveedoresListPanel({
-    required this.state,
+    required this.items,
+    required this.total,
+    required this.status,
+    required this.error,
+    required this.selectedId,
+    required this.page,
+    required this.totalPages,
+    required this.pageSize,
+    required this.start,
+    required this.end,
+    required this.compact,
+    required this.onSelect,
     required this.onRetry,
-    required this.onSelectProveedor,
+    required this.onPage,
+    required this.onPageSize,
   });
 
-  final ProveedoresState state;
+  final List<ProveedorRecord> items;
+
+  final int total;
+  final ProveedoresStatus status;
+  final String? error;
+  final int? selectedId;
+
+  final int page;
+  final int totalPages;
+  final int pageSize;
+  final int start;
+  final int end;
+
+  final bool compact;
+
+  final ValueChanged<int> onSelect;
   final VoidCallback onRetry;
-  final ValueChanged<int> onSelectProveedor;
+  final ValueChanged<int> onPage;
+  final ValueChanged<int> onPageSize;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AppSurfaceCard(
+    final colors = Theme.of(context).colorScheme;
+
+    return _PanelSurface(
       padding: EdgeInsets.zero,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ===========================================
+          // CABECERA DE LA LISTA
+          // ===========================================
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             child: Row(
               children: [
-                Text('Resultados', style: theme.textTheme.titleMedium),
-                const Spacer(),
+                const _SectionIcon(Icons.local_shipping_outlined),
+
+                const SizedBox(width: 10),
+
+                const Expanded(
+                  child: Text(
+                    'Lista de proveedores',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
+                ),
+
                 Text(
-                  '${state.items.length}',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  '$total ${total == 1 ? 'resultado' : 'resultados'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
+
+          Divider(height: 1, color: colors.outlineVariant),
+
+          // ===========================================
+          // RESULTADOS
+          // ===========================================
           Expanded(
-            child: switch (state.status) {
+            child: switch (status) {
               ProveedoresStatus.loading => const Center(
                 child: CircularProgressIndicator(),
               ),
-              ProveedoresStatus.error => _CenteredMessage(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppMessageCard.error(
-                      title: 'No pudimos cargar los proveedores',
-                      message:
-                          state.errorMessage ??
-                          'Intenta nuevamente para consultar el catálogo comercial.',
-                    ),
-                    const Gap(AppSpacing.lg),
-                    AppButton.secondary(
-                      label: 'Reintentar',
-                      icon: Icons.refresh_rounded,
-                      onPressed: onRetry,
-                    ),
-                  ],
+
+              ProveedoresStatus.error => _EmptyMessage(
+                icon: Icons.error_outline_rounded,
+                title: 'No pudimos cargar los proveedores',
+                description: error ?? 'Intenta nuevamente.',
+                onRetry: onRetry,
+              ),
+
+              ProveedoresStatus.success =>
+                total == 0
+                    ? const _EmptyMessage(
+                        icon: Icons.search_off_rounded,
+                        title: 'Sin resultados',
+                        description:
+                            'No encontramos proveedores con los filtros actuales.',
+                      )
+                    : compact
+                    ? _buildMobileList(context)
+                    : _buildDesktopTable(context),
+            },
+          ),
+
+          Divider(height: 1, color: colors.outlineVariant),
+
+          // ===========================================
+          // PIE Y PAGINACION
+          // ===========================================
+          _buildPagination(context),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================
+  // LISTA MOVIL
+  // ===========================================================
+
+  Widget _buildMobileList(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(10),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final item = items[index];
+
+        return _ProveedorMobileTile(
+          item: item,
+          selected: item.id == selectedId,
+          onTap: () => onSelect(item.id),
+        );
+      },
+    );
+  }
+
+  // ===========================================================
+  // TABLA ESCRITORIO
+  // ===========================================================
+
+  Widget _buildDesktopTable(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: math.max(690, constraints.maxWidth),
+            child: Column(
+              children: [
+                _buildTableHeader(context),
+
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      return _buildTableRow(context, items[index]);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // PROPORCIONES INTERNAS DE CADA COLUMNA
+  static const List<int> _widths = [160, 285, 145, 105, 75];
+
+  Widget _buildTableHeader(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    const headers = ['RUC', 'Razón social', 'Contacto', 'Estado', 'Acciones'];
+
+    return Container(
+      color: colors.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+      child: Row(
+        children: [
+          for (int i = 0; i < headers.length; i++)
+            Expanded(
+              flex: _widths[i],
+              child: Text(
+                headers[i],
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: colors.onSurfaceVariant,
                 ),
               ),
-              ProveedoresStatus.success =>
-                state.items.isEmpty
-                    ? const _CenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message:
-                              'No encontramos proveedores con los filtros actuales.',
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md,
-                          AppSpacing.xs,
-                          AppSpacing.md,
-                          AppSpacing.md,
-                        ),
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _ProveedorListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedProveedorId,
-                            onTap: () => onSelectProveedor(item.id),
-                          );
-                        },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableRow(BuildContext context, ProveedorRecord item) {
+    final colors = Theme.of(context).colorScheme;
+
+    final selected = item.id == selectedId;
+
+    Widget cell(
+      String value,
+      int index, {
+      bool bold = false,
+      Color? textColor,
+    }) {
+      return Expanded(
+        flex: _widths[index],
+        child: Padding(
+          padding: const EdgeInsets.only(right: 7),
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.8,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: textColor ?? colors.onSurface,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: selected ? _orange.withValues(alpha: 0.085) : Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelect(item.id),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 13, 10, 13),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: selected ? _orange : Colors.transparent,
+                width: 3,
+              ),
+              bottom: BorderSide(
+                color: colors.outlineVariant.withValues(alpha: 0.65),
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              cell(
+                item.rucDocumento,
+                0,
+                bold: true,
+                textColor: selected ? _orange : null,
+              ),
+
+              cell(item.razonSocial, 1, bold: true),
+
+              cell(_display(item.contacto), 2),
+
+              Expanded(
+                flex: _widths[3],
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _StatusPill(
+                    item.activo ? 'Activo' : 'Inactivo',
+                    active: item.activo,
+                  ),
+                ),
+              ),
+
+              Expanded(
+                flex: _widths[4],
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    tooltip: 'Ver detalle de ${item.razonSocial}',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => onSelect(item.id),
+                    icon: const Icon(Icons.more_vert_rounded, size: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================
+  // PAGINACION
+  // ===========================================================
+
+  Widget _buildPagination(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 8,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Mostrar', style: TextStyle(fontSize: 11.5)),
+
+              const SizedBox(width: 8),
+
+              DropdownButton<int>(
+                value: pageSize,
+                isDense: true,
+                underline: const SizedBox.shrink(),
+                items: const [10, 20, 50]
+                    .map(
+                      (value) => DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('$value'),
                       ),
-            },
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    onPageSize(value);
+                  }
+                },
+              ),
+
+              const SizedBox(width: 7),
+
+              const Text('por página', style: TextStyle(fontSize: 11.5)),
+            ],
+          ),
+
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                total == 0 ? '0 resultados' : '${start + 1}–$end de $total',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              IconButton.outlined(
+                tooltip: 'Página anterior',
+                visualDensity: VisualDensity.compact,
+                onPressed: page == 0 ? null : () => onPage(page - 1),
+                icon: const Icon(Icons.chevron_left_rounded, size: 19),
+              ),
+
+              const SizedBox(width: 5),
+
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _orange,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${page + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 5),
+
+              IconButton.outlined(
+                tooltip: 'Página siguiente',
+                visualDensity: VisualDensity.compact,
+                onPressed: page + 1 >= totalPages
+                    ? null
+                    : () => onPage(page + 1),
+                icon: const Icon(Icons.chevron_right_rounded, size: 19),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 }
+
+// =============================================================
+// TARJETA DE PROVEEDOR PARA MOVILES
+// =============================================================
+
+class _ProveedorMobileTile extends StatelessWidget {
+  const _ProveedorMobileTile({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ProveedorRecord item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected
+                ? _orange.withValues(alpha: 0.08)
+                : colors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color: selected
+                  ? _orange.withValues(alpha: 0.5)
+                  : colors.outlineVariant,
+            ),
+          ),
+          child: Row(
+            children: [
+              const _SectionIcon(Icons.local_shipping_outlined),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.rucDocumento,
+                      style: const TextStyle(
+                        color: _orange,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      item.razonSocial,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    Text(
+                      _display(item.contacto),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              _StatusPill(
+                item.activo ? 'Activo' : 'Inactivo',
+                active: item.activo,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================
+// PANEL DE DETALLE DEL PROVEEDOR
+// =============================================================
 
 class _ProveedorDetailPanel extends StatelessWidget {
   const _ProveedorDetailPanel({
@@ -629,164 +1133,432 @@ class _ProveedorDetailPanel extends StatelessWidget {
   });
 
   final ProveedoresState state;
+
   final VoidCallback onRetry;
   final VoidCallback? onEdit;
   final VoidCallback? onToggleState;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
+
     final proveedor = state.selectedProveedor;
-    return AppSurfaceCard(
+
+    return _PanelSurface(
       padding: EdgeInsets.zero,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ===========================================
+          // CABECERA DEL PANEL
+          // ===========================================
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text(
-              'Detalle del proveedor',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w800,
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            child: Row(
+              children: [
+                const _SectionIcon(Icons.local_shipping_outlined),
+
+                const SizedBox(width: 10),
+
+                const Expanded(
+                  child: Text(
+                    'Detalle del proveedor',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  ),
+                ),
+
+                if (proveedor != null && !state.isDetailLoading)
+                  OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Editar'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: colors.onSurface,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+
+          Divider(height: 1, color: colors.outlineVariant),
+
+          // ===========================================
+          // CONTENIDO DEL DETALLE
+          // ===========================================
           Expanded(
-            child: Builder(
-              builder: (context) {
-                if (state.isDetailLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state.detailErrorMessage != null) {
-                  return _CenteredMessage(
+            child: state.isDetailLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.detailErrorMessage != null
+                ? _EmptyMessage(
+                    icon: Icons.error_outline_rounded,
+                    title: 'No pudimos cargar el detalle',
+                    description: state.detailErrorMessage!,
+                    onRetry: onRetry,
+                  )
+                : proveedor == null
+                ? const _EmptyMessage(
+                    icon: Icons.touch_app_outlined,
+                    title: 'Selecciona un proveedor',
+                    description:
+                        'Escoge un registro del listado para consultar sus datos.',
+                  )
+                : SingleChildScrollView(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        AppMessageCard.error(
-                          title: 'No pudimos cargar el detalle',
-                          message: state.detailErrorMessage!,
-                        ),
-                        const Gap(AppSpacing.lg),
-                        AppButton.secondary(
-                          label: 'Reintentar detalle',
-                          icon: Icons.refresh_rounded,
-                          onPressed: onRetry,
-                        ),
+                        _buildLeatherHeader(proveedor),
+
+                        _buildInformation(context, proveedor),
                       ],
                     ),
-                  );
-                }
-                if (proveedor == null) {
-                  return const _CenteredMessage(
-                    child: AppMessageCard.info(
-                      title: 'Selecciona un proveedor',
-                      message:
-                          'Escoge un registro del listado para revisar su información.',
-                    ),
-                  );
-                }
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: AppSpacing.md,
-                        runSpacing: AppSpacing.md,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            proveedor.razonSocial,
-                            style: theme.textTheme.headlineSmall,
-                          ),
-                          _StatusBadge(
-                            label: proveedor.activo ? 'Activo' : 'Inactivo',
-                            icon: proveedor.activo
-                                ? Icons.verified_outlined
-                                : Icons.block_outlined,
-                            background: proveedor.activo
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.surfaceContainerHighest,
-                            foreground: proveedor.activo
-                                ? theme.colorScheme.onPrimaryContainer
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                      const Gap(AppSpacing.xs),
-                      Text(
-                        proveedor.rucDocumento,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const Gap(AppSpacing.lg),
-                      Wrap(
-                        spacing: AppSpacing.md,
-                        runSpacing: AppSpacing.md,
-                        children: [
-                          AppButton.secondary(
-                            label: 'Editar proveedor',
-                            icon: Icons.edit_outlined,
-                            isLoading: state.isSubmittingAction,
-                            onPressed: onEdit,
-                          ),
-                          AppButton.secondary(
-                            label: proveedor.activo
-                                ? 'Inactivar proveedor'
-                                : 'Activar proveedor',
-                            icon: proveedor.activo
-                                ? Icons.block_outlined
-                                : Icons.check_circle_outline,
-                            isLoading: state.isSubmittingAction,
-                            onPressed: onToggleState,
-                          ),
-                        ],
-                      ),
-                      const Gap(AppSpacing.xl),
-                      Wrap(
-                        spacing: AppSpacing.lg,
-                        runSpacing: AppSpacing.lg,
-                        children: [
-                          _DetailCard(
-                            title: 'Identidad',
-                            lines: [
-                              'ID: ${proveedor.id}',
-                              'Documento: ${proveedor.rucDocumento}',
-                              'Razón social: ${proveedor.razonSocial}',
-                            ],
-                          ),
-                          _DetailCard(
-                            title: 'Contacto',
-                            lines: [
-                              'Persona: ${proveedor.contacto ?? 'Sin contacto'}',
-                              'Teléfono: ${proveedor.telefono ?? 'Sin teléfono'}',
-                              'Correo: ${proveedor.correo ?? 'Sin correo'}',
-                            ],
-                          ),
-                          _DetailCard(
-                            title: 'Ubicación y trazabilidad',
-                            lines: [
-                              'Dirección: ${proveedor.direccion ?? 'Sin dirección'}',
-                              'Creado: ${_formatDateTime(proveedor.creadoEn)}',
-                              'Actualizado: ${_formatOptionalDate(proveedor.actualizadoEn)}',
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
-                );
-              },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================
+  // CABECERA EN TONOS DE CUERO
+  // ===========================================================
+
+  Widget _buildLeatherHeader(ProveedorRecord proveedor) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.bottomRight,
+          colors: [_brown, _brownMedium, _brownLight],
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 63,
+            height: 63,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.local_shipping_outlined,
+              size: 32,
+              color: _orange,
+            ),
+          ),
+
+          const SizedBox(width: 15),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  proveedor.razonSocial,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 19,
+                    height: 1.2,
+                  ),
+                ),
+
+                const SizedBox(height: 7),
+
+                Text(
+                  proveedor.rucDocumento,
+                  style: const TextStyle(
+                    color: Color(0xFFFFA46B),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 9),
+
+                _StatusPill(
+                  proveedor.activo ? 'Activo' : 'Inactivo',
+                  active: proveedor.activo,
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  // ===========================================================
+  // INFORMACION GENERAL DEL PROVEEDOR
+  // ===========================================================
+
+  Widget _buildInformation(BuildContext context, ProveedorRecord proveedor) {
+    return Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ===========================================
+          // BOTONES DE ACCION
+          // ===========================================
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, size: 17),
+                label: const Text('Editar proveedor'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _orange,
+                  side: const BorderSide(color: _orange),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 11,
+                  ),
+                ),
+              ),
+
+              OutlinedButton.icon(
+                onPressed: onToggleState,
+                icon: Icon(
+                  proveedor.activo
+                      ? Icons.block_outlined
+                      : Icons.check_circle_outline_rounded,
+                  size: 17,
+                ),
+                label: Text(
+                  proveedor.activo
+                      ? 'Inactivar proveedor'
+                      : 'Activar proveedor',
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          // ===========================================
+          // IDENTIDAD + CONTACTO
+          // ===========================================
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final identity = _InfoCard(
+                icon: Icons.badge_outlined,
+                title: 'Identidad',
+                children: [
+                  _InfoLine(label: 'ID', value: '${proveedor.id}'),
+                  _InfoLine(label: 'RUC', value: proveedor.rucDocumento),
+                  _InfoLine(
+                    label: 'Razón social',
+                    value: proveedor.razonSocial,
+                  ),
+                ],
+              );
+
+              final contact = _InfoCard(
+                icon: Icons.phone_outlined,
+                title: 'Contacto',
+                children: [
+                  _InfoLine(
+                    label: 'Persona de contacto',
+                    value: _display(proveedor.contacto),
+                  ),
+                  _InfoLine(
+                    label: 'Teléfono',
+                    value: _display(proveedor.telefono),
+                  ),
+                  _InfoLine(
+                    label: 'Correo electrónico',
+                    value: _display(proveedor.correo),
+                  ),
+                ],
+              );
+
+              if (constraints.maxWidth >= 410) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: identity),
+
+                    const SizedBox(width: 9),
+
+                    Expanded(child: contact),
+                  ],
+                );
+              }
+
+              return Column(
+                children: [identity, const SizedBox(height: 10), contact],
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // ===========================================
+          // UBICACION Y TRAZABILIDAD
+          // ===========================================
+          _InfoCard(
+            icon: Icons.location_on_outlined,
+            title: 'Ubicación y trazabilidad',
+            children: [
+              _InfoLine(
+                label: 'Dirección',
+                value: _display(proveedor.direccion),
+              ),
+
+              _InfoLine(
+                label: 'Fecha de creación',
+                value: _formatDateTime(proveedor.creadoEn),
+              ),
+
+              _InfoLine(
+                label: 'Última actualización',
+                value: _formatOptionalDate(proveedor.actualizadoEn),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+// =============================================================
+// TARJETAS DE INFORMACION
+// =============================================================
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 29,
+                height: 29,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _orangeSoft,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: _orange, size: 17),
+              ),
+
+              const SizedBox(width: 7),
+
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          for (int i = 0; i < children.length; i++) ...[
+            children[i],
+
+            if (i < children.length - 1) const SizedBox(height: 9),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 4,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              color: colors.onSurfaceVariant,
+              height: 1.35,
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 6),
+
+        Expanded(
+          flex: 5,
+          child: Text(
+            value,
+            textAlign: TextAlign.start,
+            style: const TextStyle(
+              fontSize: 10.8,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================
+// DETALLE EMERGENTE PARA MOVIL
+// =============================================================
 
 class _MobileProveedorDetailSheet extends StatelessWidget {
   const _MobileProveedorDetailSheet({
@@ -800,162 +1572,69 @@ class _MobileProveedorDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+
     return FractionallySizedBox(
       heightFactor: 0.88,
       child: Material(
         color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         clipBehavior: Clip.antiAlias,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.outlineVariant,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const Gap(AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Detalle del proveedor',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Cerrar detalle',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const Gap(AppSpacing.sm),
-                Expanded(
-                  child: BlocBuilder<ProveedoresCubit, ProveedoresState>(
-                    builder: (context, state) => _ProveedorDetailPanel(
-                      state: state,
-                      onRetry: () =>
-                          context.read<ProveedoresCubit>().retryDetail(),
-                      onEdit: state.selectedProveedor == null ? null : onEdit,
-                      onToggleState: state.selectedProveedor == null
-                          ? null
-                          : onToggleState,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProveedorListTileCard extends StatelessWidget {
-  const _ProveedorListTileCard({
-    required this.item,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final ProveedorRecord item;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.48)
-                : theme.colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.42)
-                  : theme.colorScheme.outlineVariant,
-            ),
-          ),
-          child: Row(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          child: Column(
             children: [
               Container(
-                width: 38,
-                height: 38,
-                alignment: Alignment.center,
+                height: 4,
+                width: 42,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.local_shipping_outlined,
-                  size: 19,
-                  color: theme.colorScheme.onPrimaryContainer,
+                  color: colors.outlineVariant,
+                  borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              const Gap(AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.rucDocumento,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
+
+              const SizedBox(height: 10),
+
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Detalle del proveedor',
+                      style: TextStyle(
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const Gap(AppSpacing.xs),
-                    Text(
-                      item.razonSocial,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const Gap(AppSpacing.xs),
-                    Text(
-                      item.contacto ??
-                          item.correo ??
-                          'Sin contacto principal registrado.',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+
+                  IconButton(
+                    tooltip: 'Cerrar',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
               ),
-              const Gap(AppSpacing.sm),
-              Tooltip(
-                message: item.activo ? 'Activo' : 'Inactivo',
-                child: Icon(
-                  item.activo
-                      ? Icons.check_circle_outline_rounded
-                      : Icons.block_rounded,
-                  color: item.activo
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  size: 20,
+
+              const SizedBox(height: 10),
+
+              Expanded(
+                child: BlocBuilder<ProveedoresCubit, ProveedoresState>(
+                  builder: (context, state) {
+                    return _ProveedorDetailPanel(
+                      state: state,
+                      onRetry: () =>
+                          context.read<ProveedoresCubit>().retryDetail(),
+                      onEdit:
+                          state.selectedProveedor == null ||
+                              state.isSubmittingAction
+                          ? null
+                          : onEdit,
+                      onToggleState:
+                          state.selectedProveedor == null ||
+                              state.isSubmittingAction
+                          ? null
+                          : onToggleState,
+                    );
+                  },
                 ),
               ),
             ],
@@ -966,93 +1645,164 @@ class _ProveedorListTileCard extends StatelessWidget {
   }
 }
 
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.lines});
+// =============================================================
+// COMPONENTES GENERALES
+// =============================================================
 
-  final String title;
-  final List<String> lines;
+class _PanelSurface extends StatelessWidget {
+  const _PanelSurface({required this.child, required this.padding});
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      clipBehavior: Clip.antiAlias,
+      padding: padding,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: colors.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const Gap(AppSpacing.md),
-          for (final line in lines) ...[
-            Text(line, style: theme.textTheme.bodyMedium),
-            const Gap(AppSpacing.sm),
-          ],
-        ],
+      child: child,
+    );
+  }
+}
+
+class _SectionIcon extends StatelessWidget {
+  const _SectionIcon(this.icon);
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 33,
+      height: 33,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _orangeSoft,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Icon(icon, size: 18, color: _orange),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill(this.label, {required this.active});
+
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = active ? _greenSoft : _graySoft;
+
+    final foreground = active
+        ? const Color(0xFF146739)
+        : const Color(0xFF656971);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: foreground,
+          fontSize: 10.8,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.label,
+class _EmptyMessage extends StatelessWidget {
+  const _EmptyMessage({
     required this.icon,
-    required this.background,
-    required this.foreground,
+    required this.title,
+    required this.description,
+    this.onRetry,
   });
 
-  final String label;
   final IconData icon;
-  final Color background;
-  final Color foreground;
+  final String title;
+  final String description;
+  final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.md,
-      vertical: AppSpacing.sm,
-    ),
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: foreground),
-        const Gap(AppSpacing.sm),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: foreground),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 38, color: colors.onSurfaceVariant),
+
+            const SizedBox(height: 12),
+
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
+
+            const SizedBox(height: 7),
+
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+            ),
+
+            if (onRetry != null) ...[
+              const SizedBox(height: 14),
+
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ],
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
-class _CenteredMessage extends StatelessWidget {
-  const _CenteredMessage({required this.child});
+// =============================================================
+// FUNCIONES AUXILIARES
+// =============================================================
 
-  final Widget child;
+String _display(String? value) {
+  final normalized = value?.trim();
 
-  @override
-  Widget build(BuildContext context) => Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 520),
-      child: child,
-    ),
-  );
+  if (normalized == null || normalized.isEmpty) {
+    return 'Sin registro';
+  }
+
+  return normalized;
 }
 
-String _formatOptionalDate(DateTime? value) =>
-    value == null ? 'Sin registro' : _formatDateTime(value);
+String _formatOptionalDate(DateTime? value) {
+  if (value == null) {
+    return 'Sin registro';
+  }
 
-String _formatDateTime(DateTime value) =>
-    DateFormat('dd/MM/yyyy hh:mm a').format(value.toLocal());
+  return _formatDateTime(value);
+}
+
+String _formatDateTime(DateTime value) {
+  return DateFormat('dd/MM/yyyy hh:mm a').format(value.toLocal());
+}

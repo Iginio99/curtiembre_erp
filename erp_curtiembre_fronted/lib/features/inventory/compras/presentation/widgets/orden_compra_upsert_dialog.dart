@@ -1,10 +1,23 @@
-import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+import 'dart:math' as math;
+
 import 'package:erp_curtiembre_fronted/features/inventory/compras/domain/repositories/compras_repository.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/shared/domain/entities/insumo_lookup.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/shared/domain/entities/proveedor_lookup.dart';
+
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+
+// ============================================================
+// COLORES DEL FORMULARIO
+// ============================================================
+
+const Color _accent = Color(0xFFE8590C);
+const Color _accentSoft = Color(0xFFFFEADF);
+
+// ============================================================
+// DATOS QUE SE ENVIAN A COMPRAS PAGE
+// SE CONSERVA EL CONTRATO ORIGINAL
+// ============================================================
 
 class OrdenCompraUpsertFormData {
   const OrdenCompraUpsertFormData({
@@ -19,6 +32,10 @@ class OrdenCompraUpsertFormData {
   final String? observacion;
   final List<CreateOrdenCompraDetalleInput> detalles;
 }
+
+// ============================================================
+// DIALOGO NUEVA ORDEN DE COMPRA
+// ============================================================
 
 class OrdenCompraUpsertDialog extends StatefulWidget {
   const OrdenCompraUpsertDialog({
@@ -39,12 +56,20 @@ class OrdenCompraUpsertDialog extends StatefulWidget {
 
 class _OrdenCompraUpsertDialogState extends State<OrdenCompraUpsertDialog> {
   final _formKey = GlobalKey<FormState>();
+
   final _observacionController = TextEditingController();
 
   DateTime _fechaEmision = DateTime.now();
+
   int? _proveedorId;
 
-  final _detalles = <_OrdenCompraDetalleDraft>[];
+  bool _attemptedSubmit = false;
+
+  final List<_OrdenCompraDetalleDraft> _detalles = [];
+
+  // ==========================================================
+  // INICIALIZACION
+  // ==========================================================
 
   @override
   void initState() {
@@ -54,91 +79,173 @@ class _OrdenCompraUpsertDialogState extends State<OrdenCompraUpsertDialog> {
         ? widget.proveedores.first.id
         : null;
 
-    _detalles.add(_OrdenCompraDetalleDraft());
+    _detalles.add(_createDraft());
   }
+
+  _OrdenCompraDetalleDraft _createDraft() {
+    return _OrdenCompraDetalleDraft(
+      insumoId: widget.insumos.isNotEmpty ? widget.insumos.first.id : null,
+    );
+  }
+
+  // ==========================================================
+  // LIBERAR RECURSOS
+  // ==========================================================
 
   @override
   void dispose() {
     _observacionController.dispose();
 
-    for (final item in _detalles) {
-      item.dispose();
+    for (final draft in _detalles) {
+      draft.dispose();
     }
 
     super.dispose();
   }
 
+  // ==========================================================
+  // FECHA DE EMISION
+  // ==========================================================
+
   Future<void> _pickDate() async {
+    if (widget.isSubmitting) return;
+
     final selected = await showDatePicker(
       context: context,
       initialDate: _fechaEmision,
       firstDate: DateTime(2024),
       lastDate: DateTime(2035),
+      helpText: 'Selecciona la fecha de emisión',
+      cancelText: 'Cancelar',
+      confirmText: 'Aceptar',
     );
 
-    if (selected != null) {
-      setState(() {
-        _fechaEmision = selected;
-      });
-    }
+    if (selected == null || !mounted) return;
+
+    setState(() {
+      _fechaEmision = selected;
+    });
   }
+
+  // ==========================================================
+  // AGREGAR PRODUCTO
+  // ==========================================================
 
   void _addDetail() {
+    if (widget.isSubmitting) return;
+
     setState(() {
-      _detalles.add(_OrdenCompraDetalleDraft());
+      _detalles.add(_createDraft());
     });
   }
 
-  void _removeDetail(int index) {
-    if (_detalles.length == 1) return;
+  // ==========================================================
+  // ELIMINAR PRODUCTO
+  // ==========================================================
+
+  void _removeDetail(_OrdenCompraDetalleDraft draft) {
+    if (widget.isSubmitting || _detalles.length <= 1) {
+      return;
+    }
 
     setState(() {
-      _detalles.removeAt(index).dispose();
+      _detalles.remove(draft);
+    });
+
+    // Se liberan los controladores después de retirar la fila
+    // del árbol de widgets para evitar errores de TextField.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      draft.dispose();
     });
   }
+
+  // ==========================================================
+  // TOTAL ESTIMADO
+  // CANTIDAD x COSTO UNITARIO DE CADA PRODUCTO
+  // ==========================================================
 
   double get _total {
-    return _detalles.fold(0, (total, item) {
-      final cantidad =
-          double.tryParse(
-            item.cantidadController.text.trim().replaceAll(',', '.'),
-          ) ??
-          0;
+    return _detalles.fold<double>(0, (total, draft) {
+      final cantidad = _parseNumber(draft.cantidadController.text) ?? 0;
 
-      final costo =
-          double.tryParse(
-            item.costoController.text.trim().replaceAll(',', '.'),
-          ) ??
-          0;
+      final costo = _parseNumber(draft.costoController.text) ?? 0;
 
       return total + (cantidad * costo);
     });
   }
 
+  double? _parseNumber(String value) {
+    final normalized = value.trim().replaceAll(',', '.');
+
+    if (normalized.isEmpty) return null;
+
+    final parsed = double.tryParse(normalized);
+
+    if (parsed == null || !parsed.isFinite) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  // ==========================================================
+  // OBSERVACION INDIVIDUAL DEL PRODUCTO
+  // ==========================================================
+
   Future<void> _editObservation(_OrdenCompraDetalleDraft draft) async {
+    if (widget.isSubmitting) return;
+
     await showDialog<void>(
       context: context,
-      builder: (ctx) {
+      builder: (dialogContext) {
+        final colors = Theme.of(dialogContext).colorScheme;
+
         return AlertDialog(
-          title: const Text('Observación del producto'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.sticky_note_2_outlined, color: _accent),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Observación del producto',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
           content: SizedBox(
-            width: 420,
+            width: 440,
             child: TextFormField(
               controller: draft.observacionController,
               autofocus: true,
               maxLength: 300,
-              minLines: 2,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Agrega una observación si es necesaria',
+              minLines: 3,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: 'Escribe una observación para este producto...',
+                alignLabelWithHint: true,
+                filled: true,
+                fillColor: colors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: const BorderSide(color: _accent, width: 1.5),
+                ),
               ),
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-              },
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Listo'),
             ),
           ],
@@ -151,699 +258,603 @@ class _OrdenCompraUpsertDialogState extends State<OrdenCompraUpsertDialog> {
     }
   }
 
+  // ==========================================================
+  // CREAR ORDEN
+  // ==========================================================
+
   void _submit() {
-    if (!_formKey.currentState!.validate()) {
+    if (widget.isSubmitting) return;
+
+    setState(() {
+      _attemptedSubmit = true;
+    });
+
+    final formValid = _formKey.currentState?.validate() ?? false;
+
+    final providerValid = _proveedorId != null;
+
+    final productsValid = _detalles.every((draft) => draft.insumoId != null);
+
+    if (!formValid || !providerValid || !productsValid) {
       return;
     }
 
     final mapped = _detalles
-        .map((item) {
-          final costo = item.costoController.text.trim().replaceAll(',', '.');
+        .map((draft) {
+          final cantidad = _parseNumber(draft.cantidadController.text)!;
+
+          final costo = _parseNumber(draft.costoController.text);
+
+          final observacion = draft.observacionController.text.trim();
 
           return CreateOrdenCompraDetalleInput(
-            insumoId: item.insumoId!,
-            cantidadSolicitada: double.parse(
-              item.cantidadController.text.trim().replaceAll(',', '.'),
-            ),
-            costoUnitarioEstimado: costo.isEmpty ? null : double.parse(costo),
-            observacion: item.observacionController.text.trim().isEmpty
-                ? null
-                : item.observacionController.text.trim(),
+            insumoId: draft.insumoId!,
+            cantidadSolicitada: cantidad,
+            costoUnitarioEstimado: costo,
+            observacion: observacion.isEmpty ? null : observacion,
           );
         })
         .toList(growable: false);
+
+    final observacionGeneral = _observacionController.text.trim();
 
     Navigator.of(context).pop(
       OrdenCompraUpsertFormData(
         proveedorId: _proveedorId!,
         fechaEmision: _fechaEmision,
-        observacion: _observacionController.text.trim().isEmpty
-            ? null
-            : _observacionController.text.trim(),
+        observacion: observacionGeneral.isEmpty ? null : observacionGeneral,
         detalles: mapped,
       ),
     );
   }
 
+  // ==========================================================
+  // VISTA PRINCIPAL
+  // ==========================================================
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final screenHeight = MediaQuery.sizeOf(context).height;
+    final screen = MediaQuery.sizeOf(context);
+    final colors = Theme.of(context).colorScheme;
+
+    final mobile = screen.width < 760;
+
+    final maxDialogHeight = (screen.height * 0.92)
+        .clamp(320.0, 900.0)
+        .toDouble();
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: mobile ? 10 : 25,
+        vertical: mobile ? 10 : 20,
+      ),
+      backgroundColor: colors.surface,
+      surfaceTintColor: Colors.transparent,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(17),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 940,
-          maxHeight: screenHeight * 0.92,
-        ),
+        constraints: BoxConstraints(maxWidth: 1080, maxHeight: maxDialogHeight),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            /*
-            ═══════════════════════════════════
-            HEADER
-            ═══════════════════════════════════
-            */
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 22, 18, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Nueva orden de compra',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
+            // ==============================================
+            // ENCABEZADO
+            // ==============================================
+            _buildHeader(context, mobile),
 
-                  IconButton(
-                    tooltip: 'Cerrar',
-                    onPressed: widget.isSubmitting
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-
-            /*
-            ═══════════════════════════════════
-            CONTENIDO
-            ═══════════════════════════════════
-            */
+            // ==============================================
+            // FORMULARIO DESPLAZABLE
+            // ==============================================
             Flexible(
-              fit: FlexFit.loose,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(28, 8, 28, 20),
-                child: Form(
-                  key: _formKey,
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    mobile ? 14 : 25,
+                    8,
+                    mobile ? 14 : 25,
+                    18,
+                  ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      /*
-                      ─────────────────────────
-                      PROVEEDOR + FECHA
-                      ─────────────────────────
-                      */
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final proveedor = DropdownButtonFormField<int>(
-                            isExpanded: true,
-                            initialValue: _proveedorId,
-                            decoration: const InputDecoration(
-                              labelText: 'Proveedor',
-                            ),
-                            items: widget.proveedores
-                                .map(
-                                  (x) => DropdownMenuItem(
-                                    value: x.id,
-                                    child: Text(
-                                      x.displayName,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: widget.proveedores.isEmpty
-                                ? null
-                                : (value) {
-                                    setState(() {
-                                      _proveedorId = value;
-                                    });
-                                  },
-                            validator: (value) {
-                              return value == null
-                                  ? 'Selecciona un proveedor.'
-                                  : null;
-                            },
-                          );
+                      // PROVEEDOR Y FECHA
+                      _buildGeneralFields(context),
 
-                          final fecha = InkWell(
-                            onTap: _pickDate,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                labelText: 'Fecha de emisión',
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    DateFormat(
-                                      'dd/MM/yyyy',
-                                    ).format(_fechaEmision),
-                                  ),
-                                  const Icon(Icons.calendar_month_outlined),
-                                ],
-                              ),
-                            ),
-                          );
+                      const SizedBox(height: 17),
 
-                          if (constraints.maxWidth < 650) {
-                            return Column(
-                              children: [
-                                proveedor,
-                                const Gap(AppSpacing.md),
-                                fecha,
-                              ],
-                            );
-                          }
+                      // OBSERVACION GENERAL
+                      _buildGeneralObservation(context),
 
-                          return Row(
-                            children: [
-                              Expanded(flex: 5, child: proveedor),
-                              const Gap(18),
-                              Expanded(flex: 4, child: fecha),
-                            ],
-                          );
-                        },
-                      ),
+                      const SizedBox(height: 20),
 
-                      const Gap(14),
+                      Divider(color: colors.outlineVariant),
 
-                      /*
-                      ─────────────────────────
-                      OBSERVACIÓN GENERAL
-                      ─────────────────────────
-                      */
-                      TextFormField(
-                        controller: _observacionController,
-                        maxLines: 1,
-                        maxLength: 500,
-                        decoration: const InputDecoration(
-                          labelText: 'Observación general',
-                          hintText: 'Ej. Compra para mantenimiento de planta',
-                        ),
-                      ),
+                      const SizedBox(height: 12),
 
-                      const Gap(20),
+                      // TITULO DE PRODUCTOS
+                      _buildDetailTitle(context),
 
-                      /*
-                      ─────────────────────────
-                      CABECERA DETALLE
-                      ─────────────────────────
-                      */
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Detalle de la compra',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
+                      const SizedBox(height: 12),
 
-                          Text(
-                            '${_detalles.length} '
-                            '${_detalles.length == 1 ? 'producto' : 'productos'}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const Gap(12),
-
-                      /*
-                      ─────────────────────────
-                      TABLA
-                      ─────────────────────────
-                      */
-                      _DetalleTable(
-                        detalles: _detalles,
-                        insumos: widget.insumos,
-                        onRemove: _removeDetail,
-                        onAdd: _addDetail,
-                        onObservation: _editObservation,
-                        onChanged: () {
-                          setState(() {});
-                        },
-                      ),
+                      // TABLA DE PRODUCTOS
+                      _buildProductsTable(context),
                     ],
                   ),
                 ),
               ),
             ),
 
-            /*
-            ═══════════════════════════════════
-            FOOTER
-            ═══════════════════════════════════
-            */
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant),
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final totalWidget = Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Total estimado:',
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      const Gap(10),
-                      Text(
-                        NumberFormat.currency(
-                          locale: 'es_PE',
-                          symbol: 'S/ ',
-                          decimalDigits: 2,
-                        ).format(_total),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  );
-
-                  final actions = Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      OutlinedButton(
-                        onPressed: widget.isSubmitting
-                            ? null
-                            : () => Navigator.of(context).pop(),
-                        child: const Text('Cancelar'),
-                      ),
-
-                      const Gap(12),
-
-                      FilledButton.icon(
-                        onPressed: widget.isSubmitting ? null : _submit,
-                        icon: widget.isSubmitting
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.shopping_cart_checkout_outlined),
-                        label: const Text('Crear orden'),
-                      ),
-                    ],
-                  );
-
-                  if (constraints.maxWidth < 650) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        totalWidget,
-                        const Gap(14),
-                        Align(alignment: Alignment.centerRight, child: actions),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [totalWidget, actions],
-                  );
-                },
-              ),
-            ),
+            // ==============================================
+            // TOTAL Y BOTONES FIJOS
+            // ==============================================
+            _buildFooter(context, mobile),
           ],
         ),
       ),
     );
   }
-}
 
-/*
-══════════════════════════════════════════
-TABLA DE DETALLE
-══════════════════════════════════════════
-*/
+  // ==========================================================
+  // ENCABEZADO
+  // ==========================================================
 
-class _DetalleTable extends StatelessWidget {
-  const _DetalleTable({
-    required this.detalles,
-    required this.insumos,
-    required this.onRemove,
-    required this.onAdd,
-    required this.onObservation,
-    required this.onChanged,
-  });
+  Widget _buildHeader(BuildContext context, bool mobile) {
+    final colors = Theme.of(context).colorScheme;
 
-  final List<_OrdenCompraDetalleDraft> detalles;
-  final List<InsumoLookup> insumos;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        mobile ? 14 : 25,
+        mobile ? 15 : 20,
+        mobile ? 10 : 17,
+        12,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: mobile ? 43 : 49,
+            height: mobile ? 43 : 49,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? _accent.withValues(alpha: 0.16)
+                  : _accentSoft,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.shopping_cart_checkout_rounded,
+              color: _accent,
+              size: 25,
+            ),
+          ),
 
-  final ValueChanged<int> onRemove;
-  final VoidCallback onAdd;
+          const SizedBox(width: 13),
 
-  final Future<void> Function(_OrdenCompraDetalleDraft) onObservation;
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nueva orden de compra',
+                  style: TextStyle(
+                    fontSize: mobile ? 19 : 23,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Registra los productos y genera una nueva orden de compra.',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-  final VoidCallback onChanged;
-
-  Widget _buildRow(int index) {
-    return _DetalleRow(
-      draft: detalles[index],
-      insumos: insumos,
-      canRemove: detalles.length > 1,
-      onRemove: () => onRemove(index),
-      onObservation: () {
-        onObservation(detalles[index]);
-      },
-      onChanged: onChanged,
+          IconButton(
+            tooltip: 'Cerrar',
+            onPressed: widget.isSubmitting
+                ? null
+                : () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close_rounded, size: 21),
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  // ==========================================================
+  // PROVEEDOR Y FECHA
+  // ==========================================================
 
-    /*
-    ═══════════════════════════════════
-    HASTA 5 PRODUCTOS:
-    CRECE NATURALMENTE
-    ═══════════════════════════════════
-    */
+  Widget _buildGeneralFields(BuildContext context) {
+    final providerField = _buildProviderField(context);
+    final dateField = _buildDateField(context);
 
-    final compactRows = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (int i = 0; i < detalles.length; i++) ...[
-          _buildRow(i),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 650) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [providerField, const SizedBox(height: 14), dateField],
+          );
+        }
 
-          if (i < detalles.length - 1)
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: theme.colorScheme.outlineVariant,
-            ),
-        ],
-      ],
-    );
-
-    /*
-    ═══════════════════════════════════
-    MÁS DE 5:
-    SCROLL INTERNO
-    ═══════════════════════════════════
-    */
-
-    final scrollRows = ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: detalles.length,
-      separatorBuilder: (_, _) {
-        return Divider(
-          height: 1,
-          thickness: 1,
-          color: theme.colorScheme.outlineVariant,
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 6, child: providerField),
+            const SizedBox(width: 16),
+            Expanded(flex: 4, child: dateField),
+          ],
         );
       },
-      itemBuilder: (_, index) {
-        return _buildRow(index);
-      },
     );
+  }
 
-    /*
-    ═══════════════════════════════════
-    CONTENIDO COMPLETO DE TABLA
-    ═══════════════════════════════════
-    */
+  // ==========================================================
+  // PROVEEDOR BUSCABLE
+  // ==========================================================
 
-    final tableContent = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        /*
-        ─────────────────────────────
-        HEADER
-        ─────────────────────────────
-        */
-        Container(
-          width: double.infinity,
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Row(children: _headers(context)),
-        ),
+  Widget _buildProviderField(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
 
-        /*
-        ─────────────────────────────
-        FILAS
-        ─────────────────────────────
-        */
-        if (detalles.length > 5)
-          SizedBox(height: 295, child: scrollRows)
-        else
-          compactRows,
+    return _FieldLabel(
+      label: 'Proveedor',
+      requiredField: true,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownMenu<int>(
+                width: constraints.maxWidth,
+                menuHeight: 300,
+                enableFilter: true,
+                enableSearch: true,
+                requestFocusOnTap: true,
+                enabled: widget.proveedores.isNotEmpty && !widget.isSubmitting,
+                initialSelection: _proveedorId,
+                hintText: widget.proveedores.isEmpty
+                    ? 'No hay proveedores disponibles'
+                    : 'Seleccionar proveedor',
+                leadingIcon: const Icon(
+                  Icons.local_shipping_outlined,
+                  size: 19,
+                ),
+                inputDecorationTheme: _dropdownTheme(context),
+                dropdownMenuEntries: widget.proveedores
+                    .map(
+                      (provider) => DropdownMenuEntry<int>(
+                        value: provider.id,
+                        label: provider.displayName,
+                      ),
+                    )
+                    .toList(growable: false),
+                onSelected: (value) {
+                  setState(() {
+                    _proveedorId = value;
+                  });
+                },
+              ),
 
-        /*
-        ─────────────────────────────
-        AGREGAR PRODUCTO
-        ─────────────────────────────
-        */
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: theme.colorScheme.outlineVariant,
-        ),
+              if (_attemptedSubmit && _proveedorId == null) ...[
+                const SizedBox(height: 5),
+                Text(
+                  'Selecciona un proveedor.',
+                  style: TextStyle(color: colors.error, fontSize: 11),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-        SizedBox(
-          width: double.infinity,
-          child: Center(
-            child: TextButton.icon(
-              onPressed: onAdd,
-              style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 13,
+  // ==========================================================
+  // FECHA
+  // ==========================================================
+
+  Widget _buildDateField(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return _FieldLabel(
+      label: 'Fecha de emisión',
+      requiredField: true,
+      child: InkWell(
+        onTap: widget.isSubmitting ? null : _pickDate,
+        borderRadius: BorderRadius.circular(9),
+        child: InputDecorator(
+          decoration: _decoration(context, hint: ''),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  DateFormat('dd/MM/yyyy').format(_fechaEmision),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text(
-                'Agregar producto',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 20,
+                color: colors.onSurface,
               ),
-            ),
+            ],
           ),
-        ),
-      ],
-    );
-
-    /*
-    ═══════════════════════════════════
-    CONTENEDOR EXTERIOR
-    ═══════════════════════════════════
-    */
-
-    return SizedBox(
-      width: double.infinity,
-      child: Container(
-        width: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            /*
-            Desktop normal:
-            ocupa TODO el ancho.
-            */
-
-            if (constraints.maxWidth >= 700) {
-              return tableContent;
-            }
-
-            /*
-            Pantalla pequeña:
-            conserva formato horizontal
-            mediante scroll lateral.
-            */
-
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(width: 700, child: tableContent),
-            );
-          },
         ),
       ),
     );
   }
 
-  /*
-  ═══════════════════════════════════
-  HEADER DE COLUMNAS
-  MISMAS MEDIDAS QUE LA FILA
-  ═══════════════════════════════════
-  */
+  // ==========================================================
+  // OBSERVACION GENERAL
+  // ==========================================================
 
-  List<Widget> _headers(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget _buildGeneralObservation(BuildContext context) {
+    return _FieldLabel(
+      label: 'Observación general',
+      child: TextFormField(
+        controller: _observacionController,
+        maxLength: 500,
+        minLines: 2,
+        maxLines: 3,
+        enabled: !widget.isSubmitting,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: _decoration(
+          context,
+          hint: 'Escribe una observación general...',
+        ),
+      ),
+    );
+  }
 
-    Widget header(String text, {TextAlign align = TextAlign.left}) {
+  // ==========================================================
+  // TITULO DEL DETALLE
+  // ==========================================================
+
+  Widget _buildDetailTitle(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Row(
+      children: [
+        const Icon(Icons.receipt_long_outlined, size: 21, color: _accent),
+
+        const SizedBox(width: 9),
+
+        const Expanded(
+          child: Text(
+            'Detalle de la compra',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+        ),
+
+        Text(
+          '${_detalles.length} '
+          '${_detalles.length == 1 ? 'producto' : 'productos'}',
+          style: TextStyle(fontSize: 11.5, color: colors.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // TABLA DE PRODUCTOS
+  // ==========================================================
+
+  Widget _buildProductsTable(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: math.max(810.0, constraints.maxWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // CABECERA
+                  _buildTableHeader(context),
+
+                  // FILAS
+                  if (_detalles.length <= 5)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final draft in _detalles)
+                          _buildProductRow(context, draft),
+                      ],
+                    )
+                  else
+                    SizedBox(
+                      height: 345,
+                      child: ListView.builder(
+                        itemCount: _detalles.length,
+                        itemBuilder: (context, index) {
+                          final draft = _detalles[index];
+
+                          return _buildProductRow(context, draft);
+                        },
+                      ),
+                    ),
+
+                  // AGREGAR PRODUCTO
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: widget.isSubmitting ? null : _addDetail,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _accent,
+                          side: BorderSide(
+                            color: _accent.withValues(alpha: 0.45),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 20),
+                        label: const Text(
+                          'Agregar producto',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================================
+  // ENCABEZADO DE LA TABLA
+  // ==========================================================
+
+  Widget _buildTableHeader(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    Widget header(String label) {
       return Text(
-        text,
-        textAlign: align,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurfaceVariant,
-          fontSize: 10.5,
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: colors.onSurfaceVariant,
         ),
       );
     }
 
-    return [
-      Expanded(flex: 5, child: header('Producto *')),
-
-      const Gap(10),
-
-      Expanded(flex: 2, child: header('Cantidad *')),
-
-      const Gap(10),
-
-      Expanded(flex: 2, child: header('Costo estimado *')),
-
-      const Gap(8),
-
-      SizedBox(
-        width: 52,
-        child: Center(child: header('Obs.', align: TextAlign.center)),
-      ),
-
-      SizedBox(
-        width: 58,
-        child: Center(child: header('Acción', align: TextAlign.center)),
-      ),
-    ];
-  }
-}
-
-/*
-══════════════════════════════════════════
-FILA DEL PRODUCTO
-══════════════════════════════════════════
-*/
-
-class _DetalleRow extends StatefulWidget {
-  const _DetalleRow({
-    required this.draft,
-    required this.insumos,
-    required this.canRemove,
-    required this.onRemove,
-    required this.onObservation,
-    required this.onChanged,
-  });
-
-  final _OrdenCompraDetalleDraft draft;
-  final List<InsumoLookup> insumos;
-
-  final bool canRemove;
-
-  final VoidCallback onRemove;
-  final VoidCallback onObservation;
-  final VoidCallback onChanged;
-
-  @override
-  State<_DetalleRow> createState() => _DetalleRowState();
-}
-
-class _DetalleRowState extends State<_DetalleRow> {
-  @override
-  void initState() {
-    super.initState();
-
-    widget.draft.insumoId ??= widget.insumos.isNotEmpty
-        ? widget.insumos.first.id
-        : null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    const fieldDecoration = InputDecoration(
-      isDense: true,
-      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+      color: colors.surfaceContainerLow,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          /*
-          ─────────────────────────────
-          PRODUCTO
-          ─────────────────────────────
-          */
+          Expanded(flex: 5, child: header('Producto *')),
+          const SizedBox(width: 12),
+          Expanded(flex: 2, child: header('Cantidad *')),
+          const SizedBox(width: 12),
+          Expanded(flex: 2, child: header('Costo estimado')),
+          const SizedBox(width: 10),
+          SizedBox(width: 51, child: Center(child: header('Obs.'))),
+          SizedBox(width: 51, child: Center(child: header('Acción'))),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // FILA DE PRODUCTO
+  // ==========================================================
+
+  Widget _buildProductRow(
+    BuildContext context,
+    _OrdenCompraDetalleDraft draft,
+  ) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      key: ObjectKey(draft),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.outlineVariant)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ============================================
+          // PRODUCTO BUSCABLE
+          // ============================================
           Expanded(
             flex: 5,
-            child: DropdownButtonFormField<int>(
-              isExpanded: true,
-              initialValue: widget.draft.insumoId,
-              decoration: fieldDecoration,
-              items: widget.insumos
-                  .map(
-                    (x) => DropdownMenuItem(
-                      value: x.id,
-                      child: Text(
-                        x.displayName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownMenu<int>(
+                      key: ValueKey(draft),
+                      width: constraints.maxWidth,
+                      menuHeight: 280,
+                      enableFilter: true,
+                      enableSearch: true,
+                      requestFocusOnTap: true,
+                      enabled:
+                          widget.insumos.isNotEmpty && !widget.isSubmitting,
+                      initialSelection: draft.insumoId,
+                      hintText: widget.insumos.isEmpty
+                          ? 'Sin insumos disponibles'
+                          : 'Seleccionar producto',
+                      inputDecorationTheme: _dropdownTheme(context),
+                      dropdownMenuEntries: widget.insumos
+                          .map(
+                            (insumo) => DropdownMenuEntry<int>(
+                              value: insumo.id,
+                              label: insumo.displayName,
+                            ),
+                          )
+                          .toList(growable: false),
+                      onSelected: (value) {
+                        setState(() {
+                          draft.insumoId = value;
+                        });
+                      },
                     ),
-                  )
-                  .toList(),
-              onChanged: widget.insumos.isEmpty
-                  ? null
-                  : (value) {
-                      setState(() {
-                        widget.draft.insumoId = value;
-                      });
-                    },
-              validator: (value) {
-                return value == null ? 'Selecciona un insumo.' : null;
+
+                    if (_attemptedSubmit && draft.insumoId == null) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        'Selecciona un producto.',
+                        style: TextStyle(fontSize: 10.5, color: colors.error),
+                      ),
+                    ],
+                  ],
+                );
               },
             ),
           ),
 
-          const Gap(10),
+          const SizedBox(width: 12),
 
-          /*
-          ─────────────────────────────
-          CANTIDAD
-          ─────────────────────────────
-          */
+          // ============================================
+          // CANTIDAD
+          // ============================================
           Expanded(
             flex: 2,
             child: TextFormField(
-              controller: widget.draft.cantidadController,
+              controller: draft.cantidadController,
+              enabled: !widget.isSubmitting,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: fieldDecoration.copyWith(hintText: '0'),
-              onChanged: (_) {
-                widget.onChanged();
-              },
+              decoration: _decoration(context, hint: '0'),
+              onChanged: (_) => setState(() {}),
               validator: (value) {
-                final number = double.tryParse(
-                  (value ?? '').trim().replaceAll(',', '.'),
-                );
+                final cantidad = _parseNumber(value ?? '');
 
-                if (number == null || number <= 0) {
+                if (cantidad == null || cantidad <= 0) {
                   return 'Cantidad inválida';
                 }
 
@@ -852,37 +863,34 @@ class _DetalleRowState extends State<_DetalleRow> {
             ),
           ),
 
-          const Gap(10),
+          const SizedBox(width: 12),
 
-          /*
-          ─────────────────────────────
-          COSTO
-          ─────────────────────────────
-          */
+          // ============================================
+          // COSTO UNITARIO ESTIMADO
+          // ============================================
           Expanded(
             flex: 2,
             child: TextFormField(
-              controller: widget.draft.costoController,
+              controller: draft.costoController,
+              enabled: !widget.isSubmitting,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: fieldDecoration.copyWith(
-                prefixText: 'S/ ',
-                hintText: '0.00',
-              ),
-              onChanged: (_) {
-                widget.onChanged();
-              },
+              decoration: _decoration(
+                context,
+                hint: '0.00',
+              ).copyWith(prefixText: 'S/ '),
+              onChanged: (_) => setState(() {}),
               validator: (value) {
-                final text = (value ?? '').trim();
+                final text = value?.trim() ?? '';
 
-                if (text.isEmpty) {
-                  return null;
-                }
+                // Se conserva el costo opcional del
+                // contrato original del repositorio.
+                if (text.isEmpty) return null;
 
-                final number = double.tryParse(text.replaceAll(',', '.'));
+                final costo = _parseNumber(text);
 
-                if (number == null || number < 0) {
+                if (costo == null || costo < 0) {
                   return 'Costo inválido';
                 }
 
@@ -891,47 +899,48 @@ class _DetalleRowState extends State<_DetalleRow> {
             ),
           ),
 
-          const Gap(8),
+          const SizedBox(width: 10),
 
-          /*
-          ─────────────────────────────
-          OBSERVACIÓN
-          ─────────────────────────────
-          */
+          // ============================================
+          // OBSERVACION
+          // ============================================
           SizedBox(
-            width: 52,
-            child: Center(
-              child: IconButton(
-                tooltip: widget.draft.observacionController.text.trim().isEmpty
-                    ? 'Agregar observación'
-                    : 'Editar observación',
-                onPressed: widget.onObservation,
-                icon: Icon(
-                  widget.draft.observacionController.text.trim().isEmpty
-                      ? Icons.note_add_outlined
-                      : Icons.sticky_note_2_outlined,
-                  size: 21,
-                ),
+            width: 51,
+            child: IconButton.outlined(
+              tooltip: draft.observacionController.text.trim().isEmpty
+                  ? 'Agregar observación'
+                  : 'Editar observación',
+              visualDensity: VisualDensity.compact,
+              onPressed: widget.isSubmitting
+                  ? null
+                  : () => _editObservation(draft),
+              icon: Icon(
+                draft.observacionController.text.trim().isEmpty
+                    ? Icons.note_add_outlined
+                    : Icons.sticky_note_2_outlined,
+                size: 19,
+                color: _accent,
               ),
             ),
           ),
 
-          /*
-          ─────────────────────────────
-          ELIMINAR
-          ─────────────────────────────
-          */
+          // ============================================
+          // ELIMINAR
+          // ============================================
           SizedBox(
-            width: 58,
-            child: Center(
-              child: IconButton(
-                tooltip: 'Eliminar producto',
-                onPressed: widget.canRemove ? widget.onRemove : null,
-                icon: Icon(
-                  Icons.delete_outline,
-                  size: 21,
-                  color: widget.canRemove ? theme.colorScheme.error : null,
-                ),
+            width: 51,
+            child: IconButton.outlined(
+              tooltip: 'Eliminar producto',
+              visualDensity: VisualDensity.compact,
+              onPressed: widget.isSubmitting || _detalles.length <= 1
+                  ? null
+                  : () => _removeDetail(draft),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 19,
+                color: _detalles.length > 1
+                    ? colors.error
+                    : colors.onSurfaceVariant,
               ),
             ),
           ),
@@ -939,15 +948,224 @@ class _DetalleRowState extends State<_DetalleRow> {
       ),
     );
   }
+
+  // ==========================================================
+  // PIE FIJO
+  // ==========================================================
+
+  Widget _buildFooter(BuildContext context, bool mobile) {
+    final colors = Theme.of(context).colorScheme;
+
+    final totalWidget = Wrap(
+      spacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        const Text(
+          'Total estimado:',
+          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+        ),
+        Text(
+          NumberFormat.currency(
+            locale: 'es_PE',
+            symbol: 'S/ ',
+            decimalDigits: 2,
+          ).format(_total),
+          style: const TextStyle(
+            color: _accent,
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+
+    final actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        OutlinedButton(
+          onPressed: widget.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(9),
+            ),
+          ),
+          child: const Text('Cancelar'),
+        ),
+
+        const SizedBox(width: 11),
+
+        FilledButton.icon(
+          onPressed: widget.isSubmitting ? null : _submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: _accent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(9),
+            ),
+          ),
+          icon: widget.isSubmitting
+              ? const SizedBox(
+                  width: 17,
+                  height: 17,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.shopping_cart_checkout_outlined, size: 19),
+          label: const Text(
+            'Crear orden',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 25, vertical: 14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.outlineVariant)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 610) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                totalWidget,
+                const SizedBox(height: 12),
+                Align(alignment: Alignment.centerRight, child: actions),
+              ],
+            );
+          }
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [totalWidget, actions],
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================================
+  // DECORACION GENERAL
+  // ==========================================================
+
+  InputDecoration _decoration(BuildContext context, {required String hint}) {
+    final colors = Theme.of(context).colorScheme;
+
+    return InputDecoration(
+      isDense: true,
+      hintText: hint,
+      hintStyle: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+      filled: true,
+      fillColor: colors.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(9)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(9),
+        borderSide: BorderSide(color: colors.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(9),
+        borderSide: const BorderSide(color: _accent, width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(9),
+        borderSide: BorderSide(color: colors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(9),
+        borderSide: BorderSide(color: colors.error, width: 1.4),
+      ),
+    );
+  }
+
+  InputDecorationTheme _dropdownTheme(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return InputDecorationTheme(
+      isDense: true,
+      filled: true,
+      fillColor: colors.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 11, vertical: 15),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(9)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(9),
+        borderSide: BorderSide(color: colors.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(9),
+        borderSide: const BorderSide(color: _accent, width: 1.4),
+      ),
+    );
+  }
 }
 
-/*
-══════════════════════════════════════════
-MODELO TEMPORAL DE FILA
-══════════════════════════════════════════
-*/
+// ============================================================
+// ETIQUETA DE CAMPO
+// ============================================================
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({
+    required this.label,
+    required this.child,
+    this.requiredField = false,
+  });
+
+  final String label;
+  final Widget child;
+  final bool requiredField;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+
+            if (requiredField) ...[
+              const SizedBox(width: 4),
+              const Text(
+                '*',
+                style: TextStyle(color: _accent, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ],
+        ),
+
+        const SizedBox(height: 7),
+
+        child,
+      ],
+    );
+  }
+}
+
+// ============================================================
+// MODELO TEMPORAL DE CADA PRODUCTO
+// ============================================================
 
 class _OrdenCompraDetalleDraft {
+  _OrdenCompraDetalleDraft({this.insumoId});
+
   int? insumoId;
 
   final cantidadController = TextEditingController();
