@@ -128,17 +128,10 @@ public sealed class SalidaInventarioService(
             errors.Add("La salida por proceso requiere una orden de produccion valida.");
         }
 
-        var processedInsumoIds = new HashSet<long>();
         var details = new List<SalidaInventarioRegistrationDetail>();
 
         foreach (var detail in requestDetails)
         {
-            if (!processedInsumoIds.Add(detail.InsumoId))
-            {
-                errors.Add($"El insumo {detail.InsumoId} no debe repetirse en la salida.");
-                continue;
-            }
-
             var insumo = await insumoRepository.FindByIdAsync(detail.InsumoId, cancellationToken);
             if (insumo is null)
             {

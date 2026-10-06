@@ -85,17 +85,10 @@ public sealed class SolicitudInsumoService(
         }
 
         var errors = new List<string>();
-        var requestedInsumos = new HashSet<long>();
         var details = new List<SolicitudInsumoDetalle>();
 
         foreach (var detail in request.Detalles)
         {
-            if (!requestedInsumos.Add(detail.InsumoId))
-            {
-                errors.Add($"El insumo {detail.InsumoId} no debe repetirse en la solicitud.");
-                continue;
-            }
-
             var quantity = decimal.Round(detail.Cantidad, 2);
             if (quantity <= 0)
             {
