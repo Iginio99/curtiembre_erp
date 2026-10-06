@@ -53,6 +53,7 @@ class FormulasRemoteDataSource {
     required int procesoProductivoId,
     required String tipoProducto,
     required String color,
+    int? productoId,
     String? descripcion,
   }) async {
     try {
@@ -64,6 +65,7 @@ class FormulasRemoteDataSource {
           'procesoProductivoId': procesoProductivoId,
           'tipoProducto': tipoProducto,
           'color': color,
+          'productoId': productoId,
           'descripcion': descripcion,
         },
       );
@@ -80,6 +82,7 @@ class FormulasRemoteDataSource {
     required int procesoProductivoId,
     required String tipoProducto,
     required String color,
+    int? productoId,
     String? descripcion,
   }) async {
     try {
@@ -91,6 +94,7 @@ class FormulasRemoteDataSource {
           'procesoProductivoId': procesoProductivoId,
           'tipoProducto': tipoProducto,
           'color': color,
+          'productoId': productoId,
           'descripcion': descripcion,
         },
       );

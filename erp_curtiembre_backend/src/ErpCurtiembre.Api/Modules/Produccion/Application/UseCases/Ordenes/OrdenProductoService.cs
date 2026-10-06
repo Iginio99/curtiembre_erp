@@ -16,11 +16,12 @@ public sealed class OrdenProductoService(ISqlConnectionFactory connectionFactory
     {
         const string sql = """
             SELECT f.id AS FormulaId, f.codigo AS FormulaCodigo, f.nombre AS FormulaNombre,
-                   f.tipo_producto AS TipoProducto, f.color AS Color,
+                   p.tipo AS TipoProducto, p.color AS Color,
                    pp.id AS ProcesoProductivoId, pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
                    fv.id AS FormulaVersionId, fv.numero_version AS NumeroVersion
             FROM configuracion.formula f
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = f.proceso_productivo_id
+            LEFT JOIN configuracion.producto p ON p.id = f.producto_id
             INNER JOIN configuracion.formula_version fv ON fv.formula_id = f.id
             WHERE f.activo = 1 AND fv.vigente = 1 AND pp.codigo IN ('REMOJO_PELAMBRE', 'CURTIDO', 'RECURTIDO', 'ACABADO')
               AND fv.fecha_inicio_vigencia <= SYSDATETIME()

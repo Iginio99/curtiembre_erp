@@ -821,6 +821,11 @@ const _moduleNavigationGroups = [
       route: '/produccion/formulas',
     ),
     _NavigationItem(
+      label: 'Productos',
+      icon: Icons.category_outlined,
+      route: '/produccion/productos',
+    ),
+    _NavigationItem(
       label: 'Personal',
       icon: Icons.badge_outlined,
       route: '/produccion/personal',

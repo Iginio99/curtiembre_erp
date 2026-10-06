@@ -188,6 +188,7 @@ class FormulasCubit extends Cubit<FormulasState> {
     required int procesoProductivoId,
     required String tipoProducto,
     required String color,
+    int? productoId,
     String? descripcion,
     required List<FormulaCreationDetail> detalles,
   }) async {
@@ -199,6 +200,7 @@ class FormulasCubit extends Cubit<FormulasState> {
         procesoProductivoId: procesoProductivoId,
         tipoProducto: tipoProducto,
         color: color,
+        productoId: productoId,
         descripcion: descripcion,
       );
 
@@ -247,6 +249,7 @@ class FormulasCubit extends Cubit<FormulasState> {
     required int procesoProductivoId,
     required String tipoProducto,
     required String color,
+    int? productoId,
     String? descripcion,
   }) async {
     final formulaId = state.selectedFormulaId;
@@ -265,6 +268,7 @@ class FormulasCubit extends Cubit<FormulasState> {
         procesoProductivoId: procesoProductivoId,
         tipoProducto: tipoProducto,
         color: color,
+        productoId: productoId,
         descripcion: descripcion,
       );
 

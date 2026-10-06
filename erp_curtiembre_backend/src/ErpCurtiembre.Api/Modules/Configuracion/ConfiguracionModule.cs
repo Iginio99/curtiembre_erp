@@ -2,6 +2,7 @@ using ErpCurtiembre.Modules.Configuracion.Application.Ports;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.Areas;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.Formulas;
+using ErpCurtiembre.Modules.Configuracion.Application.UseCases.Productos;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.TiposPiel;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.UnidadesMedida;
 using ErpCurtiembre.Modules.Configuracion.Infrastructure.Persistence;
@@ -34,6 +35,7 @@ public sealed class ConfiguracionModule : IErpModule
         services.AddScoped<IUnidadMedidaRepository, SqlUnidadMedidaRepository>();
         services.AddScoped<ITipoPielRepository, SqlTipoPielRepository>();
         services.AddScoped<IFormulaRepository, SqlFormulaRepository>();
+        services.AddScoped<IProductoCatalogoRepository, SqlProductoCatalogoRepository>();
         services.AddScoped<IDocumentSequenceService, DocumentSequenceService>();
 
         services.AddScoped<ListarParametrosConfiguracionUseCase>();
@@ -42,6 +44,7 @@ public sealed class ConfiguracionModule : IErpModule
         services.AddScoped<TipoPielCatalogService>();
         services.AddScoped<FormulaCatalogService>();
         services.AddScoped<ProcesoProductivoCatalogService>();
+        services.AddScoped<ProductoCatalogoService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder app) => app.MapConfiguracionEndpoints();

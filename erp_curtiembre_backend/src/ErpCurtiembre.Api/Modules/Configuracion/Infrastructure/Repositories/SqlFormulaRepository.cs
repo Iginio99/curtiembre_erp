@@ -39,8 +39,9 @@ public sealed class SqlFormulaRepository(
                 f.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoProductivoCodigo,
                 pp.nombre AS ProcesoProductivoNombre,
-                f.tipo_producto AS TipoProducto,
-                f.color AS Color,
+                p.tipo AS TipoProducto,
+                p.color AS Color,
+                f.producto_id AS ProductoId, p.codigo AS ProductoCodigo, p.nombre AS ProductoNombre,
                 f.descripcion AS Descripcion,
                 f.activo AS Activo,
                 f.creado_en AS CreadoEn,
@@ -52,6 +53,7 @@ public sealed class SqlFormulaRepository(
                 vv.vigente AS VersionVigente
             FROM configuracion.formula f
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = f.proceso_productivo_id
+            LEFT JOIN configuracion.producto p ON p.id = f.producto_id
             OUTER APPLY (
                 SELECT TOP 1
                     fv.id,
@@ -82,8 +84,9 @@ public sealed class SqlFormulaRepository(
                 f.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoProductivoCodigo,
                 pp.nombre AS ProcesoProductivoNombre,
-                f.tipo_producto AS TipoProducto,
-                f.color AS Color,
+                p.tipo AS TipoProducto,
+                p.color AS Color,
+                f.producto_id AS ProductoId, p.codigo AS ProductoCodigo, p.nombre AS ProductoNombre,
                 f.descripcion AS Descripcion,
                 f.activo AS Activo,
                 f.creado_en AS CreadoEn,
@@ -95,6 +98,7 @@ public sealed class SqlFormulaRepository(
                 vv.vigente AS VersionVigente
             FROM configuracion.formula f
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = f.proceso_productivo_id
+            LEFT JOIN configuracion.producto p ON p.id = f.producto_id
             OUTER APPLY (
                 SELECT TOP 1
                     fv.id,
@@ -143,6 +147,7 @@ public sealed class SqlFormulaRepository(
             ProcesoProductivoId = formula.ProcesoProductivoId,
             TipoProducto = formula.TipoProducto,
             Color = formula.Color,
+            ProductoId = formula.ProductoId,
             Descripcion = formula.Descripcion,
             Activo = formula.Activo,
             CreadoPorUsuarioId = createdByUsuarioId
@@ -166,6 +171,7 @@ public sealed class SqlFormulaRepository(
         entity.ProcesoProductivoId = formula.ProcesoProductivoId;
         entity.TipoProducto = formula.TipoProducto;
         entity.Color = formula.Color;
+        entity.ProductoId = formula.ProductoId;
         entity.Descripcion = formula.Descripcion;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -213,6 +219,12 @@ public sealed class SqlFormulaRepository(
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteScalarAsync<bool>(
             new CommandDefinition(sql, new { ProcesoProductivoId = procesoProductivoId }, cancellationToken: cancellationToken));
+    }
+
+    public async Task<string?> FindProcesoProductivoCodigoAsync(long procesoProductivoId, CancellationToken cancellationToken)
+    {
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<string?>(new CommandDefinition("SELECT codigo FROM configuracion.proceso_productivo WHERE id=@Id AND activo=1", new { Id = procesoProductivoId }, cancellationToken: cancellationToken));
     }
 
     public async Task<IReadOnlyCollection<ProcesoProductivoCatalogItem>> ListActiveProcesosProductivosAsync(CancellationToken cancellationToken)

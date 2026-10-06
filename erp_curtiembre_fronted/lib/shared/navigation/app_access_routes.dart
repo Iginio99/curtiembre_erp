@@ -44,6 +44,7 @@ abstract final class AppAccessRoutes {
         '/produccion/clientes',
         '/produccion/lotes',
         '/produccion/formulas',
+        '/produccion/productos',
         '/produccion/ordenes',
         '/produccion/personal',
         '/produccion/productos-terminados',

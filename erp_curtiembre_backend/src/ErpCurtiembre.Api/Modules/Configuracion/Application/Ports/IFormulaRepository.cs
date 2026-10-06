@@ -20,6 +20,7 @@ public interface IFormulaRepository
     Task<bool> HasAnyVigenteVersionAsync(long formulaId, CancellationToken cancellationToken);
 
     Task<bool> IsProcesoProductivoActiveAsync(long procesoProductivoId, CancellationToken cancellationToken);
+    Task<string?> FindProcesoProductivoCodigoAsync(long procesoProductivoId, CancellationToken cancellationToken);
 
     Task<IReadOnlyCollection<ProcesoProductivoCatalogItem>> ListActiveProcesosProductivosAsync(CancellationToken cancellationToken);
 

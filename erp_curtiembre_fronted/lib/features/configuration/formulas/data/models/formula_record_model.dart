@@ -175,6 +175,9 @@ class FormulaRecordModel {
     required this.procesoProductivoNombre,
     this.tipoProducto,
     this.color,
+    this.productoId,
+    this.productoCodigo,
+    this.productoNombre,
     this.descripcion,
     required this.activo,
     required this.creadoEn,
@@ -190,6 +193,9 @@ class FormulaRecordModel {
   final String procesoProductivoNombre;
   final String? tipoProducto;
   final String? color;
+  final int? productoId;
+  final String? productoCodigo;
+  final String? productoNombre;
   final String? descripcion;
   final bool activo;
   final DateTime creadoEn;
@@ -206,6 +212,9 @@ class FormulaRecordModel {
       procesoProductivoNombre: json['procesoProductivoNombre'] as String,
       tipoProducto: json['tipoProducto'] as String?,
       color: json['color'] as String?,
+      productoId: json['productoId'] as int?,
+      productoCodigo: json['productoCodigo'] as String?,
+      productoNombre: json['productoNombre'] as String?,
       descripcion: json['descripcion'] as String?,
       activo: json['activo'] as bool,
       creadoEn: DateTime.parse(json['creadoEn'] as String),
@@ -228,6 +237,9 @@ class FormulaRecordModel {
       procesoProductivoNombre: procesoProductivoNombre,
       tipoProducto: tipoProducto,
       color: color,
+      productoId: productoId,
+      productoCodigo: productoCodigo,
+      productoNombre: productoNombre,
       descripcion: descripcion,
       activo: activo,
       creadoEn: creadoEn,

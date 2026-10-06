@@ -17,6 +17,7 @@ class FormulaUpsertFormData {
     required this.procesoProductivoId,
     required this.tipoProducto,
     required this.color,
+    this.productoId,
     this.descripcion,
     this.detalles = const [],
   });
@@ -26,6 +27,7 @@ class FormulaUpsertFormData {
   final int procesoProductivoId;
   final String tipoProducto;
   final String color;
+  final int? productoId;
   final String? descripcion;
   final List<FormulaRecipeLine> detalles;
 }
@@ -78,6 +80,7 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
   late final TextEditingController _descripcionController;
   late final TextEditingController _tipoProductoController;
   late final TextEditingController _colorController;
+  late final TextEditingController _productoIdController;
 
   int? _procesoProductivoId;
 
@@ -108,6 +111,7 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
     );
 
     _colorController = TextEditingController(text: initial?.color ?? '');
+    _productoIdController = TextEditingController(text: initial?.productoId?.toString() ?? '');
 
     // Crear: proceso vacío.
     // Editar: mantener el proceso existente.
@@ -122,6 +126,7 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
     _descripcionController.dispose();
     _tipoProductoController.dispose();
     _colorController.dispose();
+    _productoIdController.dispose();
 
     for (final detail in _details) {
       detail.dispose();
@@ -189,6 +194,8 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
 
     return null;
   }
+
+  bool get _requiresProduct => _findInitialProcess()?.codigo.toUpperCase() == 'RECURTIDO' || _findInitialProcess()?.codigo.toUpperCase() == 'ACABADO';
 
   // ==========================================================
   // AGREGAR INSUMO
@@ -280,6 +287,7 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
 
         // Color opcional.
         color: _colorController.text.trim(),
+        productoId: _requiresProduct ? int.tryParse(_productoIdController.text.trim()) : null,
 
         descripcion: _descripcionController.text.trim().isEmpty
             ? null
@@ -573,10 +581,20 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
 
         const Gap(AppSpacing.md),
 
-        // ======================================================
-        // TIPO DE PRODUCTO Y COLOR
-        // ======================================================
-        LayoutBuilder(
+        // El producto solo aplica a Recurtido y Acabado. En Remojo/Pelambre y
+        // Curtido la fórmula es general y se registra únicamente por nombre.
+        if (_requiresProduct) ...[
+        const _FormLabel(text: 'ID del producto', requiredField: true),
+        const Gap(6),
+        TextFormField(
+          controller: _productoIdController,
+          keyboardType: TextInputType.number,
+          decoration: _fieldDecoration(hint: 'Selecciona el ID del producto registrado'),
+          validator: (value) => int.tryParse(value?.trim() ?? '') == null ? 'Selecciona un producto.' : null,
+        ),
+        const Gap(AppSpacing.md),
+        ],
+        if (false) LayoutBuilder(
           builder: (context, constraints) {
             final twoColumns = constraints.maxWidth >= 430;
 

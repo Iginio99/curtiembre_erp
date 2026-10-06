@@ -122,6 +122,9 @@ class FormulaRecord extends Equatable {
     required this.procesoProductivoNombre,
     this.tipoProducto,
     this.color,
+    this.productoId,
+    this.productoCodigo,
+    this.productoNombre,
     this.descripcion,
     required this.activo,
     required this.creadoEn,
@@ -137,6 +140,9 @@ class FormulaRecord extends Equatable {
   final String procesoProductivoNombre;
   final String? tipoProducto;
   final String? color;
+  final int? productoId;
+  final String? productoCodigo;
+  final String? productoNombre;
   final String? descripcion;
   final bool activo;
   final DateTime creadoEn;
@@ -156,6 +162,9 @@ class FormulaRecord extends Equatable {
     procesoProductivoNombre,
     tipoProducto,
     color,
+    productoId,
+    productoCodigo,
+    productoNombre,
     descripcion,
     activo,
     creadoEn,

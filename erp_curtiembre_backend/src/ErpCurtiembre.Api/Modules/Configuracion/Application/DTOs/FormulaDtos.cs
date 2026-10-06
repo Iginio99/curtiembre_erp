@@ -6,16 +6,18 @@ public sealed record CreateFormulaRequestDto(
     [property: Required, StringLength(50)] string Codigo,
     [property: Required, StringLength(150)] string Nombre,
     [property: Required] long ProcesoProductivoId,
-    [property: Required, StringLength(120)] string TipoProducto,
+    [property: StringLength(120)] string? TipoProducto,
     [property: StringLength(80)] string? Color,
+    long? ProductoId,
     [property: StringLength(500)] string? Descripcion);
 
 public sealed record UpdateFormulaRequestDto(
     [property: Required, StringLength(50)] string Codigo,
     [property: Required, StringLength(150)] string Nombre,
     [property: Required] long ProcesoProductivoId,
-    [property: Required, StringLength(120)] string TipoProducto,
+    [property: StringLength(120)] string? TipoProducto,
     [property: StringLength(80)] string? Color,
+    long? ProductoId,
     [property: StringLength(500)] string? Descripcion);
 
 public sealed record FormulaFiltersDto(
@@ -39,6 +41,9 @@ public sealed record FormulaListItemDto(
     string ProcesoProductivoNombre,
     string? TipoProducto,
     string? Color,
+    long? ProductoId,
+    string? ProductoCodigo,
+    string? ProductoNombre,
     string? Descripcion,
     bool Activo,
     DateTime CreadoEn,
@@ -53,6 +58,9 @@ public sealed record FormulaDetailDto(
     string ProcesoProductivoNombre,
     string? TipoProducto,
     string? Color,
+    long? ProductoId,
+    string? ProductoCodigo,
+    string? ProductoNombre,
     string? Descripcion,
     bool Activo,
     DateTime CreadoEn,

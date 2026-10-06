@@ -24,6 +24,7 @@ import 'package:erp_curtiembre_fronted/features/configuration/units/presentation
 import 'package:erp_curtiembre_fronted/features/configuration/units/presentation/pages/units_page.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentation/cubit/formulas_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/configuration/formulas/presentation/pages/formulas_page.dart';
+import 'package:erp_curtiembre_fronted/features/configuration/productos/presentation/pages/productos_page.dart';
 import 'package:erp_curtiembre_fronted/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:erp_curtiembre_fronted/features/finance/activos/presentation/cubit/activos_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/finance/activos/presentation/pages/activos_page.dart';
@@ -416,6 +417,10 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: _configuracionProductosPath,
+            builder: (context, state) => const ProductosPage(),
+          ),
+          GoRoute(
             path: _produccionPersonalPath,
             builder: (context, state) => const PersonalEmpresaPage(),
           ),
@@ -517,6 +522,7 @@ class AppRouter {
   static const String _produccionClientesPath = '/produccion/clientes';
   static const String _produccionLotesPath = '/produccion/lotes';
   static const String _produccionFormulasPath = '/produccion/formulas';
+  static const String _configuracionProductosPath = '/produccion/productos';
   static const String _produccionOrdenesPath = '/produccion/ordenes';
   static const String _produccionPersonalPath = '/produccion/personal';
   static const String _produccionProductosTerminadosPath =

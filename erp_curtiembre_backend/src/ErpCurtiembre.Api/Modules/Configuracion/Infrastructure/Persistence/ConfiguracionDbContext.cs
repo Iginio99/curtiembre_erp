@@ -21,6 +21,7 @@ public sealed class ConfiguracionDbContext(
     public DbSet<FormulaVersionWriteModel> FormulaVersions => Set<FormulaVersionWriteModel>();
 
     public DbSet<FormulaDetalleWriteModel> FormulaDetalles => Set<FormulaDetalleWriteModel>();
+    public DbSet<ProductoCatalogoWriteModel> Productos => Set<ProductoCatalogoWriteModel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,10 +87,24 @@ public sealed class ConfiguracionDbContext(
             entity.Property(x => x.ProcesoProductivoId).HasColumnName("proceso_productivo_id");
             entity.Property(x => x.TipoProducto).HasColumnName("tipo_producto").HasMaxLength(120);
             entity.Property(x => x.Color).HasColumnName("color").HasMaxLength(80);
+            entity.Property(x => x.ProductoId).HasColumnName("producto_id");
             entity.Property(x => x.Descripcion).HasColumnName("descripcion").HasMaxLength(500);
             entity.Property(x => x.Activo).HasColumnName("activo");
             entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
             entity.Property(x => x.CreadoPorUsuarioId).HasColumnName("creado_por_usuario_id");
+        });
+
+        modelBuilder.Entity<ProductoCatalogoWriteModel>(entity =>
+        {
+            entity.ToTable("producto");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(50);
+            entity.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(120);
+            entity.Property(x => x.Nombre).HasColumnName("nombre").HasMaxLength(150);
+            entity.Property(x => x.Color).HasColumnName("color").HasMaxLength(80);
+            entity.Property(x => x.Activo).HasColumnName("activo");
+            entity.Property(x => x.CreadoEn).HasColumnName("creado_en");
         });
 
         modelBuilder.Entity<FormulaVersionWriteModel>(entity =>
@@ -160,6 +175,12 @@ public sealed class ConfiguracionDbContext(
             {
                 entry.Entity.CreadoEn = now;
             }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<ProductoCatalogoWriteModel>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.CreadoEn == default)
+                entry.Entity.CreadoEn = now;
         }
 
         foreach (var entry in ChangeTracker.Entries<FormulaVersionWriteModel>())

@@ -103,6 +103,8 @@ class _FormulasPageState extends State<FormulasPage> {
 
       color: payload.color,
 
+      productoId: payload.productoId,
+
       descripcion: payload.descripcion,
 
       detalles: payload.detalles
@@ -166,6 +168,8 @@ class _FormulasPageState extends State<FormulasPage> {
       tipoProducto: payload.tipoProducto,
 
       color: payload.color,
+
+      productoId: payload.productoId,
 
       descripcion: payload.descripcion,
     );
@@ -1227,14 +1231,20 @@ class _FormulaDetailPanel extends StatelessWidget {
                                 label: 'Proceso',
                                 value: formula.processLabel,
                               ),
-                              _InfoRow(
-                                label: 'Tipo',
-                                value: _textOrFallback(formula.tipoProducto),
-                              ),
-                              _InfoRow(
-                                label: 'Color',
-                                value: _textOrFallback(formula.color),
-                              ),
+                              if (formula.productoId != null) ...[
+                                _InfoRow(
+                                  label: 'Producto',
+                                  value: _textOrFallback(formula.productoNombre),
+                                ),
+                                _InfoRow(
+                                  label: 'Tipo',
+                                  value: _textOrFallback(formula.tipoProducto),
+                                ),
+                                _InfoRow(
+                                  label: 'Color',
+                                  value: _textOrFallback(formula.color),
+                                ),
+                              ],
                             ],
                           ),
                         );

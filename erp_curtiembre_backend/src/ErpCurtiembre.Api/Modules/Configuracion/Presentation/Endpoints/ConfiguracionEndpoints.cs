@@ -2,6 +2,7 @@ using ErpCurtiembre.Modules.Configuracion.Application.DTOs;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.Areas;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.Formulas;
+using ErpCurtiembre.Modules.Configuracion.Application.UseCases.Productos;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.TiposPiel;
 using ErpCurtiembre.Modules.Configuracion.Application.UseCases.UnidadesMedida;
 using ErpCurtiembre.Modules.Seguridad.Application.UseCases.Auth;
@@ -429,6 +430,33 @@ public static class ConfiguracionEndpoints
             }
 
             return ConfiguracionEndpointResults.From(await service.InactivateAsync(id, cancellationToken));
+        });
+
+        var productos = group.MapGroup("/productos");
+        productos.MapGet("/", async (HttpRequest request, bool? activo, ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase, ProductoCatalogoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ConfiguracionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            return authorization.Failure is not null ? authorization.Failure : Results.Ok(await service.ListAsync(activo, cancellationToken));
+        });
+        productos.MapPost("/", async (HttpRequest request, UpsertProductoCatalogoRequestDto body, ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase, ProductoCatalogoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ConfiguracionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            return authorization.Failure is not null ? authorization.Failure : ConfiguracionEndpointResults.From(await service.CreateAsync(body, cancellationToken));
+        });
+        productos.MapPut("/{id:long}", async (HttpRequest request, long id, UpsertProductoCatalogoRequestDto body, ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase, ProductoCatalogoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ConfiguracionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            return authorization.Failure is not null ? authorization.Failure : ConfiguracionEndpointResults.From(await service.UpdateAsync(id, body, cancellationToken));
+        });
+        productos.MapPost("/{id:long}/activar", async (HttpRequest request, long id, ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase, ProductoCatalogoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ConfiguracionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            return authorization.Failure is not null ? authorization.Failure : ConfiguracionEndpointResults.From(await service.SetActiveAsync(id, true, cancellationToken));
+        });
+        productos.MapPost("/{id:long}/inactivar", async (HttpRequest request, long id, ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase, ProductoCatalogoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ConfiguracionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            return authorization.Failure is not null ? authorization.Failure : ConfiguracionEndpointResults.From(await service.SetActiveAsync(id, false, cancellationToken));
         });
 
         var formulas = group.MapGroup("/formulas");
