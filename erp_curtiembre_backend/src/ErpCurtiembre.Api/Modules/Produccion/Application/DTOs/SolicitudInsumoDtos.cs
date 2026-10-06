@@ -56,4 +56,5 @@ public sealed record SolicitudInsumoDetalleDto(
     string UnidadMedidaNombre,
     decimal? Porcentaje,
     decimal CantidadSolicitada,
+    decimal StockDisponible,
     string? Observacion);

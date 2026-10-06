@@ -183,6 +183,7 @@ abstract class OrdenesProduccionRepository {
 
   Future<OrdenProcesoRecord> finishProceso({
     required int id,
+    required DateTime fechaFinReal,
     String? observacion,
   });
 

@@ -72,6 +72,30 @@ public sealed class SqlSolicitudInsumoRepository(
             new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken));
     }
 
+    public async Task<SolicitudInsumo?> FindLatestByProcessAsync(long ordenProcesoId, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT TOP 1
+                s.id AS Id, s.codigo AS Codigo,
+                s.orden_produccion_id AS OrdenProduccionId, op.codigo AS OrdenCodigo,
+                s.orden_proceso_id AS OrdenProcesoId, pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
+                s.estado AS Estado, s.observacion AS Observacion, s.solicitado_en AS SolicitadoEn,
+                s.solicitado_por_usuario_id AS SolicitadoPorUsuarioId,
+                LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) AS SolicitadoPorNombre
+            FROM produccion.solicitud_insumo s
+            INNER JOIN produccion.orden_produccion op ON op.id = s.orden_produccion_id
+            INNER JOIN produccion.orden_produccion_proceso opp ON opp.id = s.orden_proceso_id
+            INNER JOIN configuracion.proceso_productivo pp ON pp.id = opp.proceso_productivo_id
+            INNER JOIN seguridad.usuario u ON u.id = s.solicitado_por_usuario_id
+            WHERE s.orden_proceso_id = @OrdenProcesoId
+            ORDER BY s.solicitado_en DESC, s.id DESC;
+            """;
+
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.QuerySingleOrDefaultAsync<SolicitudInsumo>(
+            new CommandDefinition(sql, new { OrdenProcesoId = ordenProcesoId }, cancellationToken: cancellationToken));
+    }
+
     public async Task<IReadOnlyCollection<SolicitudInsumo>> ListAsync(string? estado, CancellationToken cancellationToken)
     {
         const string sql = """
@@ -105,10 +129,13 @@ public sealed class SqlSolicitudInsumoRepository(
                 i.codigo AS InsumoCodigo, i.nombre AS InsumoNombre,
                 um.codigo AS UnidadMedidaCodigo, um.nombre AS UnidadMedidaNombre,
                 d.porcentaje AS Porcentaje,
-                d.cantidad_solicitada AS CantidadSolicitada, d.observacion AS Observacion
+                d.cantidad_solicitada AS CantidadSolicitada,
+                ISNULL(s.cantidad_actual, 0) AS StockDisponible,
+                d.observacion AS Observacion
             FROM produccion.solicitud_insumo_detalle d
             INNER JOIN inventario.insumo i ON i.id = d.insumo_id
             INNER JOIN configuracion.unidad_medida um ON um.id = i.unidad_medida_id
+            LEFT JOIN inventario.stock_insumo s ON s.insumo_id = i.id
             WHERE d.solicitud_insumo_id = @SolicitudId
             ORDER BY i.nombre, i.codigo;
             """;
@@ -123,6 +150,11 @@ public sealed class SqlSolicitudInsumoRepository(
         dbContext.SolicitudesInsumo.AnyAsync(
             x => x.OrdenProcesoId == ordenProcesoId &&
                 (x.Estado == "SOLICITADA" || x.Estado == "PARCIAL" || x.Estado == "ENTREGANDO"),
+            cancellationToken);
+
+    public Task<bool> HasApprovedRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken) =>
+        dbContext.SolicitudesInsumo.AnyAsync(
+            x => x.OrdenProcesoId == ordenProcesoId && x.Estado == "APROBADA",
             cancellationToken);
 
     public async Task<bool> TryStartDeliveryAsync(long id, CancellationToken cancellationToken)
