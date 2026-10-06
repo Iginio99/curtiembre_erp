@@ -428,13 +428,18 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
 
   Future<OrdenesActionResult> finishProceso({
     required int procesoId,
+    required DateTime fechaFinReal,
     String? observacion,
   }) async {
     _talker.cubit('Finalizando proceso de produccion $procesoId.');
     emit(state.copyWith(isSubmittingAction: true));
 
     try {
-      await _repository.finishProceso(id: procesoId, observacion: observacion);
+      await _repository.finishProceso(
+        id: procesoId,
+        fechaFinReal: fechaFinReal,
+        observacion: observacion,
+      );
 
       final ordenId = state.selectedOrdenId;
       if (ordenId != null) {

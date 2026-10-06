@@ -11,6 +11,7 @@ class OrdenSimpleActionFormData {
     this.fechaFinEstimada,
     this.responsableNombre,
     this.responsableCargo,
+    this.fechaFinReal,
   });
 
   final String? observacion;
@@ -19,6 +20,7 @@ class OrdenSimpleActionFormData {
   final DateTime? fechaFinEstimada;
   final String? responsableNombre;
   final String? responsableCargo;
+  final DateTime? fechaFinReal;
 }
 
 class OrdenSimpleActionDialog extends StatefulWidget {
@@ -32,6 +34,8 @@ class OrdenSimpleActionDialog extends StatefulWidget {
     this.initialValue,
     this.responsableOptions = const [],
     this.onAddPersonal,
+    this.requireCompletionDate = false,
+    this.firstCompletionDate,
     super.key,
   });
 
@@ -44,6 +48,8 @@ class OrdenSimpleActionDialog extends StatefulWidget {
   final String? initialValue;
   final List<PersonalEmpresaOption> responsableOptions;
   final Future<PersonalEmpresaOption?> Function()? onAddPersonal;
+  final bool requireCompletionDate;
+  final DateTime? firstCompletionDate;
 
   @override
   State<OrdenSimpleActionDialog> createState() =>
@@ -55,6 +61,7 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
   late final TextEditingController _valueController;
   late final TextEditingController _pesoController;
   late DateTime _fechaFinEstimada;
+  late DateTime _fechaFinReal;
   final _responsableNombreController = TextEditingController();
   final _responsableCargoController = TextEditingController();
   late List<PersonalEmpresaOption> _personalOptions;
@@ -66,6 +73,7 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
     _valueController = TextEditingController(text: widget.initialValue ?? '');
     _pesoController = TextEditingController();
     _fechaFinEstimada = DateTime.now();
+    _fechaFinReal = DateTime.now();
     _personalOptions = List.of(widget.responsableOptions);
   }
 
@@ -96,6 +104,7 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
             : null,
         responsableNombre: _responsableNombreController.text.trim(),
         responsableCargo: _responsableCargoController.text.trim(),
+        fechaFinReal: widget.requireCompletionDate ? _fechaFinReal : null,
       ),
     );
   }
@@ -112,10 +121,31 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
     }
   }
 
+  Future<void> _pickFechaFinReal() async {
+    final firstDate = widget.firstCompletionDate ?? DateTime(2000);
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _fechaFinReal.isBefore(firstDate)
+          ? firstDate
+          : _fechaFinReal,
+      firstDate: DateTime(firstDate.year, firstDate.month, firstDate.day),
+      lastDate: DateTime(2100),
+    );
+    if (selected != null) {
+      setState(() => _fechaFinReal = selected);
+    }
+  }
+
   String get _fechaFinLabel {
     final day = _fechaFinEstimada.day.toString().padLeft(2, '0');
     final month = _fechaFinEstimada.month.toString().padLeft(2, '0');
     return '$day/$month/${_fechaFinEstimada.year}';
+  }
+
+  String get _fechaFinRealLabel {
+    final day = _fechaFinReal.day.toString().padLeft(2, '0');
+    final month = _fechaFinReal.month.toString().padLeft(2, '0');
+    return '$day/$month/${_fechaFinReal.year}';
   }
 
   @override
@@ -250,6 +280,20 @@ class _OrdenSimpleActionDialogState extends State<OrdenSimpleActionDialog> {
                       suffixIcon: Icon(Icons.calendar_today_outlined),
                     ),
                     child: Text(_fechaFinLabel),
+                  ),
+                ),
+              ],
+              if (widget.requireCompletionDate) ...[
+                const Gap(AppSpacing.md),
+                InkWell(
+                  onTap: _pickFechaFinReal,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Fecha real de finalización',
+                      suffixIcon: Icon(Icons.calendar_today_outlined),
+                    ),
+                    child: Text(_fechaFinRealLabel),
                   ),
                 ),
               ],

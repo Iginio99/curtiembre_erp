@@ -18,6 +18,8 @@ class OrdenProcesoRecordModel {
     this.fechaFin,
     this.diasReales,
     this.observacion,
+    this.solicitudInsumosEstado,
+    this.insumosSolicitados = const [],
   });
 
   final int id;
@@ -36,6 +38,8 @@ class OrdenProcesoRecordModel {
   final int? diasReales;
   final String estado;
   final String? observacion;
+  final String? solicitudInsumosEstado;
+  final List<OrdenProcesoInsumoSolicitado> insumosSolicitados;
 
   factory OrdenProcesoRecordModel.fromJson(Map<String, dynamic> json) {
     return OrdenProcesoRecordModel(
@@ -55,6 +59,19 @@ class OrdenProcesoRecordModel {
       diasReales: _parseOptionalInt(json['diasReales']),
       estado: json['estado'] as String,
       observacion: json['observacion'] as String?,
+      solicitudInsumosEstado: json['solicitudInsumosEstado'] as String?,
+      insumosSolicitados: ((json['insumosSolicitados'] as List?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (item) => OrdenProcesoInsumoSolicitado(
+              insumoCodigo: item['insumoCodigo'] as String,
+              insumoNombre: item['insumoNombre'] as String,
+              unidadMedidaCodigo: item['unidadMedidaCodigo'] as String,
+              cantidadSolicitada: (item['cantidadSolicitada'] as num)
+                  .toDouble(),
+            ),
+          )
+          .toList(growable: false),
     );
   }
 
@@ -76,6 +93,8 @@ class OrdenProcesoRecordModel {
       diasReales: diasReales,
       estado: estado,
       observacion: observacion,
+      solicitudInsumosEstado: solicitudInsumosEstado,
+      insumosSolicitados: insumosSolicitados,
     );
   }
 

@@ -671,6 +671,8 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
         submitLabel: 'Finalizar proceso',
         labelText: 'Observacion de cierre',
         hintText: 'Resultado o detalle del cierre del proceso',
+        requireCompletionDate: true,
+        firstCompletionDate: proceso.fechaInicio,
       ),
     );
 
@@ -688,6 +690,7 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
 
     final result = await context.read<OrdenesProduccionCubit>().finishProceso(
       procesoId: proceso.id,
+      fechaFinReal: payload.fechaFinReal!,
       observacion: payload.observacion,
     );
     if (!mounted) {
@@ -2133,8 +2136,6 @@ class _ProcesoCard extends StatelessWidget {
     required this.onRequestConsumption,
     required this.onRegisterMerma,
     required this.isLocked,
-    required this.planificados,
-    required this.consumos,
   });
 
   final OrdenProcesoRecord proceso;
@@ -2145,12 +2146,77 @@ class _ProcesoCard extends StatelessWidget {
   final VoidCallback? onRequestConsumption;
   final VoidCallback? onRegisterMerma;
   final bool isLocked;
-  final List<ConsumoPlanificadoRecord> planificados;
-  final List<ConsumoRealRecord> consumos;
+
+  Future<void> _showRequestedSupplies(
+    BuildContext context,
+    List<OrdenProcesoInsumoSolicitado> items,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.inventory_2_outlined),
+              const Gap(AppSpacing.sm),
+              const Expanded(child: Text('Insumos solicitados')),
+            ],
+          ),
+          content: SizedBox(
+            width: 560,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 440),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder: (_, _) =>
+                    Divider(color: theme.colorScheme.outlineVariant),
+                itemBuilder: (_, index) {
+                  final item = items[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('${item.insumoCodigo} - ${item.insumoNombre}'),
+                    trailing: Text(
+                      '${_formatDecimal(item.cantidadSolicitada)} '
+                      '${item.unidadMedidaCodigo}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final groupedRequested = <String, OrdenProcesoInsumoSolicitado>{};
+    for (final item in proceso.insumosSolicitados) {
+      final key =
+          '${item.insumoCodigo.trim().toLowerCase()}|${item.unidadMedidaCodigo.trim().toLowerCase()}';
+      final current = groupedRequested[key];
+      groupedRequested[key] = OrdenProcesoInsumoSolicitado(
+        insumoCodigo: item.insumoCodigo,
+        insumoNombre: item.insumoNombre,
+        unidadMedidaCodigo: item.unidadMedidaCodigo,
+        cantidadSolicitada:
+            (current?.cantidadSolicitada ?? 0) + item.cantidadSolicitada,
+      );
+    }
+    final requestedItems = groupedRequested.values.toList(growable: false);
 
     return Container(
       width: double.infinity,
@@ -2262,25 +2328,28 @@ class _ProcesoCard extends StatelessWidget {
           const Gap(AppSpacing.md),
           Divider(color: theme.colorScheme.outlineVariant),
           const Gap(AppSpacing.sm),
-          Text('Insumos', style: theme.textTheme.titleSmall),
-          const Gap(AppSpacing.xs),
-          Text(
-            planificados.isEmpty
-                ? 'Sin insumos planificados'
-                : planificados.map((item) => item.insumoNombre).join(' · '),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          if (requestedItems.isEmpty)
+            Text(
+              'Debes solicitar insumos y esperar su aprobación para finalizar.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: () => _showRequestedSupplies(context, requestedItems),
+              icon: Icon(
+                proceso.hasPendingSupplyRequest
+                    ? Icons.schedule_rounded
+                    : Icons.check_circle_outline_rounded,
+              ),
+              label: Text(
+                proceso.hasPendingSupplyRequest
+                    ? 'Solicitud enviada · Ver insumos pendientes'
+                    : 'Insumos aprobados · Ver detalle',
+              ),
             ),
-          ),
-          const Gap(AppSpacing.xs),
-          Text(
-            '${planificados.length} planificados · ${consumos.length} consumidos',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
           const Gap(AppSpacing.lg),
           Wrap(
             spacing: AppSpacing.md,
@@ -2298,7 +2367,11 @@ class _ProcesoCard extends StatelessWidget {
                   label: 'Finalizar',
                   icon: Icons.task_alt_outlined,
                   isLoading: isSubmitting,
-                  onPressed: onFinish,
+                  onPressed:
+                      proceso.hasApprovedSupplies &&
+                          !proceso.hasPendingSupplyRequest
+                      ? onFinish
+                      : null,
                 ),
               AppButton.secondary(
                 label: 'Observacion',
@@ -2310,7 +2383,9 @@ class _ProcesoCard extends StatelessWidget {
                 label: 'Solicitar insumos',
                 icon: Icons.inventory_2_outlined,
                 isLoading: isSubmitting,
-                onPressed: onRequestConsumption,
+                onPressed: proceso.hasPendingSupplyRequest
+                    ? null
+                    : onRequestConsumption,
               ),
               AppButton.secondary(
                 label: 'Registrar merma',
@@ -2447,19 +2522,9 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
           ),
         ),
         const Gap(AppSpacing.lg),
-        if (_selectedIndex == 0) ...[
-          AppMessageCard.info(
-            title: 'La produccion comienza en Remojo',
-            message:
-                'Inicia la etapa y solicita manualmente los insumos necesarios para el proceso.',
-          ),
-          const Gap(AppSpacing.md),
-        ],
         _ProcesoCard(
           proceso: proceso,
           isLocked: isLocked,
-          planificados: stagePlanificados,
-          consumos: stageConsumos,
           isSubmitting: widget.isSubmitting,
           onStart: !isLocked && proceso.canStart
               ? (_selectedIndex == 0 && widget.onStartOrder != null

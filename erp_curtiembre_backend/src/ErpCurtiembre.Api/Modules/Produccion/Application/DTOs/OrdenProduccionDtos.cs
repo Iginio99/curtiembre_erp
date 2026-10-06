@@ -96,7 +96,15 @@ public sealed record OrdenProcesoListItemDto(
     DateTime? FechaFin,
     int? DiasReales,
     string Estado,
-    string? Observacion);
+    string? Observacion,
+    string? SolicitudInsumosEstado,
+    IReadOnlyCollection<OrdenProcesoInsumoSolicitadoDto> InsumosSolicitados);
+
+public sealed record OrdenProcesoInsumoSolicitadoDto(
+    string InsumoCodigo,
+    string InsumoNombre,
+    string UnidadMedidaCodigo,
+    decimal CantidadSolicitada);
 
 public sealed record StartOrdenProcesoRequestDto(
     [property: Required, StringLength(150)] string ResponsableNombre,
@@ -106,6 +114,7 @@ public sealed record StartOrdenProcesoRequestDto(
     [property: StringLength(800)] string? Observacion);
 
 public sealed record FinishOrdenProcesoRequestDto(
+    DateTime FechaFinReal,
     [property: StringLength(800)] string? Observacion);
 
 public sealed record UpdateOrdenProcesoObservacionRequestDto(

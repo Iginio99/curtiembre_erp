@@ -11,11 +11,15 @@ public interface ISolicitudInsumoRepository
 
     Task<SolicitudInsumo?> FindByIdAsync(long id, CancellationToken cancellationToken);
 
+    Task<SolicitudInsumo?> FindLatestByProcessAsync(long ordenProcesoId, CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<SolicitudInsumo>> ListAsync(string? estado, CancellationToken cancellationToken);
 
     Task<IReadOnlyCollection<SolicitudInsumoDetalle>> ListDetailsAsync(long solicitudId, CancellationToken cancellationToken);
 
     Task<bool> HasOpenRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken);
+
+    Task<bool> HasApprovedRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken);
 
     Task<bool> TryStartDeliveryAsync(long id, CancellationToken cancellationToken);
 

@@ -31,7 +31,16 @@ public sealed class OrdenProcesoService(
         CancellationToken cancellationToken)
     {
         var items = await ordenProduccionRepository.ListProcessesAsync(ordenId, cancellationToken);
-        return items.Select(MapProcess).ToArray();
+        var result = new List<OrdenProcesoListItemDto>(items.Count);
+        foreach (var item in items)
+        {
+            var solicitud = await solicitudInsumoRepository.FindLatestByProcessAsync(item.Id, cancellationToken);
+            var detalles = solicitud is null
+                ? Array.Empty<SolicitudInsumoDetalle>()
+                : (await solicitudInsumoRepository.ListDetailsAsync(solicitud.Id, cancellationToken)).ToArray();
+            result.Add(MapProcess(item, solicitud?.Estado, detalles));
+        }
+        return result;
     }
 
     public async Task<UseCaseResult<OrdenProcesoListItemDto>> StartAsync(
@@ -148,6 +157,22 @@ public sealed class OrdenProcesoService(
                 "Solo se pueden finalizar procesos en estado EN_PROCESO.");
         }
 
+        if (request.FechaFinReal == default ||
+            process.FechaInicio is null ||
+            request.FechaFinReal.Date < process.FechaInicio.Value.Date)
+        {
+            return UseCaseResult<OrdenProcesoListItemDto>.Fail(
+                ProduccionErrorCodes.Validation,
+                "La fecha de finalizacion no puede ser anterior al inicio del proceso.");
+        }
+
+        if (!await solicitudInsumoRepository.HasApprovedRequestForProcessAsync(processId, cancellationToken))
+        {
+            return UseCaseResult<OrdenProcesoListItemDto>.Fail(
+                ProduccionErrorCodes.Conflict,
+                "No puedes finalizar el proceso hasta que Logistica apruebe y entregue los insumos solicitados.");
+        }
+
         if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(processId, cancellationToken))
         {
             return UseCaseResult<OrdenProcesoListItemDto>.Fail(
@@ -158,7 +183,7 @@ public sealed class OrdenProcesoService(
         await ordenProduccionRepository.FinishProcessAsync(
             processId,
             NormalizeNullable(request.Observacion),
-            dateTimeProvider.Now,
+            request.FechaFinReal.Date,
             cancellationToken);
 
         var finished = await ordenProduccionRepository.FindProcessByIdAsync(processId, cancellationToken);
@@ -199,7 +224,10 @@ public sealed class OrdenProcesoService(
     private static string? NormalizeNullable(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static OrdenProcesoListItemDto MapProcess(OrdenProduccionProceso process) =>
+    private static OrdenProcesoListItemDto MapProcess(
+        OrdenProduccionProceso process,
+        string? solicitudInsumosEstado = null,
+        IReadOnlyCollection<SolicitudInsumoDetalle>? insumosSolicitados = null) =>
         new(
             process.Id,
             process.OrdenProduccionId,
@@ -216,5 +244,13 @@ public sealed class OrdenProcesoService(
             process.FechaFin,
             process.DiasReales,
             process.Estado,
-            process.Observacion);
+            process.Observacion,
+            solicitudInsumosEstado,
+            (insumosSolicitados ?? Array.Empty<SolicitudInsumoDetalle>())
+                .Select(x => new OrdenProcesoInsumoSolicitadoDto(
+                    x.InsumoCodigo,
+                    x.InsumoNombre,
+                    x.UnidadMedidaCodigo,
+                    x.CantidadSolicitada))
+                .ToArray());
 }

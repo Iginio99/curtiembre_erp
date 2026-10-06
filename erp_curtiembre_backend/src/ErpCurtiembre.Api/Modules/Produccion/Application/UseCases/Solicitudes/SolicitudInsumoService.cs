@@ -247,5 +247,6 @@ public sealed class SolicitudInsumoService(
             details.Select(x => new SolicitudInsumoDetalleDto(
                 x.Id, x.InsumoId, x.InsumoCodigo, x.InsumoNombre,
                 x.UnidadMedidaCodigo, x.UnidadMedidaNombre,
-                x.Porcentaje, x.CantidadSolicitada, x.Observacion)).ToArray());
+                x.Porcentaje, x.CantidadSolicitada, x.StockDisponible,
+                x.Observacion)).ToArray());
 }

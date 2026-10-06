@@ -16,6 +16,7 @@ class SolicitudInsumoDetailLine extends Equatable {
     required this.insumoNombre,
     required this.unidadMedidaCodigo,
     required this.cantidadSolicitada,
+    required this.stockDisponible,
     this.observacion,
   });
 
@@ -23,6 +24,7 @@ class SolicitudInsumoDetailLine extends Equatable {
   final String insumoNombre;
   final String unidadMedidaCodigo;
   final double cantidadSolicitada;
+  final double stockDisponible;
   final String? observacion;
 
   @override
@@ -31,6 +33,7 @@ class SolicitudInsumoDetailLine extends Equatable {
     insumoNombre,
     unidadMedidaCodigo,
     cantidadSolicitada,
+    stockDisponible,
     observacion,
   ];
 }

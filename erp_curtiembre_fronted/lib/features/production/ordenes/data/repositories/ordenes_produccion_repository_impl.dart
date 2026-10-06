@@ -443,11 +443,13 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
   @override
   Future<OrdenProcesoRecord> finishProceso({
     required int id,
+    required DateTime fechaFinReal,
     String? observacion,
   }) async {
     _talker.repository('Finalizando proceso de produccion $id.');
     final item = await _remoteDataSource.finishProceso(
       id: id,
+      fechaFinReal: fechaFinReal,
       observacion: observacion,
     );
     _talker.repository('Proceso de produccion $id finalizado correctamente.');

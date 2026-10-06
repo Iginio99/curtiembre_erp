@@ -650,6 +650,7 @@ class OrdenesProduccionRemoteDataSource {
 
   Future<OrdenProcesoRecordModel> finishProceso({
     required int id,
+    required DateTime fechaFinReal,
     String? observacion,
   }) async {
     final path = '/api/produccion/procesos/$id/finalizar';
@@ -660,7 +661,10 @@ class OrdenesProduccionRemoteDataSource {
       );
       final response = await _dio.post<Map<String, dynamic>>(
         path,
-        data: {'observacion': observacion},
+        data: {
+          'fechaFinReal': fechaFinReal.toIso8601String(),
+          'observacion': observacion,
+        },
       );
       _talker.dataSource('POST $path completado.');
       return OrdenProcesoRecordModel.fromJson(response.data!);

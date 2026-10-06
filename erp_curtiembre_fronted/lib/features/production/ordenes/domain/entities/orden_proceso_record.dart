@@ -18,6 +18,8 @@ class OrdenProcesoRecord extends Equatable {
     this.fechaFin,
     this.diasReales,
     this.observacion,
+    this.solicitudInsumosEstado,
+    this.insumosSolicitados = const [],
   });
 
   final int id;
@@ -36,11 +38,18 @@ class OrdenProcesoRecord extends Equatable {
   final int? diasReales;
   final String estado;
   final String? observacion;
+  final String? solicitudInsumosEstado;
+  final List<OrdenProcesoInsumoSolicitado> insumosSolicitados;
 
   bool get canStart => estado == 'PENDIENTE' && fechaInicio == null;
   bool get canFinish =>
       estado == 'EN_PROCESO' ||
       (estado == 'LISTA_PARA_INICIAR' && fechaInicio != null);
+  bool get hasApprovedSupplies => solicitudInsumosEstado == 'APROBADA';
+  bool get hasPendingSupplyRequest =>
+      solicitudInsumosEstado == 'SOLICITADA' ||
+      solicitudInsumosEstado == 'PARCIAL' ||
+      solicitudInsumosEstado == 'ENTREGANDO';
 
   @override
   List<Object?> get props => [
@@ -60,5 +69,29 @@ class OrdenProcesoRecord extends Equatable {
     diasReales,
     estado,
     observacion,
+    solicitudInsumosEstado,
+    insumosSolicitados,
+  ];
+}
+
+class OrdenProcesoInsumoSolicitado extends Equatable {
+  const OrdenProcesoInsumoSolicitado({
+    required this.insumoCodigo,
+    required this.insumoNombre,
+    required this.unidadMedidaCodigo,
+    required this.cantidadSolicitada,
+  });
+
+  final String insumoCodigo;
+  final String insumoNombre;
+  final String unidadMedidaCodigo;
+  final double cantidadSolicitada;
+
+  @override
+  List<Object?> get props => [
+    insumoCodigo,
+    insumoNombre,
+    unidadMedidaCodigo,
+    cantidadSolicitada,
   ];
 }

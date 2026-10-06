@@ -33,6 +33,7 @@ class SolicitudInsumoDetailLineModel {
     required this.insumoNombre,
     required this.unidadMedidaCodigo,
     required this.cantidadSolicitada,
+    required this.stockDisponible,
     this.observacion,
   });
 
@@ -40,6 +41,7 @@ class SolicitudInsumoDetailLineModel {
   final String insumoNombre;
   final String unidadMedidaCodigo;
   final double cantidadSolicitada;
+  final double stockDisponible;
   final String? observacion;
 
   factory SolicitudInsumoDetailLineModel.fromJson(Map<String, dynamic> json) =>
@@ -48,6 +50,7 @@ class SolicitudInsumoDetailLineModel {
         insumoNombre: json['insumoNombre'] as String,
         unidadMedidaCodigo: json['unidadMedidaCodigo'] as String,
         cantidadSolicitada: (json['cantidadSolicitada'] as num).toDouble(),
+        stockDisponible: (json['stockDisponible'] as num).toDouble(),
         observacion: json['observacion'] as String?,
       );
 
@@ -56,6 +59,7 @@ class SolicitudInsumoDetailLineModel {
     insumoNombre: insumoNombre,
     unidadMedidaCodigo: unidadMedidaCodigo,
     cantidadSolicitada: cantidadSolicitada,
+    stockDisponible: stockDisponible,
     observacion: observacion,
   );
 }
