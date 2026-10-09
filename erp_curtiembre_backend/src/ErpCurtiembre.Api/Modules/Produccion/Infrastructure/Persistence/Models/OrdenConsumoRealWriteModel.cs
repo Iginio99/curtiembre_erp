@@ -8,6 +8,8 @@ public sealed class OrdenConsumoRealWriteModel
 
     public long OrdenProcesoId { get; set; }
 
+    public long? OrdenProductoId { get; set; }
+
     public long? SalidaInventarioDetalleId { get; set; }
 
     public long InsumoId { get; set; }

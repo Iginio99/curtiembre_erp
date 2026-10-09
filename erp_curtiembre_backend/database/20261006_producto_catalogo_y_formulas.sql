@@ -14,12 +14,7 @@ BEGIN
     );
 END;
 
-IF COL_LENGTH(N'configuracion.formula', N'producto_id') IS NULL
-BEGIN
-    ALTER TABLE configuracion.formula ADD producto_id BIGINT NULL;
-END;
-
-IF NOT EXISTS (
+IF EXISTS (
     SELECT 1
     FROM sys.foreign_keys
     WHERE name = N'FK_formula_producto'
@@ -27,15 +22,22 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE configuracion.formula
-        ADD CONSTRAINT FK_formula_producto
-        FOREIGN KEY (producto_id) REFERENCES configuracion.producto(id);
+        DROP CONSTRAINT FK_formula_producto;
 END;
 
-/* Las fórmulas históricas de Remojo/Pelambre y Curtido no manejan producto. */
-UPDATE f SET tipo_producto = NULL, color = NULL, producto_id = NULL
-FROM configuracion.formula f
-INNER JOIN configuracion.proceso_productivo pp ON pp.id = f.proceso_productivo_id
-WHERE pp.codigo IN ('REMOJO_PELAMBRE', 'CURTIDO');
+IF COL_LENGTH(N'configuracion.formula', N'producto_id') IS NOT NULL
+BEGIN
+    ALTER TABLE configuracion.formula DROP COLUMN producto_id;
+END;
 
-/* Antes de exigir producto en Recurtido/Acabado, crea los productos y asigna
-   configuracion.formula.producto_id a las fórmulas existentes correspondientes. */
+IF COL_LENGTH(N'configuracion.formula', N'tipo_producto') IS NOT NULL
+BEGIN
+    ALTER TABLE configuracion.formula DROP COLUMN tipo_producto;
+END;
+
+IF COL_LENGTH(N'configuracion.formula', N'color') IS NOT NULL
+BEGIN
+    ALTER TABLE configuracion.formula DROP COLUMN color;
+END;
+
+/* Las fórmulas son independientes del catálogo de productos. */

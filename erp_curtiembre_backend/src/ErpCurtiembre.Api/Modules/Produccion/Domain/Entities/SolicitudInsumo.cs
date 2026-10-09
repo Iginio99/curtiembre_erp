@@ -12,6 +12,8 @@ public sealed class SolicitudInsumo
 
     public long OrdenProcesoId { get; init; }
 
+    public long? OrdenProductoId { get; init; }
+
     public string ProcesoCodigo { get; init; } = string.Empty;
 
     public string ProcesoNombre { get; init; } = string.Empty;

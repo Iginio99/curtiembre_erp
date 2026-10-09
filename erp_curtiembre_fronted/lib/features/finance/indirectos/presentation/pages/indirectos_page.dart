@@ -752,7 +752,6 @@ class _IndirectoDetailPanel extends StatelessWidget {
                               title: 'Trazabilidad',
                               lines: [
                                 'Periodo estado: ${indirecto.periodoEstado}',
-                                'Registrado por usuario: ${indirecto.registradoPorUsuarioId?.toString() ?? 'Sin registro'}',
                               ],
                             ),
                           ],

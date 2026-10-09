@@ -33,6 +33,15 @@ class FormulasCubit extends Cubit<FormulasState> {
 
   final FormulasRepository _repository;
 
+  Future<List<String>> listAllFormulaCodes() async {
+    try {
+      final formulas = await _repository.listFormulas();
+      return formulas.map((formula) => formula.codigo).toList(growable: false);
+    } on ApiException {
+      return state.items.map((formula) => formula.codigo).toList(growable: false);
+    }
+  }
+
   Future<void> initialize() async {
     emit(const FormulasState.loading());
 
@@ -186,9 +195,6 @@ class FormulasCubit extends Cubit<FormulasState> {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
-    required String tipoProducto,
-    required String color,
-    int? productoId,
     String? descripcion,
     required List<FormulaCreationDetail> detalles,
   }) async {
@@ -198,9 +204,6 @@ class FormulasCubit extends Cubit<FormulasState> {
         codigo: codigo,
         nombre: nombre,
         procesoProductivoId: procesoProductivoId,
-        tipoProducto: tipoProducto,
-        color: color,
-        productoId: productoId,
         descripcion: descripcion,
       );
 
@@ -247,9 +250,6 @@ class FormulasCubit extends Cubit<FormulasState> {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
-    required String tipoProducto,
-    required String color,
-    int? productoId,
     String? descripcion,
   }) async {
     final formulaId = state.selectedFormulaId;
@@ -266,9 +266,6 @@ class FormulasCubit extends Cubit<FormulasState> {
         codigo: codigo,
         nombre: nombre,
         procesoProductivoId: procesoProductivoId,
-        tipoProducto: tipoProducto,
-        color: color,
-        productoId: productoId,
         descripcion: descripcion,
       );
 

@@ -17,7 +17,13 @@ public interface ISolicitudInsumoRepository
 
     Task<IReadOnlyCollection<SolicitudInsumoDetalle>> ListDetailsAsync(long solicitudId, CancellationToken cancellationToken);
 
-    Task<bool> HasOpenRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken);
+    Task<bool> HasOpenRequestForProcessAsync(long ordenProcesoId, long? ordenProductoId, CancellationToken cancellationToken);
+
+    Task<bool> IsProductProcessInProgressAsync(
+        long ordenProductoId,
+        long ordenProduccionId,
+        string procesoCodigo,
+        CancellationToken cancellationToken);
 
     Task<bool> HasApprovedRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken);
 

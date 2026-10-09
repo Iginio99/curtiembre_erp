@@ -70,6 +70,8 @@ class ProductosTerminadosCubit extends Cubit<ProductosTerminadosState> {
           }
           return item.codigo.toLowerCase().contains(normalized) ||
               item.ordenCodigo.toLowerCase().contains(normalized) ||
+              (item.productoNombre ?? '').toLowerCase().contains(normalized) ||
+              (item.productoColor ?? '').toLowerCase().contains(normalized) ||
               item.estado.toLowerCase().contains(normalized);
         })
         .toList(growable: false);

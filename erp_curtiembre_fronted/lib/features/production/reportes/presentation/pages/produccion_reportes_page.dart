@@ -6,10 +6,12 @@ import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cub
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_state.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/services/production_report_pdf_service.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/consumo_proceso_reporte_item.dart';
+import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/costo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/tiempo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
@@ -477,14 +479,16 @@ class _OrdenesActivasTab extends StatelessWidget {
               subtitle: '${item.cliente} · Lote ${item.codigoLote}',
               onPrint: () async {
                 final cubit = context.read<ProduccionReportesCubit>();
-                final processes = await cubit.processesForPrint(
-                  item.ordenProduccionId,
-                );
+                final results = await Future.wait([
+                  cubit.processesForPrint(item.ordenProduccionId),
+                  cubit.productsForPrint(item.ordenProduccionId),
+                ]);
                 if (!context.mounted) return;
                 await ProductionReportPdfService.printActiveOrder(
                   context,
                   item,
-                  processes,
+                  results[0] as List<OrdenProcesoRecord>,
+                  results[1] as List<OrdenProductoRecord>,
                 );
               },
               chips: [
@@ -640,14 +644,16 @@ class _OrdenesClienteTab extends StatelessWidget {
               subtitle: '${item.cliente} · Lote ${item.codigoLote}',
               onPrint: () async {
                 final cubit = context.read<ProduccionReportesCubit>();
-                final processes = await cubit.processesForPrint(
-                  item.ordenProduccionId,
-                );
+                final results = await Future.wait([
+                  cubit.processesForPrint(item.ordenProduccionId),
+                  cubit.productsForPrint(item.ordenProduccionId),
+                ]);
                 if (!context.mounted) return;
                 await ProductionReportPdfService.printClientOrder(
                   context,
                   item,
-                  processes,
+                  results[0] as List<OrdenProcesoRecord>,
+                  results[1] as List<OrdenProductoRecord>,
                 );
               },
               chips: [
@@ -932,10 +938,7 @@ class _MermaTab extends StatelessWidget {
                 if ((item.responsable ?? '').trim().isNotEmpty)
                   _cardChip(context, item.responsable!),
               ],
-              lines: [
-                'Registrado en: ${_formatDateTime(item.registradoEn)}',
-                'Motivo: ${(item.motivo ?? 'Sin motivo').trim()}',
-              ],
+              lines: ['Motivo: ${(item.motivo ?? 'Sin motivo').trim()}'],
             );
           },
         ),
@@ -1176,7 +1179,12 @@ class _ConsumptionGroupedList extends StatelessWidget {
             );
             final byProcess = <String, List<ConsumoProcesoReporteItem>>{};
             for (final item in rows) {
-              byProcess.putIfAbsent(item.procesoNombre, () => []).add(item);
+              final product = item.productoNombre == null
+                  ? ''
+                  : ' - ${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}';
+              byProcess
+                  .putIfAbsent('${item.procesoNombre}$product', () => [])
+                  .add(item);
             }
             final orderNumber = grouped.keys.toList().indexOf(entry.key) + 1;
             return Container(
@@ -1276,7 +1284,11 @@ class _ConsumptionGroupedList extends StatelessWidget {
                             '${processNumber.toString().padLeft(2, '0')}  ${process.key}',
                             style: const TextStyle(fontWeight: FontWeight.w800),
                           ),
-                          subtitle: Text('${process.value.length} insumos'),
+                          subtitle: Text(
+                            process.value.first.productoEstado == null
+                                ? '${process.value.length} insumos'
+                                : '${process.value.length} insumos · Estado: ${process.value.first.productoEstado!.replaceAll('_', ' ')}',
+                          ),
                           trailing: Text(
                             'S/ ${processTotal.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.w800),
@@ -1937,7 +1949,7 @@ class _CostosOrdenTabV2 extends StatelessWidget {
                   (item) => item.ordenProduccionId == order.ordenProduccionId,
                 )
                 .toList(growable: false);
-            final stagesGrouped = <int, List<dynamic>>{};
+            final stagesGrouped = <int, List<CostoProcesoReporteItem>>{};
             for (final stage in stages) {
               stagesGrouped
                   .putIfAbsent(stage.ordenProcesoId, () => [])
@@ -2018,7 +2030,7 @@ class _OrderCostSummary extends StatelessWidget {
     required this.money,
   });
 
-  final List<List<dynamic>> groups;
+  final List<List<CostoProcesoReporteItem>> groups;
   final double skins;
   final double sides;
   final double total;
@@ -2104,7 +2116,7 @@ class _OrderCostSummary extends StatelessWidget {
 
 class _CostProcessTimeline extends StatefulWidget {
   const _CostProcessTimeline({required this.groups, required this.money});
-  final List<List<dynamic>> groups;
+  final List<List<CostoProcesoReporteItem>> groups;
   final NumberFormat money;
 
   @override
@@ -2120,10 +2132,16 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
     if (selectedIndex >= widget.groups.length) selectedIndex = 0;
     final rows = widget.groups[selectedIndex];
     final stage = rows.first;
-    final total = rows.fold<double>(
-      0,
-      (sum, item) => sum + item.costoMaterialesReal,
-    );
+    final isProductStage =
+        stage.procesoCodigo == 'RECURTIDO' || stage.procesoCodigo == 'ACABADO';
+    final productGroups = <int, List<CostoProcesoReporteItem>>{};
+    if (isProductStage) {
+      for (final row in rows) {
+        if (row.ordenProductoId != null) {
+          productGroups.putIfAbsent(row.ordenProductoId!, () => []).add(row);
+        }
+      }
+    }
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -2172,7 +2190,27 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
             }),
           ),
           const Gap(AppSpacing.md),
-          Container(
+          if (isProductStage && productGroups.isNotEmpty)
+            ...productGroups.values.map(
+              (productRows) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: _CostRowsBlock(
+                  title:
+                      '${stage.procesoNombre} - ${productRows.first.productoNombre ?? 'Producto'}${(productRows.first.productoColor ?? '').trim().isEmpty ? '' : ' · ${productRows.first.productoColor}'}',
+                  rows: productRows,
+                  money: widget.money,
+                  totalLabel: 'COSTO DEL PRODUCTO',
+                ),
+              ),
+            )
+          else
+            _CostRowsBlock(
+              title: stage.procesoNombre,
+              rows: rows,
+              money: widget.money,
+              totalLabel: 'COSTO PROCESO',
+            ),
+          /*Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -2301,7 +2339,148 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                     ),
               ],
             ),
+          ),*/
+        ],
+      ),
+    );
+  }
+}
+
+class _CostRowsBlock extends StatelessWidget {
+  const _CostRowsBlock({
+    required this.title,
+    required this.rows,
+    required this.money,
+    required this.totalLabel,
+  });
+
+  final String title;
+  final List<CostoProcesoReporteItem> rows;
+  final NumberFormat money;
+  final String totalLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final stage = rows.first;
+    final total = rows.fold<double>(
+      0,
+      (sum, item) => sum + item.costoMaterialesReal,
+    );
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleLarge),
+                    const Gap(AppSpacing.xs),
+                    Text(
+                      'Inicio ${_formatOptionalDate(stage.fechaInicio)}   Fin ${_formatOptionalDate(stage.fechaFin)}   Pieles ${_formatDecimal(stage.cantidadPieles)}   Kilos ${stage.pesoBaseKg == null ? '-' : _formatDecimal(stage.pesoBaseKg!)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(totalLabel),
+                  Text(
+                    money.format(total),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
+          const Divider(height: AppSpacing.xl),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.sm,
+            ),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            child: const Row(
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: Text(
+                    'INSUMO',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'PORCENTAJE',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'PESO',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'COSTO',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ...rows
+              .where((item) => item.insumoId != null)
+              .map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Text(
+                          '${_normalizeInsumoCode(item.insumoCodigo)} · ${item.insumoNombre}',
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          item.porcentaje == null
+                              ? '-'
+                              : '${_formatDecimal(item.porcentaje!)}%',
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          _formatDecimal(item.cantidadConsumida),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          money.format(item.costoMaterialesReal),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
         ],
       ),
     );
@@ -2649,15 +2828,4 @@ String _formatDecimal(double value) {
     return value.toStringAsFixed(0);
   }
   return value.toStringAsFixed(2);
-}
-
-String _formatSignedDecimal(double value) {
-  final normalized = _formatDecimal(value.abs());
-  if (value > 0) {
-    return '+$normalized';
-  }
-  if (value < 0) {
-    return '-$normalized';
-  }
-  return normalized;
 }

@@ -24,6 +24,7 @@ public sealed class SqlSolicitudInsumoRepository(
             Codigo = solicitud.Codigo,
             OrdenProduccionId = solicitud.OrdenProduccionId,
             OrdenProcesoId = solicitud.OrdenProcesoId,
+            OrdenProductoId = solicitud.OrdenProductoId,
             Estado = solicitud.Estado,
             Observacion = solicitud.Observacion,
             SolicitadoEn = solicitud.SolicitadoEn,
@@ -55,7 +56,8 @@ public sealed class SqlSolicitudInsumoRepository(
             SELECT TOP 1
                 s.id AS Id, s.codigo AS Codigo,
                 s.orden_produccion_id AS OrdenProduccionId, op.codigo AS OrdenCodigo,
-                s.orden_proceso_id AS OrdenProcesoId, pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
+                s.orden_proceso_id AS OrdenProcesoId, s.orden_producto_id AS OrdenProductoId,
+                pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
                 s.estado AS Estado, s.observacion AS Observacion, s.solicitado_en AS SolicitadoEn,
                 s.solicitado_por_usuario_id AS SolicitadoPorUsuarioId,
                 LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) AS SolicitadoPorNombre
@@ -78,7 +80,8 @@ public sealed class SqlSolicitudInsumoRepository(
             SELECT TOP 1
                 s.id AS Id, s.codigo AS Codigo,
                 s.orden_produccion_id AS OrdenProduccionId, op.codigo AS OrdenCodigo,
-                s.orden_proceso_id AS OrdenProcesoId, pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
+                s.orden_proceso_id AS OrdenProcesoId, s.orden_producto_id AS OrdenProductoId,
+                pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
                 s.estado AS Estado, s.observacion AS Observacion, s.solicitado_en AS SolicitadoEn,
                 s.solicitado_por_usuario_id AS SolicitadoPorUsuarioId,
                 LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) AS SolicitadoPorNombre
@@ -102,7 +105,8 @@ public sealed class SqlSolicitudInsumoRepository(
             SELECT
                 s.id AS Id, s.codigo AS Codigo,
                 s.orden_produccion_id AS OrdenProduccionId, op.codigo AS OrdenCodigo,
-                s.orden_proceso_id AS OrdenProcesoId, pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
+                s.orden_proceso_id AS OrdenProcesoId, s.orden_producto_id AS OrdenProductoId,
+                pp.codigo AS ProcesoCodigo, pp.nombre AS ProcesoNombre,
                 s.estado AS Estado, s.observacion AS Observacion, s.solicitado_en AS SolicitadoEn,
                 s.solicitado_por_usuario_id AS SolicitadoPorUsuarioId,
                 LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) AS SolicitadoPorNombre
@@ -146,9 +150,10 @@ public sealed class SqlSolicitudInsumoRepository(
         return items.ToArray();
     }
 
-    public Task<bool> HasOpenRequestForProcessAsync(long ordenProcesoId, CancellationToken cancellationToken) =>
+    public Task<bool> HasOpenRequestForProcessAsync(long ordenProcesoId, long? ordenProductoId, CancellationToken cancellationToken) =>
         dbContext.SolicitudesInsumo.AnyAsync(
             x => x.OrdenProcesoId == ordenProcesoId &&
+                x.OrdenProductoId == ordenProductoId &&
                 (x.Estado == "SOLICITADA" || x.Estado == "PARCIAL" || x.Estado == "ENTREGANDO"),
             cancellationToken);
 
@@ -156,6 +161,32 @@ public sealed class SqlSolicitudInsumoRepository(
         dbContext.SolicitudesInsumo.AnyAsync(
             x => x.OrdenProcesoId == ordenProcesoId && x.Estado == "APROBADA",
             cancellationToken);
+
+    public async Task<bool> IsProductProcessInProgressAsync(
+        long ordenProductoId,
+        long ordenProduccionId,
+        string procesoCodigo,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT CAST(CASE WHEN EXISTS (
+                SELECT 1
+                FROM produccion.orden_producto p
+                WHERE p.id = @ProductId
+                  AND p.orden_produccion_id = @OrderId
+                  AND p.activo = 1
+                  AND (
+                      (@ProcessCode = 'RECURTIDO' AND p.estado_recurtido = 'EN_PROCESO')
+                      OR (@ProcessCode = 'ACABADO' AND p.estado_acabado = 'EN_PROCESO')
+                  )
+            ) THEN 1 ELSE 0 END AS bit);
+            """;
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+            sql,
+            new { ProductId = ordenProductoId, OrderId = ordenProduccionId, ProcessCode = procesoCodigo },
+            cancellationToken: cancellationToken));
+    }
 
     public async Task<bool> TryStartDeliveryAsync(long id, CancellationToken cancellationToken)
     {

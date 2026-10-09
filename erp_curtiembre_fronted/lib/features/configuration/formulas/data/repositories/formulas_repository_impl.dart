@@ -33,18 +33,12 @@ class FormulasRepositoryImpl implements FormulasRepository {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
-    required String tipoProducto,
-    required String color,
-    int? productoId,
     String? descripcion,
   }) async {
     final item = await _remoteDataSource.createFormula(
       codigo: codigo,
       nombre: nombre,
       procesoProductivoId: procesoProductivoId,
-      tipoProducto: tipoProducto,
-      color: color,
-      productoId: productoId,
       descripcion: descripcion,
     );
     return item.toEntity();
@@ -56,9 +50,6 @@ class FormulasRepositoryImpl implements FormulasRepository {
     required String codigo,
     required String nombre,
     required int procesoProductivoId,
-    required String tipoProducto,
-    required String color,
-    int? productoId,
     String? descripcion,
   }) async {
     final item = await _remoteDataSource.updateFormula(
@@ -66,9 +57,6 @@ class FormulasRepositoryImpl implements FormulasRepository {
       codigo: codigo,
       nombre: nombre,
       procesoProductivoId: procesoProductivoId,
-      tipoProducto: tipoProducto,
-      color: color,
-      productoId: productoId,
       descripcion: descripcion,
     );
     return item.toEntity();

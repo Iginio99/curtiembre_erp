@@ -5,6 +5,7 @@ class ConsumoRealRecordModel {
     required this.id,
     required this.ordenProduccionId,
     required this.ordenProcesoId,
+    this.ordenProductoId,
     required this.procesoProductivoId,
     required this.procesoCodigo,
     required this.procesoNombre,
@@ -22,6 +23,7 @@ class ConsumoRealRecordModel {
   final int id;
   final int ordenProduccionId;
   final int ordenProcesoId;
+  final int? ordenProductoId;
   final int procesoProductivoId;
   final String procesoCodigo;
   final String procesoNombre;
@@ -40,6 +42,7 @@ class ConsumoRealRecordModel {
       id: (json['id'] as num).toInt(),
       ordenProduccionId: (json['ordenProduccionId'] as num).toInt(),
       ordenProcesoId: (json['ordenProcesoId'] as num).toInt(),
+      ordenProductoId: _parseOptionalInt(json['ordenProductoId']),
       procesoProductivoId: (json['procesoProductivoId'] as num).toInt(),
       procesoCodigo: json['procesoCodigo'] as String,
       procesoNombre: json['procesoNombre'] as String,
@@ -62,6 +65,7 @@ class ConsumoRealRecordModel {
       id: id,
       ordenProduccionId: ordenProduccionId,
       ordenProcesoId: ordenProcesoId,
+      ordenProductoId: ordenProductoId,
       procesoProductivoId: procesoProductivoId,
       procesoCodigo: procesoCodigo,
       procesoNombre: procesoNombre,

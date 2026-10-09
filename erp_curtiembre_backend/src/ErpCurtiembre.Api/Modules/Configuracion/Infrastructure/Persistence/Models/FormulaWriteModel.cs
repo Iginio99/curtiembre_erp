@@ -9,10 +9,6 @@ public sealed class FormulaWriteModel
     public string Nombre { get; set; } = string.Empty;
 
     public long ProcesoProductivoId { get; set; }
-    public string? TipoProducto { get; set; }
-    public string? Color { get; set; }
-    public long? ProductoId { get; set; }
-
     public string? Descripcion { get; set; }
 
     public bool Activo { get; set; }

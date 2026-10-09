@@ -26,6 +26,7 @@ class OrdenesProduccionState extends Equatable {
     this.insumoOptions = const [],
     this.personalOptions = const [],
     this.formulaProduccionOptions = const [],
+    this.productoProduccionOptions = const [],
     this.ordenProductos = const [],
     this.selectedOrdenId,
     this.selectedOrden,
@@ -56,6 +57,7 @@ class OrdenesProduccionState extends Equatable {
   final List<InsumoLookup> insumoOptions;
   final List<PersonalEmpresaOption> personalOptions;
   final List<FormulaProduccionOption> formulaProduccionOptions;
+  final List<ProductoProduccionOption> productoProduccionOptions;
   final List<OrdenProductoRecord> ordenProductos;
   final int? selectedOrdenId;
   final OrdenProduccionRecord? selectedOrden;
@@ -83,6 +85,7 @@ class OrdenesProduccionState extends Equatable {
     List<InsumoLookup>? insumoOptions,
     List<PersonalEmpresaOption>? personalOptions,
     List<FormulaProduccionOption>? formulaProduccionOptions,
+    List<ProductoProduccionOption>? productoProduccionOptions,
     List<OrdenProductoRecord>? ordenProductos,
     Object? selectedOrdenId = _sentinel,
     OrdenProduccionRecord? selectedOrden,
@@ -115,6 +118,8 @@ class OrdenesProduccionState extends Equatable {
       personalOptions: personalOptions ?? this.personalOptions,
       formulaProduccionOptions:
           formulaProduccionOptions ?? this.formulaProduccionOptions,
+      productoProduccionOptions:
+          productoProduccionOptions ?? this.productoProduccionOptions,
       ordenProductos: clearSelectedProcesos
           ? const []
           : ordenProductos ?? this.ordenProductos,
@@ -175,6 +180,7 @@ class OrdenesProduccionState extends Equatable {
     insumoOptions,
     personalOptions,
     formulaProduccionOptions,
+    productoProduccionOptions,
     ordenProductos,
     selectedOrdenId,
     selectedOrden,

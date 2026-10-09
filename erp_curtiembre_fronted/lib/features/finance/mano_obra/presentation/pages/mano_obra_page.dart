@@ -576,7 +576,6 @@ class _ManoObraDetailPanel extends StatelessWidget {
                             title: 'Monto y fecha',
                             lines: [
                               'Monto: S/ ${item.monto.toStringAsFixed(2)}',
-                              'Registrado: ${formatFinanceDateTime(item.registradoEn)}',
                               'Usuario: ${item.registradoPorUsuarioId?.toString() ?? 'Sin registro'}',
                             ],
                           ),

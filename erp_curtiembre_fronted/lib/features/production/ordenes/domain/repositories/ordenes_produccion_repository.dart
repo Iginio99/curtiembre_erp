@@ -70,6 +70,7 @@ class FinalizarOrdenProduccionInput {
 
 abstract class OrdenesProduccionRepository {
   Future<List<FormulaProduccionOption>> listFormulaProduccionOptions();
+  Future<List<ProductoProduccionOption>> listProductoProduccionOptions();
   Future<List<OrdenProductoRecord>> listOrdenProductos(int ordenId);
   Future<OrdenProductoRecord> saveOrdenProducto({
     required int ordenId,
@@ -77,6 +78,21 @@ abstract class OrdenesProduccionRepository {
     required OrdenProductoInput input,
   });
   Future<void> deleteOrdenProducto({required int ordenId, required int id});
+  Future<OrdenProductoRecord> startOrdenProductoProcess({
+    required int ordenId,
+    required int productoId,
+    required String proceso,
+    required int formulaVersionId,
+    required double pesoBaseKg,
+    required int responsableId,
+  });
+  Future<OrdenProductoRecord> finishOrdenProductoProcess({
+    required int ordenId,
+    required int productoId,
+    required String proceso,
+    double? cantidadPielesTerminadas,
+    String? observacion,
+  });
   Future<List<PersonalEmpresaOption>> listPersonal();
 
   Future<PersonalEmpresaOption> createPersonal({
@@ -142,6 +158,7 @@ abstract class OrdenesProduccionRepository {
   Future<void> solicitarConsumo({
     required int ordenId,
     required int ordenProcesoId,
+    int? ordenProductoId,
     String? motivo,
     String? observacion,
     required List<SolicitarConsumoProduccionDetalleInput> detalles,

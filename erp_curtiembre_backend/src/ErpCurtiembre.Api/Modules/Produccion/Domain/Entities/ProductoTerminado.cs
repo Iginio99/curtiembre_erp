@@ -33,4 +33,12 @@ public sealed class ProductoTerminado
     public string Estado { get; init; } = string.Empty;
 
     public string? Observacion { get; init; }
+
+    public long? OrdenProductoId { get; init; }
+
+    public string? ProductoNombre { get; init; }
+
+    public string? ProductoColor { get; init; }
+
+    public bool EsProductoIndividual { get; init; }
 }

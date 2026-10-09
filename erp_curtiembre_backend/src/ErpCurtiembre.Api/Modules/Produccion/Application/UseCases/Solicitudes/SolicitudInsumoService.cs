@@ -77,7 +77,19 @@ public sealed class SolicitudInsumoService(
                 "La solicitud se puede crear solo para una etapa iniciada.");
         }
 
-        if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(procesoId, cancellationToken))
+        if (request.OrdenProductoId.HasValue &&
+            !await solicitudInsumoRepository.IsProductProcessInProgressAsync(
+                request.OrdenProductoId.Value,
+                ordenId,
+                process.ProcesoCodigo,
+                cancellationToken))
+        {
+            return UseCaseResult<SolicitudInsumoDetailDto>.Fail(
+                ProduccionErrorCodes.Conflict,
+                "Solo puedes solicitar insumos mientras el proceso del producto esta EN_PROCESO.");
+        }
+
+        if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(procesoId, request.OrdenProductoId, cancellationToken))
         {
             return UseCaseResult<SolicitudInsumoDetailDto>.Fail(
                 ProduccionErrorCodes.Conflict,
@@ -133,6 +145,7 @@ public sealed class SolicitudInsumoService(
                 Codigo = code,
                 OrdenProduccionId = ordenId,
                 OrdenProcesoId = procesoId,
+                OrdenProductoId = request.OrdenProductoId,
                 Estado = "SOLICITADA",
                 Observacion = NormalizeNullable(request.Observacion),
                 SolicitadoEn = dateTimeProvider.Now,
@@ -190,6 +203,7 @@ public sealed class SolicitudInsumoService(
             solicitud.OrdenProduccionId,
             new SolicitarConsumoProduccionRequestDto(
                 solicitud.OrdenProcesoId,
+                solicitud.OrdenProductoId,
                 string.IsNullOrWhiteSpace(request.Motivo)
                     ? $"Entrega de solicitud {solicitud.Codigo}"
                     : request.Motivo.Trim(),

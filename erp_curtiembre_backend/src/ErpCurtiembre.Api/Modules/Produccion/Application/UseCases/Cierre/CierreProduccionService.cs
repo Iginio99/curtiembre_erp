@@ -1,4 +1,5 @@
 using ErpCurtiembre.Modules.Configuracion.Application.Ports;
+using Dapper;
 using ErpCurtiembre.Modules.Produccion.Application.DTOs;
 using ErpCurtiembre.Modules.Produccion.Application.Ports;
 using ErpCurtiembre.Modules.Produccion.Application.Support;
@@ -12,7 +13,8 @@ public sealed class CierreProduccionService(
     ICierreProduccionRepository cierreProduccionRepository,
     ICalidadProductoLookupRepository calidadProductoLookupRepository,
     IDocumentSequenceService documentSequenceService,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ErpCurtiembre.Shared.Persistence.ISqlConnectionFactory connectionFactory)
 {
     private static readonly HashSet<string> AllowedQualityCodes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -92,11 +94,18 @@ public sealed class CierreProduccionService(
         }
 
         var processes = await ordenProduccionRepository.ListProcessesAsync(orderId, cancellationToken);
-        if (processes.Count == 0 || processes.Any(x => x.Estado != "FINALIZADO"))
+        if (processes.Count == 0 || processes.Where(x => x.ProcesoCodigo is "REMOJO_PELAMBRE" or "CURTIDO").Any(x => x.Estado != "FINALIZADO"))
         {
             return UseCaseResult<ControlCalidadDto>.Fail(
                 ProduccionErrorCodes.Conflict,
-                "La calidad final solo puede registrarse cuando todos los procesos esten finalizados.");
+                "La calidad final solo puede registrarse cuando Remojo-Pelambre y Curtido esten finalizados.");
+        }
+        using (var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken))
+        {
+            var pendingProducts = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+                "SELECT CASE WHEN COUNT(1)=0 THEN 1 ELSE SUM(CASE WHEN estado_acabado<>'FINALIZADO' THEN 1 ELSE 0 END) END FROM produccion.orden_producto WHERE orden_produccion_id=@OrderId AND activo=1",
+                new { OrderId = orderId }, cancellationToken: cancellationToken));
+            if (pendingProducts > 0) return UseCaseResult<ControlCalidadDto>.Fail(ProduccionErrorCodes.Conflict, "Todos los productos deben finalizar Acabado antes de registrar la calidad final.");
         }
 
         var calidad = await calidadProductoLookupRepository.FindActiveByIdAsync(request.CalidadProductoId, cancellationToken);
@@ -259,11 +268,18 @@ public sealed class CierreProduccionService(
         }
 
         var processes = await ordenProduccionRepository.ListProcessesAsync(orderId, cancellationToken);
-        if (processes.Count == 0 || processes.Any(x => x.Estado != "FINALIZADO"))
+        if (processes.Count == 0 || processes.Where(x => x.ProcesoCodigo is "REMOJO_PELAMBRE" or "CURTIDO").Any(x => x.Estado != "FINALIZADO"))
         {
             return UseCaseResult<ProductoTerminadoDetailDto>.Fail(
                 ProduccionErrorCodes.Conflict,
-                "La orden solo puede finalizarse cuando todos los procesos esten finalizados.");
+                "La orden solo puede finalizarse cuando Remojo-Pelambre y Curtido esten finalizados.");
+        }
+        using (var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken))
+        {
+            var pendingProducts = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+                "SELECT CASE WHEN COUNT(1)=0 THEN 1 ELSE SUM(CASE WHEN estado_acabado<>'FINALIZADO' THEN 1 ELSE 0 END) END FROM produccion.orden_producto WHERE orden_produccion_id=@OrderId AND activo=1",
+                new { OrderId = orderId }, cancellationToken: cancellationToken));
+            if (pendingProducts > 0) return UseCaseResult<ProductoTerminadoDetailDto>.Fail(ProduccionErrorCodes.Conflict, "Todos los productos deben finalizar Acabado antes de cerrar la orden.");
         }
 
         var latestQuality = await cierreProduccionRepository.FindLatestControlCalidadAsync(orderId, cancellationToken);
@@ -380,7 +396,11 @@ public sealed class CierreProduccionService(
             item.CantidadLadosC,
             item.CantidadLadosMerma,
             item.Estado,
-            item.Observacion);
+            item.Observacion,
+            item.OrdenProductoId,
+            item.ProductoNombre,
+            item.ProductoColor,
+            item.EsProductoIndividual);
 
     private static ProductoTerminadoDetailDto MapProduct(ProductoTerminado item) =>
         new(
@@ -399,5 +419,9 @@ public sealed class CierreProduccionService(
             item.CantidadLadosC,
             item.CantidadLadosMerma,
             item.Estado,
-            item.Observacion);
+            item.Observacion,
+            item.OrdenProductoId,
+            item.ProductoNombre,
+            item.ProductoColor,
+            item.EsProductoIndividual);
 }

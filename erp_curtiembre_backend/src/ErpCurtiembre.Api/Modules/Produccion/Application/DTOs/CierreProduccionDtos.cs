@@ -67,7 +67,11 @@ public sealed record ProductoTerminadoListItemDto(
     decimal CantidadLadosC,
     decimal CantidadLadosMerma,
     string Estado,
-    string? Observacion);
+    string? Observacion,
+    long? OrdenProductoId,
+    string? ProductoNombre,
+    string? ProductoColor,
+    bool EsProductoIndividual);
 
 public sealed record ProductoTerminadoDetailDto(
     long Id,
@@ -85,4 +89,8 @@ public sealed record ProductoTerminadoDetailDto(
     decimal CantidadLadosC,
     decimal CantidadLadosMerma,
     string Estado,
-    string? Observacion);
+    string? Observacion,
+    long? OrdenProductoId,
+    string? ProductoNombre,
+    string? ProductoColor,
+    bool EsProductoIndividual);

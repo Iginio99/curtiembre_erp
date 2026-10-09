@@ -173,7 +173,7 @@ public sealed class OrdenProcesoService(
                 "No puedes finalizar el proceso hasta que Logistica apruebe y entregue los insumos solicitados.");
         }
 
-        if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(processId, cancellationToken))
+        if (await solicitudInsumoRepository.HasOpenRequestForProcessAsync(processId, null, cancellationToken))
         {
             return UseCaseResult<OrdenProcesoListItemDto>.Fail(
                 ProduccionErrorCodes.Conflict,

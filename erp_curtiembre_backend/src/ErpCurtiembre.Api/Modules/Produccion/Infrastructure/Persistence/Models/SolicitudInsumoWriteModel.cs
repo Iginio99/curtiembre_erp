@@ -6,6 +6,7 @@ public sealed class SolicitudInsumoWriteModel
     public string Codigo { get; set; } = string.Empty;
     public long OrdenProduccionId { get; set; }
     public long OrdenProcesoId { get; set; }
+    public long? OrdenProductoId { get; set; }
     public string Estado { get; set; } = string.Empty;
     public string? Observacion { get; set; }
     public DateTime SolicitadoEn { get; set; }

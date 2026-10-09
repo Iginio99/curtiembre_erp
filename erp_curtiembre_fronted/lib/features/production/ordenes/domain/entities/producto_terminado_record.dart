@@ -18,6 +18,10 @@ class ProductoTerminadoRecord extends Equatable {
     required this.cantidadLadosMerma,
     required this.estado,
     this.observacion,
+    this.ordenProductoId,
+    this.productoNombre,
+    this.productoColor,
+    this.esProductoIndividual = false,
   });
 
   final int id;
@@ -36,6 +40,9 @@ class ProductoTerminadoRecord extends Equatable {
   final double cantidadLadosMerma;
   final String estado;
   final String? observacion;
+  final int? ordenProductoId;
+  final String? productoNombre, productoColor;
+  final bool esProductoIndividual;
 
   @override
   List<Object?> get props => [
@@ -55,5 +62,9 @@ class ProductoTerminadoRecord extends Equatable {
     cantidadLadosMerma,
     estado,
     observacion,
+    ordenProductoId,
+    productoNombre,
+    productoColor,
+    esProductoIndividual,
   ];
 }

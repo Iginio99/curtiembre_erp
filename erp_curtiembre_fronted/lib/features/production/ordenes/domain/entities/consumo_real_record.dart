@@ -5,6 +5,7 @@ class ConsumoRealRecord extends Equatable {
     required this.id,
     required this.ordenProduccionId,
     required this.ordenProcesoId,
+    this.ordenProductoId,
     required this.procesoProductivoId,
     required this.procesoCodigo,
     required this.procesoNombre,
@@ -22,6 +23,7 @@ class ConsumoRealRecord extends Equatable {
   final int id;
   final int ordenProduccionId;
   final int ordenProcesoId;
+  final int? ordenProductoId;
   final int procesoProductivoId;
   final String procesoCodigo;
   final String procesoNombre;
@@ -40,6 +42,7 @@ class ConsumoRealRecord extends Equatable {
     id,
     ordenProduccionId,
     ordenProcesoId,
+    ordenProductoId,
     procesoProductivoId,
     procesoCodigo,
     procesoNombre,

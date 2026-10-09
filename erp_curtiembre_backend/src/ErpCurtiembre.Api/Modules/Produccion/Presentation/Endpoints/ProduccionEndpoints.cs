@@ -466,6 +466,15 @@ public static class ProduccionEndpoints
             return Results.Ok(await service.ListFormulaOptionsAsync(cancellationToken));
         });
 
+        group.MapGet("/catalogos/productos", async (
+            HttpRequest request, ValidateSessionUseCase validateSessionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return Results.Ok(await service.ListProductOptionsAsync(cancellationToken));
+        });
+
         ordenes.MapGet("/{ordenId:long}/productos", async (
             HttpRequest request, long ordenId, ValidateSessionUseCase validateSessionUseCase,
             OrdenProductoService service, CancellationToken cancellationToken) =>
@@ -503,6 +512,26 @@ public static class ProduccionEndpoints
             var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
             if (authorization.Failure is not null) return authorization.Failure;
             return ProduccionEndpointResults.From(await service.DeactivateAsync(ordenId, id, cancellationToken));
+        });
+
+        ordenes.MapPost("/{ordenId:long}/productos/{id:long}/procesos/{proceso}/iniciar", async (
+            HttpRequest request, long ordenId, long id, string proceso, IniciarProductoProcesoRequestDto body,
+            ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(await service.StartProcessAsync(ordenId, id, proceso, body, authorization.Session!.UsuarioId, cancellationToken));
+        });
+
+        ordenes.MapPost("/{ordenId:long}/productos/{id:long}/procesos/{proceso}/finalizar", async (
+            HttpRequest request, long ordenId, long id, string proceso, FinalizarProductoProcesoRequestDto body,
+            ValidateSessionUseCase validateSessionUseCase, CheckPermissionUseCase checkPermissionUseCase,
+            OrdenProductoService service, CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAdminAsync(request, validateSessionUseCase, checkPermissionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            return ProduccionEndpointResults.From(await service.FinishProcessAsync(ordenId, id, proceso, body, cancellationToken));
         });
 
         ordenes.MapGet("/{ordenId:long}/consumo-planificado", async (
@@ -771,96 +800,6 @@ public static class ProduccionEndpoints
 
             return ProduccionEndpointResults.From(
                 await service.RegisterMermaAsync(id, body, authorization.Session!.UsuarioId, cancellationToken));
-        });
-
-        ordenes.MapGet("/{ordenId:long}/calidad-final", async (
-            HttpRequest request,
-            long ordenId,
-            ValidateSessionUseCase validateSessionUseCase,
-            CierreProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
-                request, validateSessionUseCase, cancellationToken);
-            if (authorization.Failure is not null) return authorization.Failure;
-            return ProduccionEndpointResults.From(
-                await service.GetFinalQualityAsync(ordenId, cancellationToken));
-        });
-
-        ordenes.MapPost("/{ordenId:long}/calidad-final", async (
-            HttpRequest request,
-            long ordenId,
-            RegistrarCalidadFinalRequestDto body,
-            ValidateSessionUseCase validateSessionUseCase,
-            CierreProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
-                request,
-                validateSessionUseCase,
-                cancellationToken);
-            if (authorization.Failure is not null)
-            {
-                return authorization.Failure;
-            }
-
-            return ProduccionEndpointResults.From(
-                await service.RegisterFinalQualityAsync(ordenId, body, authorization.Session!.UsuarioId, cancellationToken));
-        });
-
-        ordenes.MapPut("/{ordenId:long}/calidad-final", async (
-            HttpRequest request,
-            long ordenId,
-            RegistrarCalidadFinalRequestDto body,
-            ValidateSessionUseCase validateSessionUseCase,
-            CierreProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
-                request, validateSessionUseCase, cancellationToken);
-            if (authorization.Failure is not null) return authorization.Failure;
-            return ProduccionEndpointResults.From(
-                await service.UpdateFinalQualityAsync(ordenId, body, authorization.Session!.UsuarioId, cancellationToken));
-        });
-
-        ordenes.MapGet("/{ordenId:long}/producto-terminado", async (
-            HttpRequest request,
-            long ordenId,
-            ValidateSessionUseCase validateSessionUseCase,
-            CierreProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
-                request,
-                validateSessionUseCase,
-                cancellationToken);
-            if (authorization.Failure is not null)
-            {
-                return authorization.Failure;
-            }
-
-            return ProduccionEndpointResults.From(await service.GetProductoTerminadoByOrderAsync(ordenId, cancellationToken));
-        });
-
-        ordenes.MapPost("/{ordenId:long}/finalizar", async (
-            HttpRequest request,
-            long ordenId,
-            FinalizarOrdenProduccionRequestDto body,
-            ValidateSessionUseCase validateSessionUseCase,
-            CierreProduccionService service,
-            CancellationToken cancellationToken) =>
-        {
-            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
-                request,
-                validateSessionUseCase,
-                cancellationToken);
-            if (authorization.Failure is not null)
-            {
-                return authorization.Failure;
-            }
-
-            return ProduccionEndpointResults.From(
-                await service.FinalizeOrderAsync(ordenId, body, authorization.Session!.UsuarioId, cancellationToken));
         });
 
         group.MapGet("/productos-terminados", async (

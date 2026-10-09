@@ -28,12 +28,18 @@ class SolicitarConsumoDialog extends StatefulWidget {
     required this.insumos,
     required this.formulas,
     required this.isSubmitting,
+    this.formulaAsignada,
+    this.pesoBaseAsignado,
+    this.cantidadPielesAsignada,
   });
 
   final OrdenProcesoRecord proceso;
   final List<InsumoLookup> insumos;
   final List<FormulaProduccionOption> formulas;
   final bool isSubmitting;
+  final FormulaProduccionOption? formulaAsignada;
+  final double? pesoBaseAsignado;
+  final double? cantidadPielesAsignada;
 
   @override
   State<SolicitarConsumoDialog> createState() => _SolicitarConsumoDialogState();
@@ -47,6 +53,20 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
   final _pielesController = TextEditingController();
   int? _formulaVersionId;
   final List<_ConsumoDetalleDraft> _drafts = [_ConsumoDetalleDraft()];
+
+  @override
+  void initState() {
+    super.initState();
+    final formula = widget.formulaAsignada;
+    if (formula != null) {
+      _formulaVersionId = formula.formulaVersionId;
+      _kilosController.text = _formatCantidad(widget.pesoBaseAsignado ?? 0);
+      _pielesController.text = _formatCantidad(
+        widget.cantidadPielesAsignada ?? 0,
+      );
+      _loadFormula(formula);
+    }
+  }
 
   @override
   void dispose() {
@@ -75,21 +95,25 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
         }
       }
       if (formula == null) return;
-      for (final draft in _drafts) {
-        draft.dispose();
-      }
-      _drafts.clear();
-      for (final detail in formula.insumos) {
-        final draft = _ConsumoDetalleDraft()..insumoId = detail.insumoId;
-        draft.porcentajeController.text = detail.porcentaje
-            .toStringAsFixed(4)
-            .replaceFirst(RegExp(r'\.?0+$'), '');
-        draft.observacionController.text = detail.observacion ?? '';
-        _drafts.add(draft);
-      }
-      if (_drafts.isEmpty) _drafts.add(_ConsumoDetalleDraft());
-      _recalculateFormula();
+      _loadFormula(formula);
     });
+  }
+
+  void _loadFormula(FormulaProduccionOption formula) {
+    for (final draft in _drafts) {
+      draft.dispose();
+    }
+    _drafts.clear();
+    for (final detail in formula.insumos) {
+      final draft = _ConsumoDetalleDraft()..insumoId = detail.insumoId;
+      draft.porcentajeController.text = detail.porcentaje
+          .toStringAsFixed(4)
+          .replaceFirst(RegExp(r'\.?0+$'), '');
+      draft.observacionController.text = detail.observacion ?? '';
+      _drafts.add(draft);
+    }
+    if (_drafts.isEmpty) _drafts.add(_ConsumoDetalleDraft());
+    _recalculateFormula();
   }
 
   void _recalculateFormula() {
@@ -252,7 +276,47 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                   ),
                 ),
                 const Gap(AppSpacing.md),
-                if (widget.formulas.isNotEmpty) ...[
+                if (widget.formulaAsignada != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.28,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Wrap(
+                      spacing: AppSpacing.xl,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        _ProcesoInfo(
+                          label: 'Formula asignada',
+                          value:
+                              '${widget.formulaAsignada!.formulaNombre} · ${widget.formulaAsignada!.formulaCodigo} · v${widget.formulaAsignada!.numeroVersion}',
+                        ),
+                        _ProcesoInfo(
+                          label: 'Peso base',
+                          value:
+                              '${_formatCantidad(widget.pesoBaseAsignado ?? 0)} kg',
+                        ),
+                        _ProcesoInfo(
+                          label: 'Pieles del producto',
+                          value: _formatCantidad(
+                            widget.cantidadPielesAsignada ?? 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Gap(AppSpacing.md),
+                ] else if (widget.formulas.isNotEmpty) ...[
                   DropdownButtonFormField<int>(
                     initialValue: _formulaVersionId,
                     isExpanded: true,
@@ -266,7 +330,7 @@ class _SolicitarConsumoDialogState extends State<SolicitarConsumoDialog> {
                           (f) => DropdownMenuItem(
                             value: f.formulaVersionId,
                             child: Text(
-                              '${f.formulaNombre} · ${f.tipoProducto ?? ''} · ${f.color ?? ''} · v${f.numeroVersion}',
+                              '${f.formulaNombre} · ${f.formulaCodigo} · v${f.numeroVersion}',
                             ),
                           ),
                         )

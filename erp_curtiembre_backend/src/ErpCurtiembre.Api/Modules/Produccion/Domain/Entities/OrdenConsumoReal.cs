@@ -8,6 +8,8 @@ public sealed class OrdenConsumoReal
 
     public long OrdenProcesoId { get; init; }
 
+    public long? OrdenProductoId { get; init; }
+
     public long ProcesoProductivoId { get; init; }
 
     public string ProcesoCodigo { get; init; } = string.Empty;

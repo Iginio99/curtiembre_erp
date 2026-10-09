@@ -7,6 +7,9 @@ class CostoProcesoReporteItem extends Equatable {
     required this.ordenProcesoId,
     required this.procesoCodigo,
     required this.procesoNombre,
+    this.ordenProductoId,
+    this.productoNombre,
+    this.productoColor,
     required this.cantidadPieles,
     required this.cantidadConsumida,
     required this.costoMaterialesReal,
@@ -25,6 +28,9 @@ class CostoProcesoReporteItem extends Equatable {
   final int ordenProcesoId;
   final String procesoCodigo;
   final String procesoNombre;
+  final int? ordenProductoId;
+  final String? productoNombre;
+  final String? productoColor;
   final DateTime? fechaInicio;
   final DateTime? fechaFin;
   final double cantidadPieles;
@@ -44,6 +50,9 @@ class CostoProcesoReporteItem extends Equatable {
     ordenProcesoId,
     procesoCodigo,
     procesoNombre,
+    ordenProductoId,
+    productoNombre,
+    productoColor,
     fechaInicio,
     fechaFin,
     cantidadPieles,

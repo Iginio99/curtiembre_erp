@@ -72,6 +72,7 @@ public sealed class ConsumoProduccionService(
             {
                 OrdenProduccionId = ordenId,
                 OrdenProcesoId = process.Id,
+                OrdenProductoId = request.OrdenProductoId,
                 ProcesoProductivoId = process.ProcesoProductivoId,
                 ProcesoCodigo = process.ProcesoCodigo,
                 ProcesoNombre = process.ProcesoNombre,
@@ -130,6 +131,7 @@ public sealed class ConsumoProduccionService(
             item.Id,
             item.OrdenProduccionId,
             item.OrdenProcesoId,
+            item.OrdenProductoId,
             item.ProcesoProductivoId,
             item.ProcesoCodigo,
             item.ProcesoNombre,

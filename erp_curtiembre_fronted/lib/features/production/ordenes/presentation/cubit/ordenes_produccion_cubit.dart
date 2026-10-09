@@ -1,5 +1,6 @@
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/network/api_exception.dart';
+import 'package:dio/dio.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
@@ -58,6 +59,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
       final insumoOptions = await _repository.listActiveInsumos();
       final formulaProduccionOptions = await _repository
           .listFormulaProduccionOptions();
+      final productoProduccionOptions = await _repository
+          .listProductoProduccionOptions();
       _talker.cubit(
         'Catalogos base cargados para ordenes: clientes=${clienteOptions.length}, lotes=${loteOptions.length}, insumos=${insumoOptions.length}.',
         logLevel: LogLevel.debug,
@@ -69,6 +72,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
           personalOptions: personalOptions,
           insumoOptions: insumoOptions,
           formulaProduccionOptions: formulaProduccionOptions,
+          productoProduccionOptions: productoProduccionOptions,
         ),
       );
       await load();
@@ -605,6 +609,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
 
   Future<OrdenesActionResult> solicitarConsumo({
     required int ordenProcesoId,
+    int? ordenProductoId,
     String? motivo,
     String? observacion,
     required List<SolicitarConsumoProduccionDetalleInput> detalles,
@@ -628,6 +633,7 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
       await _repository.solicitarConsumo(
         ordenId: ordenId,
         ordenProcesoId: ordenProcesoId,
+        ordenProductoId: ordenProductoId,
         motivo: motivo,
         observacion: observacion,
         detalles: detalles,
@@ -842,8 +848,21 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     required OrdenProductoInput input,
   }) async {
     final ordenId = state.selectedOrdenId;
-    if (ordenId == null)
+    if (ordenId == null) {
       return const OrdenesActionResult.failure('Selecciona una orden.');
+    }
+    final orderSkins = state.selectedOrden?.cantidadPieles ?? 0;
+    final assignedToOtherProducts = state.ordenProductos
+        .where((product) => product.id != id)
+        .fold<double>(0, (total, product) => total + product.cantidadPieles);
+    final availableSkins = orderSkins - assignedToOtherProducts;
+    if (input.cantidadPieles > availableSkins) {
+      return OrdenesActionResult.failure(
+        availableSkins <= 0
+            ? 'No hay pieles disponibles para asignar a otro producto.'
+            : 'Solo hay ${availableSkins.toStringAsFixed(0)} pieles disponibles.',
+      );
+    }
     emit(state.copyWith(isSubmittingAction: true));
     try {
       await _repository.saveOrdenProducto(
@@ -861,13 +880,35 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     } on ApiException catch (e) {
       emit(state.copyWith(isSubmittingAction: false));
       return OrdenesActionResult.failure(e.message);
+    } on DioException catch (e) {
+      emit(state.copyWith(isSubmittingAction: false));
+      final exception = ApiException.fromDioException(e);
+      return OrdenesActionResult.failure(
+        exception.statusCode == 400
+            ? (availableSkins <= 0
+                  ? 'No hay pieles disponibles para asignar a otro producto.'
+                  : exception.message)
+            : exception.message,
+      );
+    } catch (e, stackTrace) {
+      _talker.cubit(
+        'Fallo inesperado al guardar el producto de la orden $ordenId.',
+        logLevel: LogLevel.error,
+        exception: e,
+        stackTrace: stackTrace,
+      );
+      emit(state.copyWith(isSubmittingAction: false));
+      return const OrdenesActionResult.failure(
+        'No se pudo guardar el producto. Intenta nuevamente.',
+      );
     }
   }
 
   Future<OrdenesActionResult> deleteProducto(int id) async {
     final ordenId = state.selectedOrdenId;
-    if (ordenId == null)
+    if (ordenId == null) {
       return const OrdenesActionResult.failure('Selecciona una orden.');
+    }
     emit(state.copyWith(isSubmittingAction: true));
     try {
       await _repository.deleteOrdenProducto(ordenId: ordenId, id: id);
@@ -879,6 +920,66 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     } on ApiException catch (e) {
       emit(state.copyWith(isSubmittingAction: false));
       return OrdenesActionResult.failure(e.message);
+    }
+  }
+
+  Future<OrdenesActionResult> updateProductoProcess({
+    required int productoId,
+    required String proceso,
+    required bool finalizar,
+    double? cantidadPielesTerminadas,
+    String? observacion,
+    int? formulaVersionId,
+    double? pesoBaseKg,
+    int? responsableId,
+  }) async {
+    final ordenId = state.selectedOrdenId;
+    if (ordenId == null) {
+      return const OrdenesActionResult.failure('Selecciona una orden.');
+    }
+    emit(state.copyWith(isSubmittingAction: true));
+    try {
+      if (finalizar) {
+        await _repository.finishOrdenProductoProcess(
+          ordenId: ordenId,
+          productoId: productoId,
+          proceso: proceso,
+          cantidadPielesTerminadas: cantidadPielesTerminadas,
+          observacion: observacion,
+        );
+      } else {
+        if (formulaVersionId == null ||
+            pesoBaseKg == null ||
+            responsableId == null) {
+          emit(state.copyWith(isSubmittingAction: false));
+          return const OrdenesActionResult.failure(
+            'Selecciona una formula, el responsable e ingresa el peso base.',
+          );
+        }
+        await _repository.startOrdenProductoProcess(
+          ordenId: ordenId,
+          productoId: productoId,
+          proceso: proceso,
+          formulaVersionId: formulaVersionId,
+          pesoBaseKg: pesoBaseKg,
+          responsableId: responsableId,
+        );
+      }
+      final productos = await _repository.listOrdenProductos(ordenId);
+      emit(
+        state.copyWith(isSubmittingAction: false, ordenProductos: productos),
+      );
+      return OrdenesActionResult.success(
+        '$proceso ${finalizar ? 'finalizado' : 'iniciado'} correctamente.',
+      );
+    } on ApiException catch (e) {
+      emit(state.copyWith(isSubmittingAction: false));
+      return OrdenesActionResult.failure(e.message);
+    } catch (_) {
+      emit(state.copyWith(isSubmittingAction: false));
+      return const OrdenesActionResult.failure(
+        'No pudimos actualizar el proceso del producto.',
+      );
     }
   }
 
@@ -903,10 +1004,6 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
       final consumoReal = await _repository.listConsumoReal(ordenId);
       final desviaciones = await _repository.listDesviaciones(ordenId);
       final mermas = await _repository.listMermas(ordenProduccionId: ordenId);
-      final controlCalidad = await _repository.getCalidadFinal(ordenId);
-      final productoTerminado = await _repository.getProductoTerminadoByOrder(
-        ordenId,
-      );
       _talker.cubit(
         'Detalle de la orden $ordenId cargado con procesos=${procesos.length}, reales=${consumoReal.length}, desviaciones=${desviaciones.length}, mermas=${mermas.length}.',
         logLevel: LogLevel.debug,
@@ -922,8 +1019,8 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
           consumoReal: consumoReal,
           desviaciones: desviaciones,
           mermas: mermas,
-          controlCalidad: controlCalidad,
-          productoTerminado: productoTerminado,
+          controlCalidad: null,
+          productoTerminado: null,
           clearDetailError: true,
         ),
       );

@@ -9,6 +9,7 @@ public sealed record CrearSolicitudInsumoDetalleRequestDto(
     [property: StringLength(300)] string? Observacion = null);
 
 public sealed record CrearSolicitudInsumoRequestDto(
+    [property: Range(1, long.MaxValue)] long? OrdenProductoId,
     [property: StringLength(500)] string? Observacion,
     [property: MinLength(1)] IReadOnlyCollection<CrearSolicitudInsumoDetalleRequestDto> Detalles);
 

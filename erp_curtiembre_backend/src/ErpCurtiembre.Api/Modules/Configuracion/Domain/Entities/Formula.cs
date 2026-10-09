@@ -13,12 +13,6 @@ public sealed class Formula
     public string ProcesoProductivoCodigo { get; init; } = string.Empty;
 
     public string ProcesoProductivoNombre { get; init; } = string.Empty;
-    public string? TipoProducto { get; init; }
-    public string? Color { get; init; }
-    public long? ProductoId { get; init; }
-    public string? ProductoCodigo { get; init; }
-    public string? ProductoNombre { get; init; }
-
     public string? Descripcion { get; init; }
 
     public bool Activo { get; init; }

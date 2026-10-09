@@ -18,6 +18,10 @@ class ProductoTerminadoRecordModel {
     required this.cantidadLadosMerma,
     required this.estado,
     this.observacion,
+    this.ordenProductoId,
+    this.productoNombre,
+    this.productoColor,
+    this.esProductoIndividual = false,
   });
 
   final int id;
@@ -36,6 +40,9 @@ class ProductoTerminadoRecordModel {
   final double cantidadLadosMerma;
   final String estado;
   final String? observacion;
+  final int? ordenProductoId;
+  final String? productoNombre, productoColor;
+  final bool esProductoIndividual;
 
   factory ProductoTerminadoRecordModel.fromJson(Map<String, dynamic> json) {
     return ProductoTerminadoRecordModel(
@@ -56,6 +63,10 @@ class ProductoTerminadoRecordModel {
       cantidadLadosMerma: (json['cantidadLadosMerma'] as num).toDouble(),
       estado: json['estado'] as String,
       observacion: json['observacion'] as String?,
+      ordenProductoId: _parseOptionalInt(json['ordenProductoId']),
+      productoNombre: json['productoNombre'] as String?,
+      productoColor: json['productoColor'] as String?,
+      esProductoIndividual: json['esProductoIndividual'] as bool? ?? false,
     );
   }
 
@@ -77,6 +88,15 @@ class ProductoTerminadoRecordModel {
       cantidadLadosMerma: cantidadLadosMerma,
       estado: estado,
       observacion: observacion,
+      ordenProductoId: ordenProductoId,
+      productoNombre: productoNombre,
+      productoColor: productoColor,
+      esProductoIndividual: esProductoIndividual,
     );
+  }
+
+  static int? _parseOptionalInt(dynamic value) {
+    if (value is num) return value.toInt();
+    return null;
   }
 }

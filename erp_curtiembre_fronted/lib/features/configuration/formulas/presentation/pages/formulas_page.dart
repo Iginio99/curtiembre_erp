@@ -72,6 +72,10 @@ class _FormulasPageState extends State<FormulasPage> {
   // ============================================================
 
   Future<void> _openCreateFormulaDialog(FormulasState state) async {
+    final existingCodes = await context
+        .read<FormulasCubit>()
+        .listAllFormulaCodes();
+    if (!mounted) return;
     final payload = await showDialog<FormulaUpsertFormData>(
       context: context,
 
@@ -85,6 +89,8 @@ class _FormulasPageState extends State<FormulasPage> {
         isSubmitting: state.isSubmittingAction,
 
         insumoOptions: state.insumoOptions,
+
+        existingCodes: existingCodes,
       ),
     );
 
@@ -98,12 +104,6 @@ class _FormulasPageState extends State<FormulasPage> {
       nombre: payload.nombre,
 
       procesoProductivoId: payload.procesoProductivoId,
-
-      tipoProducto: payload.tipoProducto,
-
-      color: payload.color,
-
-      productoId: payload.productoId,
 
       descripcion: payload.descripcion,
 
@@ -150,6 +150,8 @@ class _FormulasPageState extends State<FormulasPage> {
 
         insumoOptions: state.insumoOptions,
 
+        existingCodes: state.items.map((item) => item.codigo).toList(),
+
         initialFormula: formula,
       ),
     );
@@ -164,12 +166,6 @@ class _FormulasPageState extends State<FormulasPage> {
       nombre: payload.nombre,
 
       procesoProductivoId: payload.procesoProductivoId,
-
-      tipoProducto: payload.tipoProducto,
-
-      color: payload.color,
-
-      productoId: payload.productoId,
 
       descripcion: payload.descripcion,
     );
@@ -464,13 +460,21 @@ class _FormulasPageState extends State<FormulasPage> {
                                     Expanded(flex: 66, child: detailPanel),
                                   ],
                                 )
-                              : Column(
+                              : ListView(
                                   children: [
-                                    Expanded(child: listPanel),
-
+                                    SizedBox(
+                                      height: constraints.maxWidth < 600
+                                          ? 360
+                                          : 440,
+                                      child: listPanel,
+                                    ),
                                     const Gap(AppSpacing.md),
-
-                                    Expanded(child: detailPanel),
+                                    SizedBox(
+                                      height: constraints.maxWidth < 600
+                                          ? 1050
+                                          : 850,
+                                      child: detailPanel,
+                                    ),
                                   ],
                                 ),
                         ),
@@ -526,8 +530,6 @@ class _FormulasFiltersBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AppSurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.md),
 
@@ -1107,59 +1109,55 @@ class _FormulaDetailPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-                    Row(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
 
-                            children: [
-                              Wrap(
-                                spacing: AppSpacing.sm,
+                          children: [
+                            Wrap(
+                              spacing: AppSpacing.sm,
 
-                                runSpacing: AppSpacing.xs,
+                              runSpacing: AppSpacing.xs,
 
-                                crossAxisAlignment: WrapCrossAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
 
-                                children: [
-                                  Text(
-                                    formula.nombre,
+                              children: [
+                                Text(
+                                  formula.nombre,
 
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(fontWeight: FontWeight.w800),
-                                  ),
-
-                                  _FormulaMiniPill(
-                                    label: formula.activo
-                                        ? 'Activa'
-                                        : 'Inactiva',
-
-                                    background: formula.activo
-                                        ? const Color(0xFFE5F5E8)
-                                        : const Color(0xFFFFE7E7),
-
-                                    foreground: formula.activo
-                                        ? const Color(0xFF2E7D32)
-                                        : const Color(0xFFB3261E),
-                                  ),
-                                ],
-                              ),
-
-                              const Gap(4),
-
-                              Text(
-                                '${formula.codigo} · ${formula.processLabel}',
-
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colors.primary,
-
-                                  fontWeight: FontWeight.w600,
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.w800),
                                 ),
+
+                                _FormulaMiniPill(
+                                  label: formula.activo ? 'Activa' : 'Inactiva',
+
+                                  background: formula.activo
+                                      ? const Color(0xFFE5F5E8)
+                                      : const Color(0xFFFFE7E7),
+
+                                  foreground: formula.activo
+                                      ? const Color(0xFF2E7D32)
+                                      : const Color(0xFFB3261E),
+                                ),
+                              ],
+                            ),
+
+                            const Gap(4),
+
+                            Text(
+                              '${formula.codigo} · ${formula.processLabel}',
+
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colors.primary,
+
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
 
                         const Gap(AppSpacing.md),
@@ -1231,20 +1229,6 @@ class _FormulaDetailPanel extends StatelessWidget {
                                 label: 'Proceso',
                                 value: formula.processLabel,
                               ),
-                              if (formula.productoId != null) ...[
-                                _InfoRow(
-                                  label: 'Producto',
-                                  value: _textOrFallback(formula.productoNombre),
-                                ),
-                                _InfoRow(
-                                  label: 'Tipo',
-                                  value: _textOrFallback(formula.tipoProducto),
-                                ),
-                                _InfoRow(
-                                  label: 'Color',
-                                  value: _textOrFallback(formula.color),
-                                ),
-                              ],
                             ],
                           ),
                         );
@@ -1344,17 +1328,18 @@ class _FormulaDetailPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
 
                     children: [
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              'Insumos de la fórmula',
+                          Text(
+                            'Insumos de la fórmula',
 
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
+
+                          const Gap(AppSpacing.sm),
 
                           FilledButton.icon(
                             onPressed: state.isSubmittingAction
@@ -1464,6 +1449,86 @@ class _FormulaDetailsTable extends StatelessWidget {
     final theme = Theme.of(context);
 
     final colors = theme.colorScheme;
+
+    if (MediaQuery.sizeOf(context).width < 700) {
+      return ListView.separated(
+        itemCount: details.length,
+        separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final detail = details[index];
+          return Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerLowest,
+              border: Border.all(color: colors.outlineVariant),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        detail.insumoNombre,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _FormulaMiniPill(
+                      label: detail.activo ? 'Activo' : 'Inactivo',
+                      background: detail.activo
+                          ? const Color(0xFFE5F5E8)
+                          : const Color(0xFFFFE7E7),
+                      foreground: detail.activo
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFFB3261E),
+                    ),
+                  ],
+                ),
+                const Gap(AppSpacing.xs),
+                Text(
+                  '${detail.insumoCodigo} · ${detail.porcentaje.toStringAsFixed(4)} %',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (detail.observacion?.isNotEmpty == true) ...[
+                  const Gap(AppSpacing.xs),
+                  Text(
+                    detail.observacion!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const Gap(AppSpacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: 'Editar',
+                      onPressed: () => onEdit(detail),
+                      icon: const Icon(Icons.edit_outlined, size: 19),
+                    ),
+                    IconButton(
+                      tooltip: 'Inactivar',
+                      onPressed: detail.activo
+                          ? () => onDelete(detail.id)
+                          : null,
+                      color: colors.error,
+                      icon: const Icon(Icons.block_outlined, size: 19),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
 
     return Container(
       decoration: BoxDecoration(

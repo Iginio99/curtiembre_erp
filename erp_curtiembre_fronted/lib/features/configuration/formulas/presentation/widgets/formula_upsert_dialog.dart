@@ -15,9 +15,6 @@ class FormulaUpsertFormData {
     required this.codigo,
     required this.nombre,
     required this.procesoProductivoId,
-    required this.tipoProducto,
-    required this.color,
-    this.productoId,
     this.descripcion,
     this.detalles = const [],
   });
@@ -25,9 +22,6 @@ class FormulaUpsertFormData {
   final String codigo;
   final String nombre;
   final int procesoProductivoId;
-  final String tipoProducto;
-  final String color;
-  final int? productoId;
   final String? descripcion;
   final List<FormulaRecipeLine> detalles;
 }
@@ -56,6 +50,7 @@ class FormulaUpsertDialog extends StatefulWidget {
     required this.processOptions,
     required this.isSubmitting,
     required this.insumoOptions,
+    this.existingCodes = const [],
     this.initialFormula,
   });
 
@@ -64,6 +59,7 @@ class FormulaUpsertDialog extends StatefulWidget {
 
   final List<ProcesoProductivoOption> processOptions;
   final List<InsumoLookup> insumoOptions;
+  final List<String> existingCodes;
 
   final bool isSubmitting;
   final FormulaRecord? initialFormula;
@@ -78,9 +74,6 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
   late final TextEditingController _codigoController;
   late final TextEditingController _nombreController;
   late final TextEditingController _descripcionController;
-  late final TextEditingController _tipoProductoController;
-  late final TextEditingController _colorController;
-  late final TextEditingController _productoIdController;
 
   int? _procesoProductivoId;
 
@@ -106,12 +99,6 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
       text: initial?.descripcion ?? '',
     );
 
-    _tipoProductoController = TextEditingController(
-      text: initial?.tipoProducto ?? '',
-    );
-
-    _colorController = TextEditingController(text: initial?.color ?? '');
-    _productoIdController = TextEditingController(text: initial?.productoId?.toString() ?? '');
 
     // Crear: proceso vacío.
     // Editar: mantener el proceso existente.
@@ -124,9 +111,6 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
     _codigoController.dispose();
     _nombreController.dispose();
     _descripcionController.dispose();
-    _tipoProductoController.dispose();
-    _colorController.dispose();
-    _productoIdController.dispose();
 
     for (final detail in _details) {
       detail.dispose();
@@ -161,7 +145,17 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
                   .substring(0, 3),
     };
 
-    return 'FOR-$prefijo-01';
+    final pattern = RegExp('^FOR-$prefijo-([0-9]+)\$', caseSensitive: false);
+    final usedNumbers = widget.existingCodes
+        .map((existingCode) => pattern.firstMatch(existingCode.trim()))
+        .whereType<RegExpMatch>()
+        .map((match) => int.parse(match.group(1)!))
+        .toSet();
+    var nextNumber = 1;
+    while (usedNumbers.contains(nextNumber)) {
+      nextNumber++;
+    }
+    return 'FOR-$prefijo-${nextNumber.toString().padLeft(2, '0')}';
   }
 
   // ==========================================================
@@ -194,8 +188,6 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
 
     return null;
   }
-
-  bool get _requiresProduct => _findInitialProcess()?.codigo.toUpperCase() == 'RECURTIDO' || _findInitialProcess()?.codigo.toUpperCase() == 'ACABADO';
 
   // ==========================================================
   // AGREGAR INSUMO
@@ -283,12 +275,6 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
         codigo: _codigoController.text.trim(),
         nombre: _nombreController.text.trim(),
         procesoProductivoId: procesoId,
-        tipoProducto: _tipoProductoController.text.trim(),
-
-        // Color opcional.
-        color: _colorController.text.trim(),
-        productoId: _requiresProduct ? int.tryParse(_productoIdController.text.trim()) : null,
-
         descripcion: _descripcionController.text.trim().isEmpty
             ? null
             : _descripcionController.text.trim(),
@@ -576,81 +562,6 @@ class _FormulaUpsertDialogState extends State<FormulaUpsertDialog> {
 
           validator: (value) {
             return (value?.trim() ?? '').isEmpty ? 'Ingresa un código.' : null;
-          },
-        ),
-
-        const Gap(AppSpacing.md),
-
-        // El producto solo aplica a Recurtido y Acabado. En Remojo/Pelambre y
-        // Curtido la fórmula es general y se registra únicamente por nombre.
-        if (_requiresProduct) ...[
-        const _FormLabel(text: 'ID del producto', requiredField: true),
-        const Gap(6),
-        TextFormField(
-          controller: _productoIdController,
-          keyboardType: TextInputType.number,
-          decoration: _fieldDecoration(hint: 'Selecciona el ID del producto registrado'),
-          validator: (value) => int.tryParse(value?.trim() ?? '') == null ? 'Selecciona un producto.' : null,
-        ),
-        const Gap(AppSpacing.md),
-        ],
-        if (false) LayoutBuilder(
-          builder: (context, constraints) {
-            final twoColumns = constraints.maxWidth >= 430;
-
-            final product = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _FormLabel(text: 'Tipo de producto', requiredField: true),
-
-                const Gap(6),
-
-                TextFormField(
-                  controller: _tipoProductoController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _fieldDecoration(hint: 'Ej. Graso, napa, gamuza'),
-                  validator: (value) {
-                    return (value?.trim() ?? '').isEmpty
-                        ? 'Ingresa el tipo de producto.'
-                        : null;
-                  },
-                ),
-              ],
-            );
-
-            // COLOR OPCIONAL
-
-            final color = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _FormLabel(text: 'Color', requiredField: false),
-
-                const Gap(6),
-
-                TextFormField(
-                  controller: _colorController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _fieldDecoration(hint: 'Ej. Negro (opcional)'),
-                ),
-              ],
-            );
-
-            if (!twoColumns) {
-              return Column(
-                children: [product, const Gap(AppSpacing.md), color],
-              );
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: product),
-
-                const Gap(AppSpacing.md),
-
-                Expanded(child: color),
-              ],
-            );
           },
         ),
 

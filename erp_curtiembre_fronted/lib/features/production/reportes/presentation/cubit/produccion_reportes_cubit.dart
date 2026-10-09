@@ -1,6 +1,8 @@
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/network/api_exception.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/consumo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/repositories/produccion_reportes_repository.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/presentation/cubit/produccion_reportes_state.dart';
@@ -82,6 +84,12 @@ class ProduccionReportesCubit extends Cubit<ProduccionReportesState> {
     await _ensureProcessOptionsForOrder(orderId);
     return processOptionsForOrder(orderId);
   }
+
+  Future<List<OrdenProductoRecord>> productsForPrint(int orderId) =>
+      _ordenesRepository.listOrdenProductos(orderId);
+
+  Future<List<ConsumoProcesoReporteItem>> consumptionForPrint(int orderId) =>
+      _reportesRepository.listConsumoPorProceso(ordenProduccionId: orderId);
 
   Future<void> ensureTabLoaded(ProduccionReportesTab tab) async {
     _talker.cubit(

@@ -124,6 +124,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.Id).HasColumnName("id");
             entity.Property(x => x.OrdenProduccionId).HasColumnName("orden_produccion_id");
             entity.Property(x => x.OrdenProcesoId).HasColumnName("orden_proceso_id");
+            entity.Property(x => x.OrdenProductoId).HasColumnName("orden_producto_id");
             entity.Property(x => x.FormulaVersionId).HasColumnName("formula_version_id");
             entity.Property(x => x.InsumoId).HasColumnName("insumo_id");
             entity.Property(x => x.Porcentaje).HasColumnName("porcentaje").HasPrecision(9, 4);
@@ -138,6 +139,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.Id).HasColumnName("id");
             entity.Property(x => x.OrdenProduccionId).HasColumnName("orden_produccion_id");
             entity.Property(x => x.OrdenProcesoId).HasColumnName("orden_proceso_id");
+            entity.Property(x => x.OrdenProductoId).HasColumnName("orden_producto_id");
             entity.Property(x => x.SalidaInventarioDetalleId).HasColumnName("salida_inventario_detalle_id");
             entity.Property(x => x.InsumoId).HasColumnName("insumo_id");
             entity.Property(x => x.CantidadConsumida).HasColumnName("cantidad_consumida").HasPrecision(18, 4);
@@ -221,6 +223,7 @@ public sealed class ProduccionDbContext(
             entity.Property(x => x.Codigo).HasColumnName("codigo").HasMaxLength(50);
             entity.Property(x => x.OrdenProduccionId).HasColumnName("orden_produccion_id");
             entity.Property(x => x.OrdenProcesoId).HasColumnName("orden_proceso_id");
+            entity.Property(x => x.OrdenProductoId).HasColumnName("orden_producto_id");
             entity.Property(x => x.Estado).HasColumnName("estado").HasMaxLength(30);
             entity.Property(x => x.Observacion).HasColumnName("observacion").HasMaxLength(500);
             entity.Property(x => x.SolicitadoEn).HasColumnName("solicitado_en");

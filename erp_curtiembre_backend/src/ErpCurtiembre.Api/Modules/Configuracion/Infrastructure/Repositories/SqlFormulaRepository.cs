@@ -39,9 +39,6 @@ public sealed class SqlFormulaRepository(
                 f.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoProductivoCodigo,
                 pp.nombre AS ProcesoProductivoNombre,
-                p.tipo AS TipoProducto,
-                p.color AS Color,
-                f.producto_id AS ProductoId, p.codigo AS ProductoCodigo, p.nombre AS ProductoNombre,
                 f.descripcion AS Descripcion,
                 f.activo AS Activo,
                 f.creado_en AS CreadoEn,
@@ -53,7 +50,6 @@ public sealed class SqlFormulaRepository(
                 vv.vigente AS VersionVigente
             FROM configuracion.formula f
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = f.proceso_productivo_id
-            LEFT JOIN configuracion.producto p ON p.id = f.producto_id
             OUTER APPLY (
                 SELECT TOP 1
                     fv.id,
@@ -84,9 +80,6 @@ public sealed class SqlFormulaRepository(
                 f.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoProductivoCodigo,
                 pp.nombre AS ProcesoProductivoNombre,
-                p.tipo AS TipoProducto,
-                p.color AS Color,
-                f.producto_id AS ProductoId, p.codigo AS ProductoCodigo, p.nombre AS ProductoNombre,
                 f.descripcion AS Descripcion,
                 f.activo AS Activo,
                 f.creado_en AS CreadoEn,
@@ -98,7 +91,6 @@ public sealed class SqlFormulaRepository(
                 vv.vigente AS VersionVigente
             FROM configuracion.formula f
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = f.proceso_productivo_id
-            LEFT JOIN configuracion.producto p ON p.id = f.producto_id
             OUTER APPLY (
                 SELECT TOP 1
                     fv.id,
@@ -145,9 +137,6 @@ public sealed class SqlFormulaRepository(
             Codigo = formula.Codigo,
             Nombre = formula.Nombre,
             ProcesoProductivoId = formula.ProcesoProductivoId,
-            TipoProducto = formula.TipoProducto,
-            Color = formula.Color,
-            ProductoId = formula.ProductoId,
             Descripcion = formula.Descripcion,
             Activo = formula.Activo,
             CreadoPorUsuarioId = createdByUsuarioId
@@ -169,9 +158,6 @@ public sealed class SqlFormulaRepository(
         entity.Codigo = formula.Codigo;
         entity.Nombre = formula.Nombre;
         entity.ProcesoProductivoId = formula.ProcesoProductivoId;
-        entity.TipoProducto = formula.TipoProducto;
-        entity.Color = formula.Color;
-        entity.ProductoId = formula.ProductoId;
         entity.Descripcion = formula.Descripcion;
 
         await dbContext.SaveChangesAsync(cancellationToken);

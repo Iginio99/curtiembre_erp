@@ -190,26 +190,30 @@ public sealed class SqlCierreProduccionRepository(
     {
         const string sql = """
             SELECT
-                pt.id AS Id,
-                pt.codigo AS Codigo,
-                pt.orden_produccion_id AS OrdenProduccionId,
+                opt.id AS Id,
+                p.codigo AS Codigo,
+                p.orden_produccion_id AS OrdenProduccionId,
                 op.codigo AS OrdenCodigo,
-                pt.calidad_producto_id AS CalidadProductoId,
-                c.codigo AS CalidadCodigo,
-                c.nombre AS CalidadNombre,
-                pt.fecha_ingreso AS FechaIngreso,
-                pt.cantidad_pieles_buenas AS CantidadPielesBuenas,
-                pt.cantidad_lados_calculada AS CantidadLadosCalculada,
-                pt.cantidad_lados_a AS CantidadLadosA,
-                pt.cantidad_lados_b AS CantidadLadosB,
-                pt.cantidad_lados_c AS CantidadLadosC,
-                pt.cantidad_lados_merma AS CantidadLadosMerma,
-                pt.estado AS Estado,
-                pt.observacion AS Observacion
-            FROM produccion.producto_terminado pt
-            INNER JOIN produccion.orden_produccion op ON op.id = pt.orden_produccion_id
-            INNER JOIN configuracion.calidad_producto c ON c.id = pt.calidad_producto_id
-            ORDER BY pt.fecha_ingreso DESC, pt.id DESC;
+                CAST(0 AS BIGINT) AS CalidadProductoId,
+                CAST('PRODUCTO' AS NVARCHAR(50)) AS CalidadCodigo,
+                p.nombre AS CalidadNombre,
+                opt.fecha_ingreso AS FechaIngreso,
+                opt.cantidad_pieles AS CantidadPielesBuenas,
+                CAST(opt.cantidad_pieles * 2 AS DECIMAL(18,4)) AS CantidadLadosCalculada,
+                CAST(0 AS DECIMAL(18,2)) AS CantidadLadosA,
+                CAST(0 AS DECIMAL(18,2)) AS CantidadLadosB,
+                CAST(0 AS DECIMAL(18,2)) AS CantidadLadosC,
+                CAST(0 AS DECIMAL(18,2)) AS CantidadLadosMerma,
+                CAST('TERMINADO' AS NVARCHAR(30)) AS Estado,
+                opt.observacion AS Observacion,
+                p.id AS OrdenProductoId,
+                p.nombre AS ProductoNombre,
+                p.color AS ProductoColor,
+                CAST(1 AS BIT) AS EsProductoIndividual
+            FROM produccion.orden_producto_terminado opt
+            INNER JOIN produccion.orden_producto p ON p.id = opt.orden_producto_id
+            INNER JOIN produccion.orden_produccion op ON op.id = p.orden_produccion_id
+            ORDER BY FechaIngreso DESC, Id DESC;
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);

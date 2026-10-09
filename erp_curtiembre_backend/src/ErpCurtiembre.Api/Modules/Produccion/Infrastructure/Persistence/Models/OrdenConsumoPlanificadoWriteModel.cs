@@ -8,6 +8,8 @@ public sealed class OrdenConsumoPlanificadoWriteModel
 
     public long OrdenProcesoId { get; set; }
 
+    public long? OrdenProductoId { get; set; }
+
     public long FormulaVersionId { get; set; }
 
     public long InsumoId { get; set; }

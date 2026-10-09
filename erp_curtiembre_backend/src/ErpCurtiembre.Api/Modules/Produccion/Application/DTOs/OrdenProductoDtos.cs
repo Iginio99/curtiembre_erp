@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ErpCurtiembre.Modules.Produccion.Application.DTOs;
 
+public sealed record ProductoProduccionOptionDto(long Id, string Codigo, string Nombre, string Tipo, string? Color);
+
 public sealed record OrdenProductoFormulaRequestDto(
     [property: Range(1, long.MaxValue)] long ProcesoProductivoId,
     [property: Range(1, long.MaxValue)] long FormulaVersionId,
@@ -17,6 +19,15 @@ public sealed record UpsertOrdenProductoRequestDto(
     [property: Range(typeof(decimal), "0", "999999999999999.999")] decimal KilosAcabado,
     [property: StringLength(500)] string? Observacion,
     IReadOnlyCollection<OrdenProductoFormulaRequestDto> Formulas);
+
+public sealed record FinalizarProductoProcesoRequestDto(
+    [property: Range(typeof(decimal), "0", "999999999999999.99")] decimal? CantidadPielesTerminadas,
+    [property: StringLength(500)] string? Observacion);
+
+public sealed record IniciarProductoProcesoRequestDto(
+    [property: Range(1, long.MaxValue)] long FormulaVersionId,
+    [property: Range(typeof(decimal), "0.001", "999999999999999.999")] decimal PesoBaseKg,
+    [property: Range(1, long.MaxValue)] long? ResponsableId);
 
 public sealed record OrdenProductoFormulaDto(
     long Id,
@@ -46,14 +57,26 @@ public sealed record OrdenProductoDto(
     DateTime CreadoEn,
     decimal CostoEstimado,
     decimal CostoPorLado,
+    string EstadoRecurtido,
+    DateTime? InicioRecurtido,
+    DateTime? FinRecurtido,
+    long? ResponsableRecurtidoId,
+    string? ResponsableRecurtidoNombre,
+    string EstadoAcabado,
+    DateTime? InicioAcabado,
+    DateTime? FinAcabado,
+    long? ResponsableAcabadoId,
+    string? ResponsableAcabadoNombre,
+    decimal? CantidadPielesTerminadas,
+    long? ProductoTerminadoId,
+    string? SolicitudRecurtidoEstado,
+    string? SolicitudAcabadoEstado,
     IReadOnlyCollection<OrdenProductoFormulaDto> Formulas);
 
 public sealed record FormulaProduccionOptionDto(
     long FormulaId,
     string FormulaCodigo,
     string FormulaNombre,
-    string? TipoProducto,
-    string? Color,
     long ProcesoProductivoId,
     string ProcesoCodigo,
     string ProcesoNombre,

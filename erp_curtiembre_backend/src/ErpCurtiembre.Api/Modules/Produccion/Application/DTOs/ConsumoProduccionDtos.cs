@@ -24,6 +24,7 @@ public sealed record SolicitarConsumoDetalleRequestDto(
 
 public sealed record SolicitarConsumoProduccionRequestDto(
     [property: Range(1, long.MaxValue)] long OrdenProcesoId,
+    [property: Range(1, long.MaxValue)] long? OrdenProductoId,
     [property: StringLength(150)] string? Motivo,
     [property: StringLength(500)] string? Observacion,
     [property: MinLength(1)] IReadOnlyCollection<SolicitarConsumoDetalleRequestDto> Detalles);
@@ -32,6 +33,7 @@ public sealed record ConsumoRealItemDto(
     long Id,
     long OrdenProduccionId,
     long OrdenProcesoId,
+    long? OrdenProductoId,
     long ProcesoProductivoId,
     string ProcesoCodigo,
     string ProcesoNombre,

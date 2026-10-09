@@ -27,6 +27,10 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
       _remoteDataSource.listFormulaProduccionOptions();
 
   @override
+  Future<List<ProductoProduccionOption>> listProductoProduccionOptions() =>
+      _remoteDataSource.listProductoProduccionOptions();
+
+  @override
   Future<List<OrdenProductoRecord>> listOrdenProductos(int ordenId) =>
       _remoteDataSource.listOrdenProductos(ordenId);
 
@@ -44,6 +48,38 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
   @override
   Future<void> deleteOrdenProducto({required int ordenId, required int id}) =>
       _remoteDataSource.deleteOrdenProducto(ordenId: ordenId, id: id);
+
+  @override
+  Future<OrdenProductoRecord> startOrdenProductoProcess({
+    required int ordenId,
+    required int productoId,
+    required String proceso,
+    required int formulaVersionId,
+    required double pesoBaseKg,
+    required int responsableId,
+  }) => _remoteDataSource.startOrdenProductoProcess(
+    ordenId: ordenId,
+    productoId: productoId,
+    proceso: proceso,
+    formulaVersionId: formulaVersionId,
+    pesoBaseKg: pesoBaseKg,
+    responsableId: responsableId,
+  );
+
+  @override
+  Future<OrdenProductoRecord> finishOrdenProductoProcess({
+    required int ordenId,
+    required int productoId,
+    required String proceso,
+    double? cantidadPielesTerminadas,
+    String? observacion,
+  }) => _remoteDataSource.finishOrdenProductoProcess(
+    ordenId: ordenId,
+    productoId: productoId,
+    proceso: proceso,
+    cantidadPielesTerminadas: cantidadPielesTerminadas,
+    observacion: observacion,
+  );
 
   @override
   Future<List<PersonalEmpresaOption>> listPersonal() =>
@@ -321,6 +357,7 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
   Future<void> solicitarConsumo({
     required int ordenId,
     required int ordenProcesoId,
+    int? ordenProductoId,
     String? motivo,
     String? observacion,
     required List<SolicitarConsumoProduccionDetalleInput> detalles,
@@ -331,6 +368,7 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
     await _remoteDataSource.solicitarConsumo(
       ordenId: ordenId,
       ordenProcesoId: ordenProcesoId,
+      ordenProductoId: ordenProductoId,
       motivo: motivo,
       observacion: observacion,
       detalles: detalles

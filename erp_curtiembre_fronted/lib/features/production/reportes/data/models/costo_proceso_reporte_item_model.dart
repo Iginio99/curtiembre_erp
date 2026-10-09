@@ -7,6 +7,9 @@ class CostoProcesoReporteItemModel {
     required this.ordenProcesoId,
     required this.procesoCodigo,
     required this.procesoNombre,
+    this.ordenProductoId,
+    this.productoNombre,
+    this.productoColor,
     required this.cantidadPieles,
     required this.cantidadConsumida,
     required this.costoMaterialesReal,
@@ -25,6 +28,9 @@ class CostoProcesoReporteItemModel {
   final int ordenProcesoId;
   final String procesoCodigo;
   final String procesoNombre;
+  final int? ordenProductoId;
+  final String? productoNombre;
+  final String? productoColor;
   final DateTime? fechaInicio;
   final DateTime? fechaFin;
   final double cantidadPieles;
@@ -44,6 +50,9 @@ class CostoProcesoReporteItemModel {
         ordenProcesoId: (json['ordenProcesoId'] as num).toInt(),
         procesoCodigo: json['procesoCodigo'] as String,
         procesoNombre: json['procesoNombre'] as String,
+        ordenProductoId: (json['ordenProductoId'] as num?)?.toInt(),
+        productoNombre: json['productoNombre'] as String?,
+        productoColor: json['productoColor'] as String?,
         fechaInicio: json['fechaInicio'] == null
             ? null
             : DateTime.parse(json['fechaInicio'] as String),
@@ -67,6 +76,9 @@ class CostoProcesoReporteItemModel {
     ordenProcesoId: ordenProcesoId,
     procesoCodigo: procesoCodigo,
     procesoNombre: procesoNombre,
+    ordenProductoId: ordenProductoId,
+    productoNombre: productoNombre,
+    productoColor: productoColor,
     fechaInicio: fechaInicio,
     fechaFin: fechaFin,
     cantidadPieles: cantidadPieles,

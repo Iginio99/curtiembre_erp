@@ -42,10 +42,15 @@ public sealed class SqlProduccionFinanceLookupRepository(ISqlConnectionFactory c
                 l.cliente_trae_lote AS ClienteTraeLote,
                 l.costo_pieles_total AS CostoPielesTotal,
                 op.fecha_fin_real AS FechaFinReal,
-                pt.cantidad_pieles_buenas AS PielesBuenasFinales
+                terminados.cantidad_pieles AS PielesBuenasFinales
             FROM produccion.orden_produccion op
             INNER JOIN produccion.lote l ON l.id = op.lote_id
-            LEFT JOIN produccion.producto_terminado pt ON pt.orden_produccion_id = op.id
+            OUTER APPLY (
+                SELECT SUM(opt.cantidad_pieles) AS cantidad_pieles
+                FROM produccion.orden_producto p
+                INNER JOIN produccion.orden_producto_terminado opt ON opt.orden_producto_id = p.id
+                WHERE p.orden_produccion_id = op.id
+            ) terminados
             WHERE op.id = @OrdenProduccionId;
             """;
 

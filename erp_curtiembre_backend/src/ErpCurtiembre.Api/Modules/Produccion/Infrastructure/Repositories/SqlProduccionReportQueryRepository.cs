@@ -85,38 +85,73 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                 SELECT
                     p.orden_produccion_id,
                     p.orden_proceso_id,
+                    p.orden_producto_id,
                     p.insumo_id,
                     SUM(p.cantidad_planificada) AS cantidad_planificada
                 FROM produccion.orden_consumo_planificado p
-                GROUP BY p.orden_produccion_id, p.orden_proceso_id, p.insumo_id
+                GROUP BY p.orden_produccion_id, p.orden_proceso_id, p.orden_producto_id, p.insumo_id
             ),
             actual AS (
                 SELECT
                     r.orden_produccion_id,
                     r.orden_proceso_id,
+                    r.orden_producto_id,
                     r.insumo_id,
                     SUM(r.cantidad_consumida) AS cantidad_real,
                     MAX(r.costo_unitario) AS costo_unitario,
                     SUM(r.costo_total) AS costo_total
                 FROM produccion.orden_consumo_real r
-                GROUP BY r.orden_produccion_id, r.orden_proceso_id, r.insumo_id
+                GROUP BY r.orden_produccion_id, r.orden_proceso_id, r.orden_producto_id, r.insumo_id
             ),
             deviation AS (
                 SELECT
                     r.orden_produccion_id,
                     r.orden_proceso_id,
+                    r.orden_producto_id,
                     r.insumo_id,
                     SUM(d.cantidad_desviacion) AS cantidad_desviacion
                 FROM produccion.desviacion_consumo d
                 INNER JOIN produccion.orden_consumo_real r ON r.id = d.orden_consumo_real_id
-                GROUP BY r.orden_produccion_id, r.orden_proceso_id, r.insumo_id
+                GROUP BY r.orden_produccion_id, r.orden_proceso_id, r.orden_producto_id, r.insumo_id
+            ),
+            consumption_keys AS (
+                SELECT orden_produccion_id, orden_proceso_id, orden_producto_id, insumo_id FROM planned
+                UNION
+                SELECT orden_produccion_id, orden_proceso_id, orden_producto_id, insumo_id FROM actual
             )
             SELECT
                 op.id AS OrdenProduccionId,
                 op.codigo AS CodigoOrden,
+                op.cantidad_pieles AS OrdenCantidadPieles,
                 opp.id AS OrdenProcesoId,
                 pp.codigo AS ProcesoCodigo,
                 pp.nombre AS ProcesoNombre,
+                product.id AS OrdenProductoId,
+                product.nombre AS ProductoNombre,
+                product.color AS ProductoColor,
+                CASE pp.codigo
+                    WHEN 'RECURTIDO' THEN product.estado_recurtido
+                    WHEN 'ACABADO' THEN product.estado_acabado
+                    ELSE NULL
+                END AS ProductoEstado,
+                product.cantidad_pieles AS ProductoCantidadPieles,
+                product.cantidad_lados AS ProductoCantidadLados,
+                finished.cantidad_pieles AS ProductoCantidadPielesTerminadas,
+                CASE pp.codigo
+                    WHEN 'RECURTIDO' THEN product.kilos_recurtido
+                    WHEN 'ACABADO' THEN product.kilos_acabado
+                    ELSE NULL
+                END AS ProductoPesoBaseKg,
+                CASE pp.codigo
+                    WHEN 'RECURTIDO' THEN product.inicio_recurtido
+                    WHEN 'ACABADO' THEN product.inicio_acabado
+                    ELSE NULL
+                END AS ProductoInicio,
+                CASE pp.codigo
+                    WHEN 'RECURTIDO' THEN product.fin_recurtido
+                    WHEN 'ACABADO' THEN product.fin_acabado
+                    ELSE NULL
+                END AS ProductoFin,
                 i.id AS InsumoId,
                 i.codigo AS InsumoCodigo,
                 i.nombre AS InsumoNombre,
@@ -128,21 +163,16 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
             FROM produccion.orden_produccion op
             INNER JOIN produccion.orden_produccion_proceso opp ON opp.orden_produccion_id = op.id
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = opp.proceso_productivo_id
-            INNER JOIN inventario.insumo i ON i.id IN (
-                SELECT x.insumo_id
-                FROM produccion.orden_consumo_planificado x
-                WHERE x.orden_produccion_id = op.id AND x.orden_proceso_id = opp.id
-                UNION
-                SELECT y.insumo_id
-                FROM produccion.orden_consumo_real y
-                WHERE y.orden_produccion_id = op.id AND y.orden_proceso_id = opp.id
-            )
-            LEFT JOIN planned ON planned.orden_produccion_id = op.id AND planned.orden_proceso_id = opp.id AND planned.insumo_id = i.id
-            LEFT JOIN actual ON actual.orden_produccion_id = op.id AND actual.orden_proceso_id = opp.id AND actual.insumo_id = i.id
-            LEFT JOIN deviation ON deviation.orden_produccion_id = op.id AND deviation.orden_proceso_id = opp.id AND deviation.insumo_id = i.id
+            INNER JOIN consumption_keys keys ON keys.orden_produccion_id=op.id AND keys.orden_proceso_id=opp.id
+            INNER JOIN inventario.insumo i ON i.id=keys.insumo_id
+            LEFT JOIN produccion.orden_producto product ON product.id=keys.orden_producto_id
+            LEFT JOIN produccion.orden_producto_terminado finished ON finished.orden_producto_id=product.id
+            LEFT JOIN planned ON planned.orden_produccion_id = op.id AND planned.orden_proceso_id = opp.id AND planned.insumo_id = i.id AND (planned.orden_producto_id=keys.orden_producto_id OR planned.orden_producto_id IS NULL AND keys.orden_producto_id IS NULL)
+            LEFT JOIN actual ON actual.orden_produccion_id = op.id AND actual.orden_proceso_id = opp.id AND actual.insumo_id = i.id AND (actual.orden_producto_id=keys.orden_producto_id OR actual.orden_producto_id IS NULL AND keys.orden_producto_id IS NULL)
+            LEFT JOIN deviation ON deviation.orden_produccion_id = op.id AND deviation.orden_proceso_id = opp.id AND deviation.insumo_id = i.id AND (deviation.orden_producto_id=keys.orden_producto_id OR deviation.orden_producto_id IS NULL AND keys.orden_producto_id IS NULL)
             WHERE (@OrdenProduccionId IS NULL OR op.id = @OrdenProduccionId)
               AND (@OrdenProcesoId IS NULL OR opp.id = @OrdenProcesoId)
-            ORDER BY op.id, opp.secuencia, i.nombre, i.codigo;
+            ORDER BY op.id, opp.secuencia, product.nombre, product.color, i.nombre, i.codigo;
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
@@ -282,33 +312,55 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
         CancellationToken cancellationToken)
     {
         const string sql = """
+            WITH actual AS (
+                SELECT
+                    orden_produccion_id,
+                    orden_proceso_id,
+                    orden_producto_id,
+                    insumo_id,
+                    SUM(cantidad_consumida) AS cantidad_consumida,
+                    MAX(costo_unitario) AS costo_unitario,
+                    SUM(costo_total) AS costo_total
+                FROM produccion.orden_consumo_real
+                GROUP BY orden_produccion_id, orden_proceso_id, orden_producto_id, insumo_id
+            )
             SELECT
                 op.id AS OrdenProduccionId,
                 op.codigo AS CodigoOrden,
                 opp.id AS OrdenProcesoId,
                 pp.codigo AS ProcesoCodigo,
                 pp.nombre AS ProcesoNombre,
-                opp.fecha_inicio AS FechaInicio,
-                opp.fecha_fin AS FechaFin,
-                op.cantidad_pieles AS CantidadPieles,
-                opp.peso_base_kg AS PesoBaseKg,
-                i.id AS InsumoId,
+                product.id AS OrdenProductoId,
+                product.nombre AS ProductoNombre,
+                product.color AS ProductoColor,
+                CASE pp.codigo WHEN 'RECURTIDO' THEN product.inicio_recurtido WHEN 'ACABADO' THEN product.inicio_acabado ELSE opp.fecha_inicio END AS FechaInicio,
+                CASE pp.codigo WHEN 'RECURTIDO' THEN product.fin_recurtido WHEN 'ACABADO' THEN product.fin_acabado ELSE opp.fecha_fin END AS FechaFin,
+                ISNULL(product.cantidad_pieles, op.cantidad_pieles) AS CantidadPieles,
+                CASE pp.codigo WHEN 'RECURTIDO' THEN product.kilos_recurtido WHEN 'ACABADO' THEN product.kilos_acabado ELSE opp.peso_base_kg END AS PesoBaseKg,
+                actual.insumo_id AS InsumoId,
                 i.codigo AS InsumoCodigo,
                 i.nombre AS InsumoNombre,
-                COALESCE(MAX(ocp.porcentaje), MAX(requested.porcentaje)) AS Porcentaje,
-                ISNULL(SUM(ocr.cantidad_consumida), 0) AS CantidadConsumida,
-                MAX(ocr.costo_unitario) AS CostoUnitario,
-                ISNULL(SUM(ocr.costo_total), 0) AS CostoMaterialesReal
+                COALESCE(planned.porcentaje, requested.porcentaje) AS Porcentaje,
+                ISNULL(actual.cantidad_consumida, 0) AS CantidadConsumida,
+                actual.costo_unitario AS CostoUnitario,
+                ISNULL(actual.costo_total, 0) AS CostoMaterialesReal
             FROM produccion.orden_produccion op
             INNER JOIN produccion.orden_produccion_proceso opp ON opp.orden_produccion_id = op.id
             INNER JOIN configuracion.proceso_productivo pp ON pp.id = opp.proceso_productivo_id
-            LEFT JOIN produccion.orden_consumo_real ocr ON ocr.orden_produccion_id = op.id
-                AND ocr.orden_proceso_id = opp.id
-            LEFT JOIN inventario.insumo i ON i.id = ocr.insumo_id
-            LEFT JOIN produccion.orden_consumo_planificado ocp
-                ON ocp.orden_produccion_id = op.id
-                AND ocp.orden_proceso_id = opp.id
-                AND ocp.insumo_id = ocr.insumo_id
+            LEFT JOIN actual ON actual.orden_produccion_id = op.id
+                AND actual.orden_proceso_id = opp.id
+            LEFT JOIN inventario.insumo i ON i.id = actual.insumo_id
+            LEFT JOIN produccion.orden_producto product ON product.id=actual.orden_producto_id
+            OUTER APPLY (
+                SELECT TOP 1 ocp.porcentaje
+                FROM produccion.orden_consumo_planificado ocp
+                WHERE ocp.orden_produccion_id=op.id
+                  AND ocp.orden_proceso_id=opp.id
+                  AND ocp.insumo_id=actual.insumo_id
+                  AND (ocp.orden_producto_id=actual.orden_producto_id
+                       OR ocp.orden_producto_id IS NULL AND actual.orden_producto_id IS NULL)
+                ORDER BY ocp.id DESC
+            ) planned
             OUTER APPLY (
                 SELECT TOP 1
                     COALESCE(
@@ -318,16 +370,15 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                 FROM produccion.solicitud_insumo s
                 INNER JOIN produccion.solicitud_insumo_detalle sd
                     ON sd.solicitud_insumo_id = s.id
-                    AND sd.insumo_id = ocr.insumo_id
+                    AND sd.insumo_id = actual.insumo_id
                 WHERE s.orden_produccion_id = op.id
                   AND s.orden_proceso_id = opp.id
+                  AND (s.orden_producto_id=actual.orden_producto_id
+                       OR s.orden_producto_id IS NULL AND actual.orden_producto_id IS NULL)
                 ORDER BY s.solicitado_en DESC, s.id DESC
             ) requested
             WHERE (@OrdenProduccionId IS NULL OR op.id = @OrdenProduccionId)
-            GROUP BY op.id, op.codigo, opp.id, pp.codigo, pp.nombre, opp.secuencia,
-                opp.fecha_inicio, opp.fecha_fin, op.cantidad_pieles, opp.peso_base_kg,
-                i.id, i.codigo, i.nombre
-            ORDER BY op.id DESC, opp.secuencia, i.nombre;
+            ORDER BY op.id DESC, opp.secuencia, product.nombre, product.color, i.nombre;
             """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);

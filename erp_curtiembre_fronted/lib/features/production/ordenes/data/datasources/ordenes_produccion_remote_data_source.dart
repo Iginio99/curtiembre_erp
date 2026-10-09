@@ -54,6 +54,17 @@ class OrdenesProduccionRemoteDataSource {
         .toList();
   }
 
+  Future<List<ProductoProduccionOption>> listProductoProduccionOptions() async {
+    final response = await _dio.get<List<dynamic>>(
+      '/api/produccion/catalogos/productos',
+    );
+    return (response.data ?? const [])
+        .map(
+          (x) => ProductoProduccionOption.fromJson(x as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
   Future<List<OrdenProductoRecord>> listOrdenProductos(int ordenId) async {
     final response = await _dio.get<List<dynamic>>(
       '/api/produccion/ordenes/$ordenId/productos',
@@ -70,14 +81,54 @@ class OrdenesProduccionRemoteDataSource {
   }) async {
     final path =
         '/api/produccion/ordenes/$ordenId/productos${id == null ? '' : '/$id'}';
-    final response = id == null
-        ? await _dio.post<Map<String, dynamic>>(path, data: input.toJson())
-        : await _dio.put<Map<String, dynamic>>(path, data: input.toJson());
-    return OrdenProductoRecord.fromJson(response.data!);
+    try {
+      final response = id == null
+          ? await _dio.post<Map<String, dynamic>>(path, data: input.toJson())
+          : await _dio.put<Map<String, dynamic>>(path, data: input.toJson());
+      return OrdenProductoRecord.fromJson(response.data!);
+    } on DioException catch (exception) {
+      throw ApiException.fromDioException(exception);
+    }
   }
 
   Future<void> deleteOrdenProducto({required int ordenId, required int id}) =>
       _dio.delete<void>('/api/produccion/ordenes/$ordenId/productos/$id');
+
+  Future<OrdenProductoRecord> startOrdenProductoProcess({
+    required int ordenId,
+    required int productoId,
+    required String proceso,
+    required int formulaVersionId,
+    required double pesoBaseKg,
+    required int responsableId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/produccion/ordenes/$ordenId/productos/$productoId/procesos/$proceso/iniciar',
+      data: {
+        'formulaVersionId': formulaVersionId,
+        'pesoBaseKg': pesoBaseKg,
+        'responsableId': responsableId,
+      },
+    );
+    return OrdenProductoRecord.fromJson(response.data!);
+  }
+
+  Future<OrdenProductoRecord> finishOrdenProductoProcess({
+    required int ordenId,
+    required int productoId,
+    required String proceso,
+    double? cantidadPielesTerminadas,
+    String? observacion,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/produccion/ordenes/$ordenId/productos/$productoId/procesos/$proceso/finalizar',
+      data: {
+        'cantidadPielesTerminadas': cantidadPielesTerminadas,
+        'observacion': observacion,
+      },
+    );
+    return OrdenProductoRecord.fromJson(response.data!);
+  }
 
   Future<List<OrdenProduccionRecordModel>> listOrdenes({
     String? texto,
@@ -235,6 +286,7 @@ class OrdenesProduccionRemoteDataSource {
   Future<void> solicitarConsumo({
     required int ordenId,
     required int ordenProcesoId,
+    int? ordenProductoId,
     String? motivo,
     String? observacion,
     required List<Map<String, dynamic>> detalles,
@@ -248,7 +300,11 @@ class OrdenesProduccionRemoteDataSource {
       );
       await _dio.post<void>(
         path,
-        data: {'observacion': observacion, 'detalles': detalles},
+        data: {
+          'ordenProductoId': ordenProductoId,
+          'observacion': observacion,
+          'detalles': detalles,
+        },
       );
       _talker.dataSource(
         'POST $path completado con ${detalles.length} detalles.',

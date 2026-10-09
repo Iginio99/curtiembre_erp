@@ -43,16 +43,88 @@ class OrdenesProduccionPage extends StatefulWidget {
 }
 
 class _OrdenProductosSection extends StatelessWidget {
-  const _OrdenProductosSection({required this.state});
+  const _OrdenProductosSection({required this.state, required this.stageCode});
   final OrdenesProduccionState state;
+  final String stageCode;
+
+  Future<void> _requestSupplies(
+    BuildContext context,
+    OrdenProductoRecord product,
+  ) async {
+    OrdenProcesoRecord? process;
+    for (final candidate in state.selectedProcesos) {
+      if (candidate.procesoCodigo == stageCode) process = candidate;
+    }
+    if (process == null) return;
+
+    OrdenProductoFormulaRecord? assignedFormula;
+    for (final candidate in product.formulas) {
+      if (candidate.procesoCodigo == stageCode) {
+        assignedFormula = candidate;
+        break;
+      }
+    }
+    FormulaProduccionOption? formulaOption;
+    if (assignedFormula != null) {
+      for (final candidate in state.formulaProduccionOptions) {
+        if (candidate.formulaVersionId == assignedFormula.formulaVersionId) {
+          formulaOption = candidate;
+          break;
+        }
+      }
+    }
+    if (assignedFormula == null || formulaOption == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se encontro la formula con la que se inicio este producto.',
+          ),
+        ),
+      );
+      return;
+    }
+    final payload = await showDialog<SolicitarConsumoDialogResult>(
+      context: context,
+      builder: (_) => SolicitarConsumoDialog(
+        proceso: process!,
+        insumos: state.insumoOptions,
+        formulas: const [],
+        formulaAsignada: formulaOption,
+        pesoBaseAsignado: assignedFormula!.kilosBase,
+        cantidadPielesAsignada: product.cantidadPieles,
+        isSubmitting: state.isSubmittingAction,
+      ),
+    );
+    if (payload == null || !context.mounted) return;
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .solicitarConsumo(
+          ordenProcesoId: payload.ordenProcesoId,
+          ordenProductoId: product.id,
+          motivo: payload.motivo,
+          observacion: '${product.nombre}: ${payload.observacion ?? ''}'.trim(),
+          detalles: payload.detalles,
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+    }
+  }
 
   Future<void> _open(BuildContext context, [OrdenProductoRecord? item]) async {
+    final totalSkins = state.selectedOrden?.cantidadPieles ?? 0;
+    final assignedToOtherProducts = state.ordenProductos
+        .where((product) => product.id != item?.id)
+        .fold<double>(0, (total, product) => total + product.cantidadPieles);
+    final availableSkins = totalSkins - assignedToOtherProducts;
     final input = await showDialog<OrdenProductoInput>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _OrdenProductoDialog(
         item: item,
-        options: state.formulaProduccionOptions,
+        products: state.productoProduccionOptions,
+        maxPieles: availableSkins,
       ),
     );
     if (input == null || !context.mounted) return;
@@ -60,10 +132,184 @@ class _OrdenProductosSection extends StatelessWidget {
       id: item?.id,
       input: input,
     );
-    if (context.mounted)
+    if (context.mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(result.message)));
+    }
+  }
+
+  Future<void> _runProcess(
+    BuildContext context,
+    OrdenProductoRecord product,
+    String process,
+    bool finish,
+  ) async {
+    double? completed;
+    int? formulaVersionId;
+    double? pesoBaseKg;
+    int? responsableId;
+    if (!finish) {
+      final options = state.formulaProduccionOptions
+          .where((x) => x.procesoCodigo == process)
+          .toList();
+      int? selectedFormula = options.length == 1
+          ? options.first.formulaVersionId
+          : null;
+      int? selectedResponsable = state.personalOptions.isEmpty
+          ? null
+          : state.personalOptions.first.id;
+      final weightController = TextEditingController();
+      final selection = await showDialog<(int, double, int)>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(
+              'Iniciar ${process == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} - ${product.nombre}',
+            ),
+            content: SizedBox(
+              width: 480,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<int>(
+                    initialValue: selectedFormula,
+                    decoration: const InputDecoration(
+                      labelText: 'Formula del producto',
+                    ),
+                    items: options
+                        .map(
+                          (x) => DropdownMenuItem(
+                            value: x.formulaVersionId,
+                            child: Text(
+                              '${x.formulaNombre} - v${x.numeroVersion}',
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        setDialogState(() => selectedFormula = value),
+                  ),
+                  const Gap(AppSpacing.md),
+                  DropdownButtonFormField<int>(
+                    initialValue: selectedResponsable,
+                    decoration: const InputDecoration(
+                      labelText: 'Responsable del producto',
+                    ),
+                    items: state.personalOptions
+                        .map(
+                          (person) => DropdownMenuItem(
+                            value: person.id,
+                            child: Text(person.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        setDialogState(() => selectedResponsable = value),
+                  ),
+                  const Gap(AppSpacing.md),
+                  TextField(
+                    controller: weightController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Peso base (kg)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final weight = double.tryParse(
+                    weightController.text.replaceAll(',', '.'),
+                  );
+                  if (selectedFormula != null &&
+                      selectedResponsable != null &&
+                      weight != null &&
+                      weight > 0) {
+                    Navigator.pop(dialogContext, (
+                      selectedFormula!,
+                      weight,
+                      selectedResponsable!,
+                    ));
+                  }
+                },
+                child: const Text('Iniciar producto'),
+              ),
+            ],
+          ),
+        ),
+      );
+      weightController.dispose();
+      if (selection == null || !context.mounted) return;
+      formulaVersionId = selection.$1;
+      pesoBaseKg = selection.$2;
+      responsableId = selection.$3;
+    }
+    if (finish && process == 'ACABADO') {
+      final controller = TextEditingController(
+        text: product.cantidadPieles.toStringAsFixed(0),
+      );
+      completed = await showDialog<double>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('Finalizar Acabado - ${product.nombre}'),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Pieles terminadas',
+              helperText:
+                  'Maximo: ${product.cantidadPieles.toStringAsFixed(0)}',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = double.tryParse(
+                  controller.text.replaceAll(',', '.'),
+                );
+                if (value != null &&
+                    value > 0 &&
+                    value <= product.cantidadPieles) {
+                  Navigator.pop(dialogContext, value);
+                }
+              },
+              child: const Text('Finalizar y registrar'),
+            ),
+          ],
+        ),
+      );
+      controller.dispose();
+      if (completed == null || !context.mounted) return;
+    }
+    final result = await context
+        .read<OrdenesProduccionCubit>()
+        .updateProductoProcess(
+          productoId: product.id,
+          proceso: process,
+          finalizar: finish,
+          cantidadPielesTerminadas: completed,
+          formulaVersionId: formulaVersionId,
+          pesoBaseKg: pesoBaseKg,
+          responsableId: responsableId,
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+    }
   }
 
   @override
@@ -89,24 +335,27 @@ class _OrdenProductosSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Productos desde Recurtido',
+                      'Productos en ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'}',
                       style: theme.textTheme.titleLarge,
                     ),
                     Text(
-                      'Distribuye las pieles y lados; asigna una formula y kilos propios para Recurtido y Acabado.',
+                      stageCode == 'RECURTIDO'
+                          ? 'Distribuye las pieles y controla el avance independiente de cada producto.'
+                          : 'Cada producto puede avanzar a Acabado cuando termine su Recurtido.',
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
-              AppButton.primary(
-                label: 'Agregar producto',
-                icon: Icons.add_rounded,
-                expand: false,
-                onPressed: order == null || state.isSubmittingAction
-                    ? null
-                    : () => _open(context),
-              ),
+              if (stageCode == 'RECURTIDO')
+                AppButton.primary(
+                  label: 'Agregar producto',
+                  icon: Icons.add_rounded,
+                  expand: false,
+                  onPressed: order == null || state.isSubmittingAction
+                      ? null
+                      : () => _open(context),
+                ),
             ],
           ),
           const Gap(AppSpacing.md),
@@ -115,33 +364,201 @@ class _OrdenProductosSection extends StatelessWidget {
           ),
           const Gap(AppSpacing.md),
           if (state.ordenProductos.isEmpty)
-            const AppMessageCard.info(
+            AppMessageCard.info(
               title: 'Sin division de productos',
-              message:
-                  'Antes de iniciar Recurtido agrega los productos que se obtendran de esta orden.',
+              message: stageCode == 'RECURTIDO'
+                  ? 'Agrega aqui los productos que se obtendran de esta orden.'
+                  : 'Primero registra los productos dentro de la etapa de Recurtido.',
             )
           else
-            ...state.ordenProductos.map(
-              (p) => Padding(
+            ...state.ordenProductos.map((p) {
+              final hasPendingRequest = p.hasPendingSupplyRequest(stageCode);
+              final hasApprovedRequest = p.hasApprovedSupplies(stageCode);
+              final isCurrentProcessRunning = stageCode == 'RECURTIDO'
+                  ? p.estadoRecurtido == 'EN_PROCESO'
+                  : p.estadoAcabado == 'EN_PROCESO';
+              final productConsumptions = state.consumoReal
+                  .where(
+                    (item) =>
+                        item.ordenProductoId == p.id &&
+                        item.procesoCodigo == stageCode,
+                  )
+                  .toList(growable: false);
+              final processWeight = stageCode == 'RECURTIDO'
+                  ? 'Recurtido ${p.kilosRecurtido.toStringAsFixed(2)} kg'
+                  : p.estadoAcabado == 'PENDIENTE'
+                  ? 'Peso de Acabado pendiente'
+                  : 'Acabado ${p.kilosAcabado.toStringAsFixed(2)} kg';
+              final processResponsible = stageCode == 'RECURTIDO'
+                  ? p.responsableRecurtidoNombre
+                  : p.responsableAcabadoNombre;
+              final processCost = p.formulas
+                  .where((formula) => formula.procesoCodigo == stageCode)
+                  .fold<double>(
+                    0,
+                    (total, formula) => total + formula.costoEstimado,
+                  );
+              final hasProcessFormula = p.formulas.any(
+                (formula) => formula.procesoCodigo == stageCode,
+              );
+              final processCostText = hasProcessFormula
+                  ? 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} S/ ${processCost.toStringAsFixed(2)} · S/ ${(p.cantidadLados > 0 ? processCost / p.cantidadLados : 0).toStringAsFixed(2)} por lado'
+                  : 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} pendiente';
+              return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Card(
-                  child: ListTile(
-                    title: Text(
-                      '${p.nombre}${(p.color ?? '').isEmpty ? '' : ' · ${p.color}'}',
-                    ),
-                    subtitle: Text(
-                      '${p.cantidadPieles.toStringAsFixed(0)} pieles · ${p.cantidadLados.toStringAsFixed(0)} lados · Recurtido ${p.kilosRecurtido.toStringAsFixed(2)} kg · Acabado ${p.kilosAcabado.toStringAsFixed(2)} kg\nCosto estimado S/ ${p.costoEstimado.toStringAsFixed(2)} · S/ ${p.costoPorLado.toStringAsFixed(2)} por lado',
-                    ),
-                    isThreeLine: true,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit_rounded),
-                      tooltip: 'Editar producto',
-                      onPressed: () => _open(context, p),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        title: Text(
+                          '${p.nombre}${(p.color ?? '').isEmpty ? '' : ' · ${p.color}'}',
+                        ),
+                        subtitle: Text(
+                          '${p.cantidadPieles.toStringAsFixed(0)} pieles · ${p.cantidadLados.toStringAsFixed(0)} lados · $processWeight\nResponsable: ${processResponsible ?? 'Pendiente de asignar'}\n$processCostText',
+                        ),
+                        isThreeLine: true,
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit_rounded),
+                          tooltip: 'Editar producto',
+                          onPressed: p.estadoRecurtido == 'PENDIENTE'
+                              ? () => _open(context, p)
+                              : null,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          0,
+                          AppSpacing.md,
+                          AppSpacing.md,
+                        ),
+                        child: Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (hasPendingRequest || hasApprovedRequest)
+                              OutlinedButton.icon(
+                                onPressed: null,
+                                icon: Icon(
+                                  hasPendingRequest
+                                      ? Icons.schedule_rounded
+                                      : Icons.check_circle_outline_rounded,
+                                ),
+                                label: Text(
+                                  hasPendingRequest
+                                      ? 'Solicitud enviada · Pendiente de aprobacion'
+                                      : 'Insumos aprobados',
+                                ),
+                              ),
+                            if (stageCode == 'RECURTIDO')
+                              Chip(
+                                label: Text('Recurtido: ${p.estadoRecurtido}'),
+                              ),
+                            if (stageCode == 'RECURTIDO' &&
+                                p.estadoRecurtido == 'PENDIENTE')
+                              OutlinedButton(
+                                onPressed: state.isSubmittingAction
+                                    ? null
+                                    : () => _runProcess(
+                                        context,
+                                        p,
+                                        'RECURTIDO',
+                                        false,
+                                      ),
+                                child: const Text('Iniciar'),
+                              ),
+                            if (stageCode == 'RECURTIDO' &&
+                                p.estadoRecurtido == 'EN_PROCESO')
+                              FilledButton(
+                                onPressed:
+                                    state.isSubmittingAction ||
+                                        !hasApprovedRequest
+                                    ? null
+                                    : () => _runProcess(
+                                        context,
+                                        p,
+                                        'RECURTIDO',
+                                        true,
+                                      ),
+                                child: const Text('Finalizar'),
+                              ),
+                            if (stageCode == 'ACABADO')
+                              Chip(label: Text('Acabado: ${p.estadoAcabado}')),
+                            if (stageCode == 'ACABADO' &&
+                                p.estadoRecurtido == 'FINALIZADO' &&
+                                p.estadoAcabado == 'PENDIENTE')
+                              OutlinedButton(
+                                onPressed: state.isSubmittingAction
+                                    ? null
+                                    : () => _runProcess(
+                                        context,
+                                        p,
+                                        'ACABADO',
+                                        false,
+                                      ),
+                                child: const Text('Iniciar'),
+                              ),
+                            if (stageCode == 'ACABADO' &&
+                                p.estadoAcabado == 'EN_PROCESO')
+                              FilledButton(
+                                onPressed:
+                                    state.isSubmittingAction ||
+                                        !hasApprovedRequest
+                                    ? null
+                                    : () => _runProcess(
+                                        context,
+                                        p,
+                                        'ACABADO',
+                                        true,
+                                      ),
+                                child: const Text('Finalizar'),
+                              ),
+                            if (isCurrentProcessRunning)
+                              OutlinedButton.icon(
+                                onPressed:
+                                    state.isSubmittingAction ||
+                                        hasPendingRequest
+                                    ? null
+                                    : () => _requestSupplies(context, p),
+                                icon: const Icon(Icons.inventory_2_outlined),
+                                label: const Text('Solicitar insumos'),
+                              ),
+                            if (stageCode == 'ACABADO' &&
+                                p.cantidadPielesTerminadas != null)
+                              Text(
+                                'Terminado: ${p.cantidadPielesTerminadas!.toStringAsFixed(0)} pieles',
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (productConsumptions.isNotEmpty) ...[
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Insumos utilizados por ${p.nombre}',
+                                style: theme.textTheme.titleSmall,
+                              ),
+                              const Gap(AppSpacing.sm),
+                              _ConsumoRealTable(items: productConsumptions),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
         ],
       ),
     );
@@ -149,24 +566,22 @@ class _OrdenProductosSection extends StatelessWidget {
 }
 
 class _OrdenProductoDialog extends StatefulWidget {
-  const _OrdenProductoDialog({this.item, required this.options});
+  const _OrdenProductoDialog({
+    this.item,
+    required this.products,
+    required this.maxPieles,
+  });
   final OrdenProductoRecord? item;
-  final List<FormulaProduccionOption> options;
+  final List<ProductoProduccionOption> products;
+  final double maxPieles;
   @override
   State<_OrdenProductoDialog> createState() => _OrdenProductoDialogState();
 }
 
 class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _code,
-      _name,
-      _color,
-      _skins,
-      _sides,
-      _kgRetan,
-      _kgFinish,
-      _notes;
-  int? _retanVersion, _finishVersion;
+  late final TextEditingController _code, _name, _color, _skins, _sides;
+  int? _productId;
   @override
   void initState() {
     super.initState();
@@ -176,30 +591,42 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
     _color = TextEditingController(text: p?.color);
     _skins = TextEditingController(text: p?.cantidadPieles.toString());
     _sides = TextEditingController(text: p?.cantidadLados.toString());
-    _kgRetan = TextEditingController(text: p?.kilosRecurtido.toString());
-    _kgFinish = TextEditingController(text: p?.kilosAcabado.toString());
-    _notes = TextEditingController(text: p?.observacion);
-    for (final f in p?.formulas ?? const <OrdenProductoFormulaRecord>[]) {
-      if (f.procesoCodigo == 'RECURTIDO') _retanVersion = f.formulaVersionId;
-      if (f.procesoCodigo == 'ACABADO') _finishVersion = f.formulaVersionId;
+    _skins.addListener(_calculateSides);
+    if (p != null) {
+      for (final product in widget.products) {
+        if (product.codigo == p.codigo) {
+          _productId = product.id;
+          break;
+        }
+      }
     }
   }
 
   @override
   void dispose() {
-    for (final c in [
-      _code,
-      _name,
-      _color,
-      _skins,
-      _sides,
-      _kgRetan,
-      _kgFinish,
-      _notes,
-    ]) {
+    _skins.removeListener(_calculateSides);
+    for (final c in [_code, _name, _color, _skins, _sides]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void _calculateSides() {
+    final skins = double.tryParse(_skins.text.replaceAll(',', '.'));
+    final next = skins == null
+        ? ''
+        : (skins * 2).toStringAsFixed(skins % 1 == 0 ? 0 : 2);
+    if (_sides.text != next) _sides.text = next;
+  }
+
+  void _selectProduct(int? productId) {
+    if (productId == null) return;
+    final product = widget.products.firstWhere((x) => x.id == productId);
+    setState(() {
+      _productId = productId;
+      _code.text = product.codigo;
+      _name.text = product.nombre;
+    });
   }
 
   String? _required(String? v) =>
@@ -209,14 +636,21 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
     return n == null || n <= 0 ? 'Ingresa un valor mayor que cero' : null;
   }
 
+  String? _skinsValidator(String? value) {
+    final positiveError = _positive(value);
+    if (positiveError != null) return positiveError;
+    final skins = double.parse(value!.replaceAll(',', '.'));
+    if (skins > widget.maxPieles) {
+      return 'Solo hay ${widget.maxPieles.toStringAsFixed(0)} pieles disponibles';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final retan = widget.options
-        .where((x) => x.procesoCodigo == 'RECURTIDO')
-        .toList();
-    final finish = widget.options
-        .where((x) => x.procesoCodigo == 'ACABADO')
-        .toList();
+    final products = {
+      for (final product in widget.products) product.id: product,
+    };
     return AlertDialog(
       title: Text(widget.item == null ? 'Agregar producto' : 'Editar producto'),
       content: SizedBox(
@@ -227,33 +661,21 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _code,
-                        decoration: const InputDecoration(labelText: 'Codigo'),
-                        validator: _required,
-                      ),
-                    ),
-                    const Gap(AppSpacing.md),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _name,
-                        decoration: const InputDecoration(
-                          labelText: 'Producto',
+                DropdownButtonFormField<int>(
+                  initialValue: _productId,
+                  decoration: const InputDecoration(labelText: 'Producto'),
+                  items: products.values
+                      .map(
+                        (x) => DropdownMenuItem(
+                          value: x.id,
+                          child: Text('${x.codigo} - ${x.nombre}'),
                         ),
-                        validator: _required,
-                      ),
-                    ),
-                    const Gap(AppSpacing.md),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _color,
-                        decoration: const InputDecoration(labelText: 'Color'),
-                      ),
-                    ),
-                  ],
+                      )
+                      .toList(),
+                  onChanged: widget.item == null ? _selectProduct : null,
+                  validator: (value) => value == null
+                      ? 'Selecciona un producto del catalogo'
+                      : null,
                 ),
                 const Gap(AppSpacing.md),
                 Row(
@@ -262,10 +684,12 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
                       child: TextFormField(
                         controller: _skins,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Cantidad de pieles',
+                          helperText:
+                              'Disponibles: ${widget.maxPieles.toStringAsFixed(0)}',
                         ),
-                        validator: _positive,
+                        validator: _skinsValidator,
                       ),
                     ),
                     const Gap(AppSpacing.md),
@@ -274,72 +698,21 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
                         controller: _sides,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Cantidad de lados',
+                          labelText: 'Cantidad de lados (automatico)',
                         ),
+                        readOnly: true,
                         validator: _positive,
                       ),
                     ),
                   ],
                 ),
-                const Gap(AppSpacing.lg),
-                DropdownButtonFormField<int>(
-                  initialValue: _retanVersion,
-                  decoration: const InputDecoration(
-                    labelText: 'Formula de Recurtido',
-                  ),
-                  items: retan
-                      .map(
-                        (x) => DropdownMenuItem(
-                          value: x.formulaVersionId,
-                          child: Text(
-                            '${x.formulaNombre} · v${x.numeroVersion}',
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => _retanVersion = v),
-                ),
-                const Gap(AppSpacing.sm),
-                TextFormField(
-                  controller: _kgRetan,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Kilos a preparar en Recurtido',
-                  ),
-                  validator: _positive,
-                ),
-                const Gap(AppSpacing.lg),
-                DropdownButtonFormField<int>(
-                  initialValue: _finishVersion,
-                  decoration: const InputDecoration(
-                    labelText: 'Formula de Acabado',
-                  ),
-                  items: finish
-                      .map(
-                        (x) => DropdownMenuItem(
-                          value: x.formulaVersionId,
-                          child: Text(
-                            '${x.formulaNombre} · v${x.numeroVersion}',
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => _finishVersion = v),
-                ),
-                const Gap(AppSpacing.sm),
-                TextFormField(
-                  controller: _kgFinish,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Kilos a preparar en Acabado',
-                  ),
-                  validator: _positive,
-                ),
                 const Gap(AppSpacing.md),
                 TextFormField(
-                  controller: _notes,
-                  maxLines: 2,
-                  decoration: const InputDecoration(labelText: 'Observacion'),
+                  controller: _color,
+                  decoration: const InputDecoration(
+                    labelText: 'Color de fondo de Recurtido',
+                  ),
+                  validator: _required,
                 ),
               ],
             ),
@@ -354,29 +727,8 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
         FilledButton(
           onPressed: () {
             if (!_formKey.currentState!.validate()) return;
-            final formulas = <Map<String, dynamic>>[];
-            final kgR = double.parse(_kgRetan.text.replaceAll(',', '.'));
-            final kgA = double.parse(_kgFinish.text.replaceAll(',', '.'));
-            if (_retanVersion != null) {
-              final o = retan.firstWhere(
-                (x) => x.formulaVersionId == _retanVersion,
-              );
-              formulas.add({
-                'procesoProductivoId': o.procesoProductivoId,
-                'formulaVersionId': o.formulaVersionId,
-                'kilosBase': kgR,
-              });
-            }
-            if (_finishVersion != null) {
-              final o = finish.firstWhere(
-                (x) => x.formulaVersionId == _finishVersion,
-              );
-              formulas.add({
-                'procesoProductivoId': o.procesoProductivoId,
-                'formulaVersionId': o.formulaVersionId,
-                'kilosBase': kgA,
-              });
-            }
+            const kgR = 0.0;
+            const kgA = 0.0;
             Navigator.pop(
               context,
               OrdenProductoInput(
@@ -387,8 +739,8 @@ class _OrdenProductoDialogState extends State<_OrdenProductoDialog> {
                 cantidadLados: double.parse(_sides.text.replaceAll(',', '.')),
                 kilosRecurtido: kgR,
                 kilosAcabado: kgA,
-                observacion: _notes.text.trim(),
-                formulas: formulas,
+                observacion: widget.item?.observacion,
+                formulas: const [],
               ),
             );
           },
@@ -1404,88 +1756,6 @@ class _OrdenesFiltersCard extends StatelessWidget {
   }
 }
 
-class _OrdenesListPanel extends StatelessWidget {
-  const _OrdenesListPanel({
-    required this.state,
-    required this.onRetry,
-    required this.onSelectOrden,
-  });
-
-  final OrdenesProduccionState state;
-  final VoidCallback onRetry;
-  final ValueChanged<int> onSelectOrden;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return AppSurfaceCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Listado de ordenes', style: theme.textTheme.titleLarge),
-          const Gap(AppSpacing.xs),
-          Text(
-            '${state.items.length} resultado(s) para la vista actual.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Gap(AppSpacing.lg),
-          Expanded(
-            child: switch (state.status) {
-              OrdenesProduccionStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              OrdenesProduccionStatus.error => _CenteredMessage(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppMessageCard.error(
-                      title: 'No pudimos cargar las ordenes',
-                      message:
-                          state.errorMessage ??
-                          'Intenta nuevamente para revisar la operacion del modulo.',
-                    ),
-                    const Gap(AppSpacing.lg),
-                    AppButton.secondary(
-                      label: 'Reintentar',
-                      icon: Icons.refresh_rounded,
-                      onPressed: onRetry,
-                    ),
-                  ],
-                ),
-              ),
-              OrdenesProduccionStatus.success =>
-                state.items.isEmpty
-                    ? const _CenteredMessage(
-                        child: AppMessageCard.info(
-                          title: 'Sin resultados',
-                          message:
-                              'No encontramos ordenes con los filtros actuales.',
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: state.items.length,
-                        separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return _OrdenListTileCard(
-                            item: item,
-                            isSelected: item.id == state.selectedOrdenId,
-                            onTap: () => onSelectOrden(item.id),
-                          );
-                        },
-                      ),
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _OrdenDetailPanel extends StatelessWidget {
   const _OrdenDetailPanel({
     required this.state,
@@ -1696,21 +1966,18 @@ class _OrdenDetailPanel extends StatelessWidget {
                         ),
                       ],
                       const Gap(AppSpacing.lg),
-                      _OrdenProductosSection(state: state),
-                      const Gap(AppSpacing.lg),
                       Text(
                         'Pipeline de produccion',
                         style: theme.textTheme.titleLarge,
                       ),
                       const Gap(AppSpacing.md),
                       _ProcessPipeline(
+                        state: state,
                         procesos: state.selectedProcesos,
                         planificados: state.consumoPlanificado,
                         consumos: state.consumoReal,
                         mermas: state.mermas,
                         desviaciones: state.desviaciones,
-                        controlCalidad: state.controlCalidad,
-                        productoTerminado: state.productoTerminado,
                         isSubmitting: state.isSubmittingAction,
                         onStart: onStartProceso,
                         onFinish: onFinishProceso,
@@ -1719,9 +1986,6 @@ class _OrdenDetailPanel extends StatelessWidget {
                         onRegisterMerma: onRegisterMerma,
                         onStartOrder: onStartOrden,
                         onCalculatePlanned: onGeneratePlannedConsumption,
-                        onRegisterQuality: onRegisterCalidadFinal,
-                        onFinalizeOrder: onFinalizeOrden,
-                        hasQuality: state.controlCalidad != null,
                       ),
                     ],
                   ),
@@ -1977,7 +2241,7 @@ class _OrderPipelineColumn extends StatelessWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.all(10),
                     itemCount: items.length,
-                    separatorBuilder: (_, __) => const Gap(AppSpacing.sm),
+                    separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
                     itemBuilder: (context, index) => _OrdenListTileCard(
                       item: items[index],
                       isSelected: false,
@@ -2403,13 +2667,12 @@ class _ProcesoCard extends StatelessWidget {
 
 class _ProcessPipeline extends StatefulWidget {
   const _ProcessPipeline({
+    required this.state,
     required this.procesos,
     required this.planificados,
     required this.consumos,
     required this.mermas,
     required this.desviaciones,
-    required this.controlCalidad,
-    required this.productoTerminado,
     required this.isSubmitting,
     required this.onStart,
     required this.onFinish,
@@ -2418,18 +2681,14 @@ class _ProcessPipeline extends StatefulWidget {
     required this.onRegisterMerma,
     required this.onStartOrder,
     required this.onCalculatePlanned,
-    required this.onRegisterQuality,
-    required this.onFinalizeOrder,
-    required this.hasQuality,
   });
 
+  final OrdenesProduccionState state;
   final List<OrdenProcesoRecord> procesos;
   final List<ConsumoPlanificadoRecord> planificados;
   final List<ConsumoRealRecord> consumos;
   final List<MermaProcesoRecord> mermas;
   final List<DesviacionConsumoRecord> desviaciones;
-  final ControlCalidadRecord? controlCalidad;
-  final ProductoTerminadoRecord? productoTerminado;
   final bool isSubmitting;
   final ValueChanged<OrdenProcesoRecord> onStart;
   final ValueChanged<OrdenProcesoRecord> onFinish;
@@ -2438,9 +2697,6 @@ class _ProcessPipeline extends StatefulWidget {
   final ValueChanged<OrdenProcesoRecord> onRegisterMerma;
   final VoidCallback? onStartOrder;
   final VoidCallback onCalculatePlanned;
-  final VoidCallback onRegisterQuality;
-  final VoidCallback onFinalizeOrder;
-  final bool hasQuality;
 
   @override
   State<_ProcessPipeline> createState() => _ProcessPipelineState();
@@ -2461,10 +2717,40 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
       );
     }
     final orderId = ordered.first.ordenProduccionId;
+    bool stageFinished(int index) {
+      final code = ordered[index].procesoCodigo;
+      if (code == 'RECURTIDO') {
+        return widget.state.ordenProductos.isNotEmpty &&
+            widget.state.ordenProductos.every(
+              (p) => p.estadoRecurtido == 'FINALIZADO',
+            );
+      }
+      if (code == 'ACABADO') {
+        return widget.state.ordenProductos.isNotEmpty &&
+            widget.state.ordenProductos.every(
+              (p) => p.estadoAcabado == 'FINALIZADO',
+            );
+      }
+      return ordered[index].estado == 'FINALIZADO';
+    }
+
+    bool stageEnabled(int index) {
+      if (index == 0) return true;
+      if (ordered[index].procesoCodigo == 'ACABADO') {
+        return widget.state.ordenProductos.any(
+          (p) => p.estadoRecurtido == 'FINALIZADO',
+        );
+      }
+      return stageFinished(index - 1);
+    }
+
     if (_selectedIndex < 0) {
       _selectedIndex =
           _selectedStageByOrder[orderId] ??
-          ordered.indexWhere((item) => item.estado != 'FINALIZADO');
+          List.generate(ordered.length, (index) => index).firstWhere(
+            (index) => !stageFinished(index),
+            orElse: () => ordered.length - 1,
+          );
       if (_selectedIndex < 0) _selectedIndex = ordered.length - 1;
     }
     if (_selectedIndex >= ordered.length) {
@@ -2472,9 +2758,10 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
     }
 
     final proceso = ordered[_selectedIndex];
-    final isLocked =
-        _selectedIndex > 0 &&
-        ordered[_selectedIndex - 1].estado != 'FINALIZADO';
+    final isLocked = !stageEnabled(_selectedIndex);
+    final isProductStage =
+        proceso.procesoCodigo == 'RECURTIDO' ||
+        proceso.procesoCodigo == 'ACABADO';
     final stagePlanificados = widget.planificados
         .where((item) => item.ordenProcesoId == proceso.id)
         .toList(growable: false);
@@ -2487,7 +2774,6 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
     final stageDesviaciones = widget.desviaciones
         .where((item) => item.ordenProcesoId == proceso.id)
         .toList(growable: false);
-    final isLastStage = _selectedIndex == ordered.length - 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2499,10 +2785,9 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
               for (var index = 0; index < ordered.length; index++)
                 ButtonSegment<int>(
                   value: index,
-                  enabled:
-                      index == 0 || ordered[index - 1].estado == 'FINALIZADO',
+                  enabled: stageEnabled(index),
                   icon: Icon(
-                    ordered[index].estado == 'FINALIZADO'
+                    stageFinished(index)
                         ? Icons.check_circle_rounded
                         : index > 0 && ordered[index - 1].estado != 'FINALIZADO'
                         ? Icons.lock_outline_rounded
@@ -2522,27 +2807,33 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
           ),
         ),
         const Gap(AppSpacing.lg),
-        _ProcesoCard(
-          proceso: proceso,
-          isLocked: isLocked,
-          isSubmitting: widget.isSubmitting,
-          onStart: !isLocked && proceso.canStart
-              ? (_selectedIndex == 0 && widget.onStartOrder != null
-                    ? widget.onStartOrder
-                    : () => widget.onStart(proceso))
-              : null,
-          onFinish: !isLocked && proceso.canFinish
-              ? () => widget.onFinish(proceso)
-              : null,
-          onEditObservation: () => widget.onEditObservation(proceso),
-          onRequestConsumption: !isLocked && proceso.estado != 'PENDIENTE'
-              ? () => widget.onRequestConsumption(proceso)
-              : null,
-          onRegisterMerma: !isLocked && proceso.estado != 'PENDIENTE'
-              ? () => widget.onRegisterMerma(proceso)
-              : null,
-        ),
-        if (stagePlanificados.isNotEmpty) ...[
+        if (isProductStage)
+          _OrdenProductosSection(
+            state: widget.state,
+            stageCode: proceso.procesoCodigo,
+          )
+        else
+          _ProcesoCard(
+            proceso: proceso,
+            isLocked: isLocked,
+            isSubmitting: widget.isSubmitting,
+            onStart: !isLocked && proceso.canStart
+                ? (_selectedIndex == 0 && widget.onStartOrder != null
+                      ? widget.onStartOrder
+                      : () => widget.onStart(proceso))
+                : null,
+            onFinish: !isLocked && proceso.canFinish
+                ? () => widget.onFinish(proceso)
+                : null,
+            onEditObservation: () => widget.onEditObservation(proceso),
+            onRequestConsumption: !isLocked && proceso.estado != 'PENDIENTE'
+                ? () => widget.onRequestConsumption(proceso)
+                : null,
+            onRegisterMerma: !isLocked && proceso.estado != 'PENDIENTE'
+                ? () => widget.onRegisterMerma(proceso)
+                : null,
+          ),
+        if (!isProductStage && stagePlanificados.isNotEmpty) ...[
           const Gap(AppSpacing.lg),
           _ConsumptionSection(
             title: 'Insumos planificados de ${proceso.procesoNombre}',
@@ -2561,7 +2852,7 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
             ),
           ),
         ],
-        if (stageConsumos.isNotEmpty) ...[
+        if (!isProductStage && stageConsumos.isNotEmpty) ...[
           const Gap(AppSpacing.lg),
           _ConsumptionSection(
             title: 'Insumos utilizados',
@@ -2571,7 +2862,7 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
             child: _ConsumoRealTable(items: stageConsumos),
           ),
         ],
-        if (stageMermas.isNotEmpty) ...[
+        if (!isProductStage && stageMermas.isNotEmpty) ...[
           const Gap(AppSpacing.lg),
           _ConsumptionSection(
             title: 'Mermas de ${proceso.procesoNombre}',
@@ -2590,7 +2881,7 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
             ),
           ),
         ],
-        if (stageDesviaciones.isNotEmpty) ...[
+        if (!isProductStage && stageDesviaciones.isNotEmpty) ...[
           const Gap(AppSpacing.lg),
           _ConsumptionSection(
             title: 'Desviaciones de ${proceso.procesoNombre}',
@@ -2608,58 +2899,6 @@ class _ProcessPipelineState extends State<_ProcessPipeline> {
                   .toList(growable: false),
             ),
           ),
-        ],
-        if (isLastStage) ...[
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              if (widget.controlCalidad == null)
-                AppButton.secondary(
-                  label: 'Registrar calidad final',
-                  icon: Icons.verified_outlined,
-                  isLoading: widget.isSubmitting,
-                  onPressed: proceso.estado == 'FINALIZADO'
-                      ? widget.onRegisterQuality
-                      : null,
-                ),
-              AppButton.primary(
-                label: 'Finalizar y pasar a productos terminados',
-                icon: Icons.inventory_2_outlined,
-                isLoading: widget.isSubmitting,
-                onPressed: proceso.estado == 'FINALIZADO' && widget.hasQuality
-                    ? widget.onFinalizeOrder
-                    : null,
-                expand: false,
-              ),
-            ],
-          ),
-          if (widget.controlCalidad != null) ...[
-            const Gap(AppSpacing.lg),
-            _ConsumptionSection(
-              title: 'Calidad final',
-              helperText: 'Evaluacion registrada para cerrar la orden.',
-              isEmpty: false,
-              emptyMessage: '',
-              child: _CalidadFinalCard(
-                item: widget.controlCalidad!,
-                onEdit: widget.productoTerminado == null
-                    ? widget.onRegisterQuality
-                    : null,
-              ),
-            ),
-          ],
-          if (widget.productoTerminado != null) ...[
-            const Gap(AppSpacing.lg),
-            _ConsumptionSection(
-              title: 'Producto terminado',
-              helperText: 'Resultado generado al finalizar la orden.',
-              isEmpty: false,
-              emptyMessage: '',
-              child: _ProductoTerminadoCard(item: widget.productoTerminado!),
-            ),
-          ],
         ],
       ],
     );
@@ -2788,10 +3027,6 @@ class _PlanificadoCard extends StatelessWidget {
                 label: 'Formula version',
                 value: item.formulaVersionId.toString(),
               ),
-              _InlineInfo(
-                label: 'Registrado',
-                value: _formatDateTime(item.creadoEn),
-              ),
             ],
           ),
         ],
@@ -2828,7 +3063,6 @@ class _ConsumoRealTable extends StatelessWidget {
             DataColumn(label: Text('Cantidad'), numeric: true),
             DataColumn(label: Text('Costo unitario'), numeric: true),
             DataColumn(label: Text('Costo total'), numeric: true),
-            DataColumn(label: Text('Registrado')),
           ],
           rows: items
               .map(
@@ -2838,7 +3072,6 @@ class _ConsumoRealTable extends StatelessWidget {
                     DataCell(Text(_formatDecimal(item.cantidadConsumida))),
                     DataCell(Text(_formatCurrency(item.costoUnitario))),
                     DataCell(Text(_formatCurrency(item.costoTotal))),
-                    DataCell(Text(_formatDateTime(item.creadoEn))),
                   ],
                 ),
               )
@@ -2910,10 +3143,6 @@ class _DesviacionCard extends StatelessWidget {
                 label: 'Desviacion',
                 value: _formatSignedDecimal(item.cantidadDesviacion),
               ),
-              _InlineInfo(
-                label: 'Registrado',
-                value: _formatDateTime(item.registradoEn),
-              ),
             ],
           ),
           if ((item.motivo ?? '').trim().isNotEmpty) ...[
@@ -2975,10 +3204,6 @@ class _MermaCard extends StatelessWidget {
               _InlineInfo(
                 label: 'Responsable',
                 value: item.registradoPorNombre ?? 'Sin dato',
-              ),
-              _InlineInfo(
-                label: 'Registrado',
-                value: _formatDateTime(item.registradoEn),
               ),
             ],
           ),
@@ -3220,39 +3445,6 @@ class _InlineInfo extends StatelessWidget {
           ),
           const Gap(AppSpacing.xs),
           Text(value, style: theme.textTheme.bodyMedium),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.lines});
-
-  final String title;
-  final List<String> lines;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: 270,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const Gap(AppSpacing.md),
-          for (final line in lines) ...[
-            Text(line, style: theme.textTheme.bodyMedium),
-            const Gap(AppSpacing.sm),
-          ],
         ],
       ),
     );

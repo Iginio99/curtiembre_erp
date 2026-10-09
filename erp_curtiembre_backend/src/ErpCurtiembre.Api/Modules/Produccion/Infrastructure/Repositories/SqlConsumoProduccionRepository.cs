@@ -94,6 +94,7 @@ public sealed class SqlConsumoProduccionRepository(
             {
                 OrdenProduccionId = item.OrdenProduccionId,
                 OrdenProcesoId = item.OrdenProcesoId,
+                OrdenProductoId = item.OrdenProductoId,
                 SalidaInventarioDetalleId = item.SalidaInventarioDetalleId,
                 InsumoId = item.InsumoId,
                 CantidadConsumida = item.CantidadConsumida,
@@ -136,6 +137,7 @@ public sealed class SqlConsumoProduccionRepository(
                 r.id AS Id,
                 r.orden_produccion_id AS OrdenProduccionId,
                 r.orden_proceso_id AS OrdenProcesoId,
+                r.orden_producto_id AS OrdenProductoId,
                 opp.proceso_productivo_id AS ProcesoProductivoId,
                 pp.codigo AS ProcesoCodigo,
                 pp.nombre AS ProcesoNombre,
