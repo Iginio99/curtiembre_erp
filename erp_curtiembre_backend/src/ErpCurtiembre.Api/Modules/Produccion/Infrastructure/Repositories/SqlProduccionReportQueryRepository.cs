@@ -15,6 +15,7 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                 op.codigo AS CodigoOrden,
                 c.razon_social AS Cliente,
                 l.codigo AS CodigoLote,
+                op.cantidad_pieles AS CantidadPieles,
                 CASE WHEN u.id IS NULL THEN NULL ELSE LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) END AS Responsable,
                 op.fecha_inicio_real AS FechaInicioReal,
                 op.fecha_fin_estimada AS FechaFinEstimada,

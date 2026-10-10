@@ -12,14 +12,14 @@ abstract final class ApiConfig {
     }
 
     if (kIsWeb) {
-      return 'http://127.0.0.1:5085';
+      return 'http://localhost:5126';
     }
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://10.0.2.2:5085';
+        return 'http://10.0.2.2:5126';
       default:
-        return 'http://127.0.0.1:5085';
+        return 'http://localhost:5126';
     }
   }
 }

@@ -6,6 +6,7 @@ class OrdenActivaReporteItem extends Equatable {
     required this.codigoOrden,
     required this.cliente,
     required this.codigoLote,
+    required this.cantidadPieles,
     required this.fechaFinEstimada,
     required this.estado,
     this.responsable,
@@ -16,6 +17,7 @@ class OrdenActivaReporteItem extends Equatable {
   final String codigoOrden;
   final String cliente;
   final String codigoLote;
+  final double cantidadPieles;
   final String? responsable;
   final DateTime? fechaInicioReal;
   final DateTime fechaFinEstimada;
@@ -27,6 +29,7 @@ class OrdenActivaReporteItem extends Equatable {
     codigoOrden,
     cliente,
     codigoLote,
+    cantidadPieles,
     responsable,
     fechaInicioReal,
     fechaFinEstimada,

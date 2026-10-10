@@ -5,6 +5,7 @@ public sealed record OrdenesActivasReporteItemDto(
     string CodigoOrden,
     string Cliente,
     string CodigoLote,
+    decimal CantidadPieles,
     string? Responsable,
     DateTime? FechaInicioReal,
     DateTime FechaFinEstimada,

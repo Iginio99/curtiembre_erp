@@ -209,8 +209,9 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                         ),
                         validator: (value) {
                           final parsed = int.tryParse(value?.trim() ?? '');
-                          if (parsed == null)
+                          if (parsed == null) {
                             return 'Ingresa un numero valido.';
+                          }
                           if (parsed <= 0) return 'Debe ser mayor a 0.';
                           return null;
                         },
@@ -234,8 +235,9 @@ class _ActivoUpsertDialogState extends State<ActivoUpsertDialog> {
                           final quantity =
                               int.tryParse(_cantidadController.text.trim()) ??
                               1;
-                          if (residual == null)
+                          if (residual == null) {
                             return 'Ingresa un valor valido.';
+                          }
                           if (residual < 0) return 'No puede ser negativo.';
                           if (purchase != null &&
                               residual > purchase * quantity) {

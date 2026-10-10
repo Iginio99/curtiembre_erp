@@ -360,7 +360,7 @@ class _OrdenProductosSection extends StatelessWidget {
           ),
           const Gap(AppSpacing.md),
           Text(
-            'Asignado: ${usedSkins.toStringAsFixed(0)} de ${order?.cantidadPieles.toStringAsFixed(0) ?? '-'} pieles · ${usedSides.toStringAsFixed(0)} lados',
+            'Asignado: ${usedSkins.toStringAsFixed(0)} de ${order?.cantidadPieles.toStringAsFixed(0) ?? '-'} pieles Ã‚Â· ${usedSides.toStringAsFixed(0)} lados',
           ),
           const Gap(AppSpacing.md),
           if (state.ordenProductos.isEmpty)
@@ -402,7 +402,7 @@ class _OrdenProductosSection extends StatelessWidget {
                 (formula) => formula.procesoCodigo == stageCode,
               );
               final processCostText = hasProcessFormula
-                  ? 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} S/ ${processCost.toStringAsFixed(2)} · S/ ${(p.cantidadLados > 0 ? processCost / p.cantidadLados : 0).toStringAsFixed(2)} por lado'
+                  ? 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} S/ ${processCost.toStringAsFixed(2)} Ã‚Â· S/ ${(p.cantidadLados > 0 ? processCost / p.cantidadLados : 0).toStringAsFixed(2)} por lado'
                   : 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} pendiente';
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -412,10 +412,10 @@ class _OrdenProductosSection extends StatelessWidget {
                     children: [
                       ListTile(
                         title: Text(
-                          '${p.nombre}${(p.color ?? '').isEmpty ? '' : ' · ${p.color}'}',
+                          '${p.nombre}${(p.color ?? '').isEmpty ? '' : ' Ã‚Â· ${p.color}'}',
                         ),
                         subtitle: Text(
-                          '${p.cantidadPieles.toStringAsFixed(0)} pieles · ${p.cantidadLados.toStringAsFixed(0)} lados · $processWeight\nResponsable: ${processResponsible ?? 'Pendiente de asignar'}\n$processCostText',
+                          '${p.cantidadPieles.toStringAsFixed(0)} pieles Ã‚Â· ${p.cantidadLados.toStringAsFixed(0)} lados Ã‚Â· $processWeight\nResponsable: ${processResponsible ?? 'Pendiente de asignar'}\n$processCostText',
                         ),
                         isThreeLine: true,
                         trailing: IconButton(
@@ -448,7 +448,7 @@ class _OrdenProductosSection extends StatelessWidget {
                                 ),
                                 label: Text(
                                   hasPendingRequest
-                                      ? 'Solicitud enviada · Pendiente de aprobacion'
+                                      ? 'Solicitud enviada Ã‚Â· Pendiente de aprobacion'
                                       : 'Insumos aprobados',
                                 ),
                               ),
@@ -1299,9 +1299,9 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
     }
 
     return AppShell(
-      title: 'Órdenes de producción',
+      title: 'Ãƒâ€œrdenes de producciÃƒÂ³n',
       currentPath: '/produccion/ordenes',
-      breadcrumbs: const ['Inicio', 'Producción', 'Órdenes'],
+      breadcrumbs: const ['Inicio', 'ProducciÃƒÂ³n', 'Ãƒâ€œrdenes'],
       userName: session.nombreCompleto,
       roleName: session.rolNombre,
       accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
@@ -1671,13 +1671,13 @@ class _OrdenesFiltersCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Órdenes de producción',
+                      'Ãƒâ€œrdenes de producciÃƒÂ³n',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
-                      'Gestiona y visualiza el estado de las órdenes.',
+                      'Gestiona y visualiza el estado de las ÃƒÂ³rdenes.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -1863,7 +1863,7 @@ class _OrdenDetailPanel extends StatelessWidget {
                       ),
                       const Gap(AppSpacing.xs),
                       Text(
-                        '${orden.clienteRazonSocial} · ${orden.loteCodigo}',
+                        '${orden.clienteRazonSocial} Ã‚Â· ${orden.loteCodigo}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
                         ),
@@ -2000,7 +2000,7 @@ class _OrdenDetailPanel extends StatelessWidget {
 }
 
 // ============================================================================
-// TABLERO KANBAN DE ÓRDENES - SOLO VISUALIZACIÓN, SIN DRAG & DROP
+// TABLERO KANBAN DE Ãƒâ€œRDENES - SOLO VISUALIZACIÃƒâ€œN, SIN DRAG & DROP
 // ============================================================================
 
 class _OrdersPipelineBoard extends StatelessWidget {
@@ -2029,35 +2029,35 @@ class _OrdersPipelineBoard extends StatelessWidget {
           states: {'PROGRAMADA'},
           tone: Color(0xFFF05A14),
           icon: Icons.event_note_outlined,
-          emptyText: 'Las órdenes programadas aparecerán aquí.',
+          emptyText: 'Las ÃƒÂ³rdenes programadas aparecerÃƒÂ¡n aquÃƒÂ­.',
         ),
         (
-          title: 'Preparación',
+          title: 'PreparaciÃƒÂ³n',
           states: {'ESPERANDO_MATERIALES', 'LISTA_PARA_INICIAR'},
           tone: Color(0xFF2479D6),
           icon: Icons.settings_outlined,
-          emptyText: 'Las órdenes en preparación aparecerán aquí.',
+          emptyText: 'Las ÃƒÂ³rdenes en preparaciÃƒÂ³n aparecerÃƒÂ¡n aquÃƒÂ­.',
         ),
         (
           title: 'En proceso',
           states: {'EN_PROCESO'},
           tone: Color(0xFFF3A414),
           icon: Icons.play_arrow_rounded,
-          emptyText: 'Las órdenes en proceso aparecerán aquí.',
+          emptyText: 'Las ÃƒÂ³rdenes en proceso aparecerÃƒÂ¡n aquÃƒÂ­.',
         ),
         (
           title: 'Finalizadas',
           states: {'FINALIZADA'},
           tone: Color(0xFF15A363),
           icon: Icons.check_rounded,
-          emptyText: 'Las órdenes finalizadas aparecerán aquí.',
+          emptyText: 'Las ÃƒÂ³rdenes finalizadas aparecerÃƒÂ¡n aquÃƒÂ­.',
         ),
         (
           title: 'Anuladas',
           states: {'ANULADA', 'CANCELADA'},
           tone: Color(0xFFE53945),
           icon: Icons.close_rounded,
-          emptyText: 'Las órdenes anuladas aparecerán aquí.',
+          emptyText: 'Las ÃƒÂ³rdenes anuladas aparecerÃƒÂ¡n aquÃƒÂ­.',
         ),
       ];
 
@@ -2072,7 +2072,7 @@ class _OrdersPipelineBoard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppMessageCard.error(
-              title: 'No pudimos cargar las órdenes',
+              title: 'No pudimos cargar las ÃƒÂ³rdenes',
               message: state.errorMessage ?? 'Intenta nuevamente.',
             ),
             const Gap(AppSpacing.md),
@@ -2221,7 +2221,7 @@ class _OrderPipelineColumn extends StatelessWidget {
                           ),
                           const Gap(AppSpacing.md),
                           Text(
-                            'Sin órdenes',
+                            'Sin ÃƒÂ³rdenes',
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -2594,7 +2594,7 @@ class _ProcesoCard extends StatelessWidget {
           const Gap(AppSpacing.sm),
           if (requestedItems.isEmpty)
             Text(
-              'Debes solicitar insumos y esperar su aprobación para finalizar.',
+              'Debes solicitar insumos y esperar su aprobaciÃƒÂ³n para finalizar.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,
                 fontWeight: FontWeight.w600,
@@ -2610,8 +2610,8 @@ class _ProcesoCard extends StatelessWidget {
               ),
               label: Text(
                 proceso.hasPendingSupplyRequest
-                    ? 'Solicitud enviada · Ver insumos pendientes'
-                    : 'Insumos aprobados · Ver detalle',
+                    ? 'Solicitud enviada Ã‚Â· Ver insumos pendientes'
+                    : 'Insumos aprobados Ã‚Â· Ver detalle',
               ),
             ),
           const Gap(AppSpacing.lg),
@@ -2972,7 +2972,7 @@ class _PlanificadoCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               Text(
-                '${item.procesoNombre} · ${item.insumoCodigo}',
+                '${item.procesoNombre} Ã‚Â· ${item.insumoCodigo}',
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
@@ -2997,19 +2997,19 @@ class _PlanificadoCard extends StatelessWidget {
             children: [
               _InlineInfo(
                 label: 'Calidad A',
-                value: '${_formatDecimal(item.cantidadLadosA)} lados · ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosA)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
               ),
               _InlineInfo(
                 label: 'Calidad B',
-                value: '${_formatDecimal(item.cantidadLadosB)} lados · ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosB)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
               ),
               _InlineInfo(
                 label: 'Calidad C',
-                value: '${_formatDecimal(item.cantidadLadosC)} lados · ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosC)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
               ),
               _InlineInfo(
                 label: 'Merma final',
-                value: '${_formatDecimal(item.cantidadLadosMerma)} lados · ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosMerma)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
               ),
             ],
           ),
@@ -3109,7 +3109,7 @@ class _DesviacionCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               Text(
-                '${item.procesoNombre} · ${item.insumoCodigo}',
+                '${item.procesoNombre} Ã‚Â· ${item.insumoCodigo}',
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
@@ -3185,7 +3185,7 @@ class _MermaCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               Text(
-                '${item.procesoNombre} · ${item.procesoCodigo}',
+                '${item.procesoNombre} Ã‚Â· ${item.procesoCodigo}',
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
@@ -3222,205 +3222,7 @@ class _MermaCard extends StatelessWidget {
   }
 }
 
-class _CalidadFinalCard extends StatelessWidget {
-  const _CalidadFinalCard({required this.item, this.onEdit});
 
-  final ControlCalidadRecord item;
-  final VoidCallback? onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _MiniPill(
-                label: item.resultado,
-                background: item.resultado == 'APROBADO'
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.errorContainer,
-                foreground: item.resultado == 'APROBADO'
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onErrorContainer,
-              ),
-              const Spacer(),
-              if (onEdit != null)
-                TextButton.icon(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Editar'),
-                ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Evaluado por',
-                  value: item.evaluadoPorNombre ?? 'Sin dato',
-                ),
-              ),
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Fecha',
-                  value: _formatDateTime(item.evaluadoEn),
-                ),
-              ),
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Producto terminado',
-                  value:
-                      item.productoTerminadoId?.toString() ?? 'Aun no generado',
-                ),
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Calidad A',
-                  value:
-                      '${_formatDecimal(item.cantidadLadosA)} lados / ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
-                ),
-              ),
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Calidad B',
-                  value:
-                      '${_formatDecimal(item.cantidadLadosB)} lados / ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
-                ),
-              ),
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Calidad C',
-                  value:
-                      '${_formatDecimal(item.cantidadLadosC)} lados / ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
-                ),
-              ),
-              Expanded(
-                child: _InlineInfo(
-                  label: 'Merma final',
-                  value:
-                      '${_formatDecimal(item.cantidadLadosMerma)} lados / ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
-                ),
-              ),
-            ],
-          ),
-          if ((item.observacion ?? '').trim().isNotEmpty) ...[
-            const Gap(AppSpacing.md),
-            Text(
-              item.observacion!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ProductoTerminadoCard extends StatelessWidget {
-  const _ProductoTerminadoCard({required this.item});
-
-  final ProductoTerminadoRecord item;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            children: [
-              Text(item.codigo, style: theme.textTheme.titleMedium),
-              _MiniPill(
-                label: item.estado,
-                background: theme.colorScheme.primaryContainer,
-                foreground: theme.colorScheme.onPrimaryContainer,
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.md,
-            children: [
-              _InlineInfo(label: 'Orden', value: item.ordenCodigo),
-              _InlineInfo(
-                label: 'Lados registrados',
-                value: _formatDecimal(item.cantidadLadosCalculada),
-              ),
-              _InlineInfo(label: 'Unidad', value: 'Lado'),
-              _InlineInfo(
-                label: 'Fecha ingreso',
-                value: _formatDateTime(item.fechaIngreso),
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.md,
-            children: [
-              _InlineInfo(
-                label: 'Calidad A',
-                value: '${_formatDecimal(item.cantidadLadosA)} lados',
-              ),
-              _InlineInfo(
-                label: 'Calidad B',
-                value: '${_formatDecimal(item.cantidadLadosB)} lados',
-              ),
-              _InlineInfo(
-                label: 'Calidad C',
-                value: '${_formatDecimal(item.cantidadLadosC)} lados',
-              ),
-              _InlineInfo(
-                label: 'Merma',
-                value: '${_formatDecimal(item.cantidadLadosMerma)} lados',
-              ),
-            ],
-          ),
-          if ((item.observacion ?? '').trim().isNotEmpty) ...[
-            const Gap(AppSpacing.md),
-            Text(
-              item.observacion!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 class _InlineInfo extends StatelessWidget {
   const _InlineInfo({required this.label, required this.value});
@@ -3543,7 +3345,7 @@ String _formatResponsable(String? nombre, String? cargo) {
   final cargoLimpio = cargo?.trim();
   if (nombreLimpio == null || nombreLimpio.isEmpty) return 'Sin asignar';
   if (cargoLimpio == null || cargoLimpio.isEmpty) return nombreLimpio;
-  return '$nombreLimpio · $cargoLimpio';
+  return '$nombreLimpio Ã‚Â· $cargoLimpio';
 }
 
 String _formatSignedDecimal(double value) {

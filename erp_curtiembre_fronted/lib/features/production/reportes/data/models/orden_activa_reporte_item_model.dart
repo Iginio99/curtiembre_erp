@@ -6,6 +6,7 @@ class OrdenActivaReporteItemModel {
     required this.codigoOrden,
     required this.cliente,
     required this.codigoLote,
+    required this.cantidadPieles,
     required this.fechaFinEstimada,
     required this.estado,
     this.responsable,
@@ -16,6 +17,7 @@ class OrdenActivaReporteItemModel {
   final String codigoOrden;
   final String cliente;
   final String codigoLote;
+  final double cantidadPieles;
   final String? responsable;
   final DateTime? fechaInicioReal;
   final DateTime fechaFinEstimada;
@@ -27,6 +29,9 @@ class OrdenActivaReporteItemModel {
       codigoOrden: json['codigoOrden'] as String,
       cliente: json['cliente'] as String,
       codigoLote: json['codigoLote'] as String,
+      // Las sesiones que aún apuntan al backend anterior no incluyen este
+      // campo. Mantenemos la ficha utilizable hasta que se actualice el API.
+      cantidadPieles: (json['cantidadPieles'] as num?)?.toDouble() ?? 0,
       responsable: json['responsable'] as String?,
       fechaInicioReal: _parseOptionalDate(json['fechaInicioReal']),
       fechaFinEstimada: DateTime.parse(json['fechaFinEstimada'] as String),
@@ -40,6 +45,7 @@ class OrdenActivaReporteItemModel {
       codigoOrden: codigoOrden,
       cliente: cliente,
       codigoLote: codigoLote,
+      cantidadPieles: cantidadPieles,
       responsable: responsable,
       fechaInicioReal: fechaInicioReal,
       fechaFinEstimada: fechaFinEstimada,

@@ -373,8 +373,6 @@ class _ModuleNavigationGroup extends StatelessWidget {
         ],
       );
     }
-    final primaryItems = items.where((item) => !item.secondary).toList();
-    final secondaryItems = items.where((item) => item.secondary).toList();
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
@@ -387,33 +385,11 @@ class _ModuleNavigationGroup extends StatelessWidget {
         title: Text(group.label),
         childrenPadding: const EdgeInsets.only(left: AppSpacing.lg),
         children: [
-          for (final item in primaryItems)
+          for (final item in items)
             _SidebarItem(
               item: item,
               selected: item.matches(currentPath),
               compact: false,
-            ),
-          if (secondaryItems.isNotEmpty)
-            ExpansionTile(
-              initiallyExpanded: secondaryItems.any(
-                (item) => item.matches(currentPath),
-              ),
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-              ),
-              leading: const Icon(Icons.settings_suggest_outlined, size: 20),
-              title: const Text('Ajustes mensuales'),
-              childrenPadding: const EdgeInsets.only(left: AppSpacing.md),
-              children: [
-                for (final item in secondaryItems)
-                  _SidebarItem(
-                    item: item,
-                    selected: item.matches(currentPath),
-                    compact: false,
-                  ),
-              ],
             ),
         ],
       ),
@@ -749,13 +725,11 @@ class _NavigationItem {
     required this.label,
     required this.icon,
     required this.route,
-    this.secondary = false,
   });
 
   final String label;
   final IconData icon;
   final String route;
-  final bool secondary;
 
   bool matches(String path) =>
       route == '/home' ? path == route : path.startsWith(route);

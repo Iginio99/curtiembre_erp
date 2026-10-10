@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/consumo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/costo_orden_reporte_item.dart';
@@ -33,6 +34,7 @@ class ProductionReportPdfService {
       summary: [
         ('Cliente', order.cliente),
         ('Lote', order.codigoLote),
+        ('Cantidad de pieles', _number(order.cantidadPieles)),
         ('Estado', order.estado),
         ('Responsable', order.responsable ?? 'Sin responsable'),
         ('Inicio', _optionalDate(order.fechaInicioReal)),
@@ -107,7 +109,7 @@ class ProductionReportPdfService {
           }
           return _PdfProductGroup(
             title:
-                '${first.productoNombre ?? 'Producto'}${color.isEmpty ? '' : ' · $color'}',
+                '${first.productoNombre ?? 'Producto'}${color.isEmpty ? '' : ' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· $color'}',
             total: productRows.fold<double>(
               0,
               (sum, item) => sum + item.costoTotal,
@@ -137,7 +139,7 @@ class ProductionReportPdfService {
               entry.key,
               entry.value,
               detail:
-                  '${_number(entry.value.first.ordenCantidadPieles)} pieles · ${_number(entry.value.first.ordenCantidadPieles * 2)} lados usados en la etapa general',
+                  '${_number(entry.value.first.ordenCantidadPieles)} pieles ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${_number(entry.value.first.ordenCantidadPieles * 2)} lados usados en la etapa general',
             ),
           )
           .toList(growable: false),
@@ -229,7 +231,7 @@ class ProductionReportPdfService {
             final first = rows.first;
             return _PdfSection(
               title:
-                  '${first.procesoNombre}${first.ordenProductoId == null ? '' : ' - ${first.productoNombre ?? 'Producto'}${(first.productoColor ?? '').trim().isEmpty ? '' : ' · ${first.productoColor}'}'}',
+                  '${first.procesoNombre}${first.ordenProductoId == null ? '' : ' - ${first.productoNombre ?? 'Producto'}${(first.productoColor ?? '').trim().isEmpty ? '' : ' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${first.productoColor}'}'}',
               subtitle:
                   'Inicio ${_optionalDate(first.fechaInicio)}   Fin ${_optionalDate(first.fechaFin)}',
               headers: const ['INSUMO', 'PORCENTAJE', 'CANTIDAD', 'SOLES'],
@@ -267,19 +269,9 @@ class ProductionReportPdfService {
     List<_PdfProductGroup> productGroups = const [],
     List<OrdenProductoRecord> orderProducts = const [],
   }) async {
-    final accepted = await _showPreview(
-      context,
-      title: title,
-      code: code,
-      summary: summary,
-      sections: sections,
-      processes: processes,
-      productGroups: productGroups,
-      orderProducts: orderProducts,
-    );
-    if (!accepted) return;
-
-    final previewWindow = html.window.open('', '_blank');
+    // La vista previa y la pestaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â±a del PDF deben consumir los mismos bytes.
+    // Antes, la vista previa se dibujaba con un layout Flutter independiente,
+    // que quedÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ desfasado respecto de la plantilla de `pdf`.
     final bytes = await _build(
       title: title,
       code: code,
@@ -289,6 +281,13 @@ class ProductionReportPdfService {
       productGroups: productGroups,
       orderProducts: orderProducts,
     );
+    final accepted = await _showPreview(
+      context,
+      bytes: bytes,
+    );
+    if (!accepted) return;
+
+    final previewWindow = html.window.open('', '_blank');
     final blob = html.Blob([bytes], 'application/pdf');
     final url = html.Url.createObjectUrlFromBlob(blob);
     previewWindow.location.href = url;
@@ -299,13 +298,7 @@ class ProductionReportPdfService {
 
   static Future<bool> _showPreview(
     BuildContext context, {
-    required String title,
-    required String code,
-    required List<(String, String)> summary,
-    required List<_PdfSection> sections,
-    required List<OrdenProcesoRecord> processes,
-    required List<_PdfProductGroup> productGroups,
-    required List<OrdenProductoRecord> orderProducts,
+    required Uint8List bytes,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -348,17 +341,8 @@ class ProductionReportPdfService {
                     child: Center(
                       child: Container(
                         width: 760,
-                        padding: const EdgeInsets.only(bottom: 28),
                         color: Colors.white,
-                        child: _DocumentPreview(
-                          title: title,
-                          code: code,
-                          summary: summary,
-                          sections: sections,
-                          processes: processes,
-                          productGroups: productGroups,
-                          orderProducts: orderProducts,
-                        ),
+                        child: _PdfDocumentPreview(bytes: bytes),
                       ),
                     ),
                   ),
@@ -407,7 +391,7 @@ class ProductionReportPdfService {
     document.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.fromLTRB(30, 30, 30, 34),
+        margin: const pw.EdgeInsets.fromLTRB(28, 26, 28, 30),
         header: (context) => _header(title, code),
         footer: (context) => pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -424,18 +408,18 @@ class ProductionReportPdfService {
         ),
         build: (_) => [
           pw.SizedBox(height: 16),
-          _summary(summary),
-          if (processes.isNotEmpty) ...[
-            pw.SizedBox(height: 22),
-            _processTimeline(processes),
+          if (processes.isNotEmpty)
+            _productionFlowDashboard(summary, processes, orderProducts)
+          else ...[
+            _summary(summary),
+            if (processes.isNotEmpty) ...[
+              pw.SizedBox(height: 22),
+              _processTimeline(processes),
+            ],
           ],
-          if (orderProducts.isNotEmpty) ...[
-            pw.SizedBox(height: 14),
-            ...orderProducts.map(_orderProductCard),
-            _orderProductsSummary(orderProducts),
-          ] else if (productGroups.isNotEmpty && sections.isNotEmpty)
+          if (orderProducts.isEmpty && productGroups.isNotEmpty && sections.isNotEmpty)
             _commonSectionGroup(sections)
-          else
+          else if (orderProducts.isEmpty)
             ...sections.map(_section),
           for (final group in productGroups) ...[
             pw.NewPage(freeSpace: _productGroupMinHeight(group)),
@@ -472,7 +456,7 @@ class ProductionReportPdfService {
     children: [
       pw.Container(
         color: _charcoal,
-        padding: const pw.EdgeInsets.all(18),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
@@ -482,7 +466,7 @@ class ProductionReportPdfService {
                 pw.RichText(
                   text: pw.TextSpan(
                     style: pw.TextStyle(
-                      fontSize: 20,
+                      fontSize: 19,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.white,
                     ),
@@ -498,7 +482,7 @@ class ProductionReportPdfService {
                 pw.Text(
                   'GESTION DE CURTIEMBRE',
                   style: const pw.TextStyle(
-                    fontSize: 7,
+                    fontSize: 7.5,
                     color: PdfColors.grey300,
                     letterSpacing: 1.2,
                   ),
@@ -511,20 +495,20 @@ class ProductionReportPdfService {
                 pw.Text(
                   title.toUpperCase(),
                   style: const pw.TextStyle(
-                    fontSize: 8,
+                    fontSize: 8.5,
                     color: PdfColors.grey300,
                   ),
                 ),
                 pw.Text(
                   code,
                   style: pw.TextStyle(
-                    fontSize: 14,
+                      fontSize: 12,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.white,
                   ),
                 ),
                 pw.Text(
-                  _date.format(DateTime.now()),
+                  'Emitida ${_date.format(DateTime.now())}',
                   style: const pw.TextStyle(
                     fontSize: 8,
                     color: PdfColors.white,
@@ -535,21 +519,22 @@ class ProductionReportPdfService {
           ],
         ),
       ),
-      pw.Container(height: 5, color: _orange),
+      pw.Container(height: 4, color: _orange),
     ],
   );
 
   static pw.Widget _summary(List<(String, String)> values) => pw.Wrap(
-    spacing: 12,
-    runSpacing: 8,
+    spacing: 14,
+    runSpacing: 10,
     children: values
         .map(
           (item) => pw.Container(
-            width: 245,
-            padding: const pw.EdgeInsets.only(bottom: 4),
+            width: 247,
+            padding: const pw.EdgeInsets.fromLTRB(8, 6, 8, 6),
             decoration: const pw.BoxDecoration(
+              color: PdfColor.fromInt(0xFFF8F9FA),
               border: pw.Border(
-                bottom: pw.BorderSide(color: PdfColors.grey400, width: .5),
+                bottom: pw.BorderSide(color: PdfColors.grey300, width: .7),
               ),
             ),
             child: pw.Row(
@@ -558,7 +543,7 @@ class ProductionReportPdfService {
                 pw.Text(
                   item.$1,
                   style: const pw.TextStyle(
-                    fontSize: 9,
+                    fontSize: 8.5,
                     color: PdfColors.grey700,
                   ),
                 ),
@@ -568,7 +553,7 @@ class ProductionReportPdfService {
                     item.$2,
                     textAlign: pw.TextAlign.right,
                     style: pw.TextStyle(
-                      fontSize: 9,
+                      fontSize: 8.5,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
@@ -579,6 +564,320 @@ class ProductionReportPdfService {
         )
         .toList(),
   );
+
+  /// DiseÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â±o compacto de una sola hoja para las fichas de ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³rdenes activas.
+  /// Las etapas comunes se leen una vez en la matriz y Recurtido/Acabado se
+  /// muestran por cada producto, tal como se trabaja en planta.
+  static pw.Widget _productionFlowDashboard(
+    List<(String, String)> summary,
+    List<OrdenProcesoRecord> processes,
+    List<OrdenProductoRecord> products,
+  ) => _orderDashboard(summary, processes, products);
+
+  static pw.Widget _orderDashboard(
+    List<(String, String)> summary,
+    List<OrdenProcesoRecord> processes,
+    List<OrdenProductoRecord> products,
+  ) {
+    final general = _generalProcesses(processes);
+    final overallProgress = products.isEmpty
+        ? (processes.isEmpty
+              ? 0.0
+              : processes
+                      .map((process) => _stageProgress(process.estado))
+                      .reduce((a, b) => a + b) /
+                  processes.length)
+        : products
+                .map(
+                  (product) =>
+                      (_stageProgress(product.estadoRecurtido) +
+                          _stageProgress(product.estadoAcabado)) /
+                      2,
+                )
+                .reduce((a, b) => a + b) /
+            products.length;
+    String? current;
+    for (final process in processes) {
+      if (process.estado == 'EN_PROCESO') {
+        current = process.procesoNombre;
+        break;
+      }
+    }
+    final finished = products
+        .where((product) => product.estadoAcabado == 'FINALIZADO')
+        .length;
+    final totalPieles = summary.firstWhere(
+      (entry) => entry.$1 == 'Cantidad de pieles',
+      orElse: () => ('Cantidad de pieles', _number(products.fold<double>(0, (sum, product) => sum + product.cantidadPieles))),
+    ).$2;
+    final info = <(String, String)>[
+      for (final label in const ['Cliente', 'Lote', 'Inicio', 'Fin estimado'])
+        summary.firstWhere(
+          (entry) => entry.$1 == label,
+          orElse: () => (label, '-'),
+        ),
+    ];
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _dashboardInfo(info),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          children: [
+            pw.Expanded(
+              flex: 5,
+              child: _dashboardKpi(
+                'Avance de la orden',
+                '${overallProgress.round()}%',
+                subtitle: '${products.length} productos programados',
+                progress: overallProgress,
+              ),
+            ),
+            pw.SizedBox(width: 7),
+            pw.Expanded(
+              flex: 3,
+              child: _dashboardKpi(
+                'Estado',
+                _statusLabel(current == null ? 'PENDIENTE' : 'EN_PROCESO'),
+                subtitle: current == null ? 'Sin etapa activa' : 'Etapa: $current',
+                status: current == null ? 'PENDIENTE' : 'EN_PROCESO',
+              ),
+            ),
+            pw.SizedBox(width: 7),
+            pw.Expanded(
+              flex: 3,
+              child: _dashboardKpi(
+                'Etapas',
+                '${processes.where((p) => p.estado == 'FINALIZADO').length}/${processes.length}',
+                subtitle: 'etapas finalizadas',
+              ),
+            ),
+            pw.SizedBox(width: 7),
+            pw.Expanded(
+              flex: 3,
+              child: _dashboardKpi(
+                'ProducciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n',
+                '$totalPieles pieles',
+                subtitle: '$finished de ${products.length} productos listos',
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 14),
+        if (products.isEmpty) ...[
+          _dashboardSectionTitle('Estado de etapas generales'),
+          pw.SizedBox(height: 6),
+          _generalStageOverview(general),
+        ] else ...[
+          _dashboardSectionTitle('Estado por etapa y producto'),
+          pw.SizedBox(height: 5),
+          _orderMatrix(general, products),
+          pw.SizedBox(height: 8),
+          _statusLegend(),
+          pw.SizedBox(height: 14),
+          _dashboardSectionTitle('Avance por producto'),
+          pw.SizedBox(height: 6),
+          _productProgressGrid(products),
+        ],
+      ],
+    );
+  }
+
+  static pw.Widget _dashboardInfo(List<(String, String)> info) => pw.Row(
+    children: info
+        .map(
+          (entry) => pw.Expanded(
+            child: pw.Padding(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 5),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(entry.$1, style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                  pw.SizedBox(height: 2),
+                  pw.Text(entry.$2, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        )
+        .toList(),
+  );
+
+  static pw.Widget _dashboardKpi(
+    String label,
+    String value, {
+    required String subtitle,
+    double? progress,
+    String? status,
+  }) => pw.Container(
+    height: 53,
+    padding: const pw.EdgeInsets.all(7),
+    decoration: const pw.BoxDecoration(
+      color: PdfColor.fromInt(0xFFF5F4F0),
+      borderRadius: pw.BorderRadius.all(pw.Radius.circular(5)),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(label, style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+        if (status != null) ...[
+          pw.SizedBox(height: 4),
+          _pdfStatusBadge(value),
+        ] else
+          pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        if (progress != null) ...[
+          pw.SizedBox(height: 3),
+          _pdfProgressBar(progress, _progressColor(progress)),
+        ] else
+          pw.SizedBox(height: 2),
+        pw.Text(subtitle, style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+      ],
+    ),
+  );
+
+  static pw.Widget _dashboardSectionTitle(String title) => pw.Text(
+    title.toUpperCase(),
+    style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700),
+  );
+
+  static pw.Widget _generalStageOverview(List<OrdenProcesoRecord> processes) =>
+      pw.Row(
+        children: processes.asMap().entries.map((entry) {
+          final process = entry.value;
+          return pw.Expanded(
+            child: pw.Container(
+              margin: pw.EdgeInsets.only(
+                right: entry.key == processes.length - 1 ? 0 : 8,
+              ),
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                color: _stageBackground(process.estado),
+                border: pw.Border.all(color: PdfColors.grey300),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    process.procesoNombre,
+                    style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 5),
+                  _pdfStatusBadge(_statusLabel(process.estado)),
+                  pw.SizedBox(height: 5),
+                  pw.Text('Inicio: ${_optionalDate(process.fechaInicio)}', style: const pw.TextStyle(fontSize: 6.5)),
+                  pw.Text('Fin: ${_optionalDate(process.fechaFin)}', style: const pw.TextStyle(fontSize: 6.5)),
+                  pw.Text('Resp. ${process.responsableNombre ?? 'Sin asignar'}', style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+                  pw.SizedBox(height: 5),
+                  _pdfProgressBar(_stageProgress(process.estado), _progressColor(_stageProgress(process.estado))),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      );
+
+  static pw.Widget _orderMatrix(
+    List<OrdenProcesoRecord> general,
+    List<OrdenProductoRecord> products,
+  ) {
+    final headers = ['Producto', ...general.map((p) => p.procesoNombre), 'Curtido / Recurtido', 'Acabado'];
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: .45),
+      columnWidths: {for (var i = 0; i < headers.length; i++) i: pw.FlexColumnWidth(i == 0 ? 1.25 : 1)},
+      children: [
+        pw.TableRow(
+          children: headers.map((header) => pw.Padding(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(header, style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+          )).toList(),
+        ),
+        for (var row = 0; row < products.length; row++)
+          pw.TableRow(
+            children: [
+              _matrixProductCell(products[row]),
+              for (final process in general)
+                _matrixStageCell(
+                  process.estado,
+                  process.fechaInicio,
+                  process.responsableNombre,
+                  common: row > 0,
+                ),
+              _matrixStageCell(products[row].estadoRecurtido, products[row].inicioRecurtido, products[row].responsableRecurtidoNombre),
+              _matrixStageCell(products[row].estadoAcabado, products[row].inicioAcabado, products[row].responsableAcabadoNombre),
+            ],
+          ),
+      ],
+    );
+  }
+
+  static pw.Widget _matrixProductCell(OrdenProductoRecord product) {
+    final progress = (_stageProgress(product.estadoRecurtido) + _stageProgress(product.estadoAcabado)) / 2;
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(5),
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Text('${product.nombre}${(product.color ?? '').isEmpty ? '' : ' - ${product.color}'}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+        pw.Text('${_number(product.cantidadPieles)} pieles - ${progress.round()}%', style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+      ]),
+    );
+  }
+
+  static pw.Widget _matrixStageCell(
+    String status,
+    DateTime? start,
+    String? responsible, {
+    bool common = false,
+  }
+  ) => pw.Container(
+    color: common ? const PdfColor.fromInt(0xFFF5F4F0) : null,
+    padding: const pw.EdgeInsets.all(5),
+    child: common
+        ? pw.Center(
+            child: pw.Text(
+              'Aplica a todos',
+              textAlign: pw.TextAlign.center,
+              style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700),
+            ),
+          )
+        : pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _pdfStatusBadge(_statusLabel(status)),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                start == null ? 'Sin registro' : _date.format(start),
+                style: const pw.TextStyle(fontSize: 6.5),
+              ),
+              pw.Text(
+                'Resp. ${responsible ?? 'Sin asignar'}',
+                style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700),
+              ),
+            ],
+          ),
+  );
+
+  static pw.Widget _statusLegend() => pw.Row(children: [
+    _pdfStatusBadge('FINALIZADO'), pw.SizedBox(width: 9), _pdfStatusBadge('EN PROCESO'), pw.SizedBox(width: 9), _pdfStatusBadge('PENDIENTE'),
+  ]);
+
+  static pw.Widget _productProgressGrid(List<OrdenProductoRecord> products) => pw.Row(
+    children: products.asMap().entries.map((entry) {
+      final product = entry.value;
+      final progress = (_stageProgress(product.estadoRecurtido) + _stageProgress(product.estadoAcabado)) / 2;
+      return pw.Expanded(child: pw.Container(
+        margin: pw.EdgeInsets.only(right: entry.key == products.length - 1 ? 0 : 8),
+        padding: const pw.EdgeInsets.all(8),
+        decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300), borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5))),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Row(children: [pw.Expanded(child: pw.Text('${product.nombre}${(product.color ?? '').isEmpty ? '' : ' - ${product.color}'}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))), pw.Text('${progress.round()}%', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _progressColor(progress)))]),
+          pw.SizedBox(height: 5), _pdfProgressBar(progress, _progressColor(progress)), pw.SizedBox(height: 4),
+          pw.Text('${_number(product.cantidadPieles)} pieles - ${product.estadoAcabado == 'FINALIZADO' ? 'Listo para entrega' : 'Ahora en ${product.estadoRecurtido.replaceAll('_', ' ').toLowerCase()}'}', style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey700)),
+        ]),
+      ));
+    }).toList(),
+  );
+
+  static String _statusLabel(String status) => status.replaceAll('_', ' ');
 
   static pw.Widget _section(_PdfSection section) => pw.Container(
     margin: const pw.EdgeInsets.only(top: 18),
@@ -747,9 +1046,9 @@ class ProductionReportPdfService {
         ),
         pw.SizedBox(height: 3),
         pw.Text(
-          '${_number(group.cantidadPieles)} pieles  ·  '
+          '${_number(group.cantidadPieles)} pieles  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â·  '
           '${_number(group.cantidadLados)} lados'
-          '${group.cantidadTerminada == null ? '' : '  ·  ${_number(group.cantidadTerminada!)} terminadas'}',
+          '${group.cantidadTerminada == null ? '' : '  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â·  ${_number(group.cantidadTerminada!)} terminadas'}',
           style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
         ),
         pw.SizedBox(height: 8),
@@ -869,95 +1168,6 @@ class ProductionReportPdfService {
     return 92 + (longestTable * 15.0);
   }
 
-  static pw.Widget _orderProductCard(OrdenProductoRecord product) {
-    final title =
-        '${product.nombre}${(product.color ?? '').trim().isEmpty ? '' : ' - ${product.color}'}';
-    final progress =
-        (_stageProgress(product.estadoRecurtido) +
-            _stageProgress(product.estadoAcabado)) /
-        2;
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 10),
-      padding: const pw.EdgeInsets.all(9),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      title,
-                      style: pw.TextStyle(
-                        fontSize: 13,
-                        fontWeight: pw.FontWeight.bold,
-                        color: _charcoal,
-                      ),
-                    ),
-                    pw.Text(
-                      'Pieles: ${_number(product.cantidadPieles)}',
-                      style: const pw.TextStyle(
-                        fontSize: 7,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 12),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Text('Avance general', style: pw.TextStyle(fontSize: 6.5)),
-                  pw.Text(
-                    '${progress.round()}%',
-                    style: pw.TextStyle(
-                      fontSize: 10,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          _pdfProgressBar(progress, _progressColor(progress)),
-          pw.SizedBox(height: 7),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                child: _orderStageCard(
-                  title: 'CURTIDO / RECURTIDO',
-                  status: product.estadoRecurtido,
-                  start: product.inicioRecurtido,
-                  end: product.finRecurtido,
-                  responsible: product.responsableRecurtidoNombre,
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Expanded(
-                child: _orderStageCard(
-                  title: 'ACABADO',
-                  status: product.estadoAcabado,
-                  start: product.inicioAcabado,
-                  end: product.finAcabado,
-                  responsible: product.responsableAcabadoNombre,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   static pw.Widget _orderStageCard({
     required String title,
@@ -969,7 +1179,7 @@ class ProductionReportPdfService {
     final progress = _stageProgress(status);
     final color = _progressColor(progress);
     return pw.Container(
-      padding: const pw.EdgeInsets.all(7),
+      padding: const pw.EdgeInsets.all(8),
       decoration: pw.BoxDecoration(
         color: _stageBackground(status),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
@@ -980,8 +1190,8 @@ class ProductionReportPdfService {
           pw.Row(
             children: [
               pw.Container(
-                width: 16,
-                height: 16,
+                width: 18,
+                height: 18,
                 alignment: pw.Alignment.center,
                 decoration: pw.BoxDecoration(
                   color: color,
@@ -990,18 +1200,18 @@ class ProductionReportPdfService {
                 child: pw.Text(
                   status == 'FINALIZADO' ? 'OK' : '${progress.round()}',
                   style: pw.TextStyle(
-                    fontSize: 5,
+                    fontSize: 6,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.white,
                   ),
                 ),
               ),
-              pw.SizedBox(width: 5),
+              pw.SizedBox(width: 6),
               pw.Expanded(
                 child: pw.Text(
                   title,
                   style: pw.TextStyle(
-                    fontSize: 8,
+                    fontSize: 8.5,
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
@@ -1025,16 +1235,16 @@ class ProductionReportPdfService {
     child: pw.Row(
       children: [
         pw.SizedBox(
-          width: 48,
+          width: 54,
           child: pw.Text(
             label,
-            style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
+            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
           ),
         ),
         pw.Expanded(
           child: pw.Text(
             value,
-            style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
           ),
         ),
       ],
@@ -1068,38 +1278,6 @@ class ProductionReportPdfService {
         ),
       );
 
-  static pw.Widget _orderProductsSummary(List<OrdenProductoRecord> products) {
-    final completed = products
-        .where((item) => item.estadoAcabado == 'FINALIZADO')
-        .length;
-    final active = products.length - completed;
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(top: 2, bottom: 8),
-      padding: const pw.EdgeInsets.all(9),
-      decoration: const pw.BoxDecoration(
-        color: PdfColor.fromInt(0xFFF0F2F4),
-        borderRadius: pw.BorderRadius.all(pw.Radius.circular(5)),
-      ),
-      child: pw.Row(
-        children: [
-          pw.Text(
-            'RESUMEN DE LA ORDEN',
-            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.Spacer(),
-          pw.Text(
-            '$completed producto${completed == 1 ? '' : 's'} finalizado${completed == 1 ? '' : 's'}',
-            style: const pw.TextStyle(fontSize: 7, color: PdfColors.green700),
-          ),
-          pw.SizedBox(width: 16),
-          pw.Text(
-            '$active producto${active == 1 ? '' : 's'} en proceso',
-            style: const pw.TextStyle(fontSize: 7, color: _orange),
-          ),
-        ],
-      ),
-    );
-  }
 
   static double _stageProgress(String status) => status == 'FINALIZADO'
       ? 100
@@ -1133,7 +1311,7 @@ class ProductionReportPdfService {
             color: _charcoal,
           ),
         ),
-        pw.SizedBox(height: 14),
+        pw.SizedBox(height: 12),
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: ordered.map((process) {
@@ -1145,8 +1323,8 @@ class ProductionReportPdfService {
               child: pw.Column(
                 children: [
                   pw.Container(
-                    width: 22,
-                    height: 22,
+                    width: 24,
+                    height: 24,
                     alignment: pw.Alignment.center,
                     decoration: pw.BoxDecoration(
                       color: completed ? _orange : PdfColors.white,
@@ -1156,7 +1334,7 @@ class ProductionReportPdfService {
                     child: pw.Text(
                       completed ? 'OK' : '${process.secuencia}',
                       style: pw.TextStyle(
-                        fontSize: 6.5,
+                        fontSize: 7,
                         fontWeight: pw.FontWeight.bold,
                         color: completed ? PdfColors.white : color,
                       ),
@@ -1185,6 +1363,20 @@ class ProductionReportPdfService {
       ],
     );
   }
+
+  /// Recurtido y acabado se controlan por producto y se muestran en las
+  /// tarjetas de producto. Las demÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡s etapas pertenecen a toda la orden.
+  static List<OrdenProcesoRecord> _generalProcesses(
+    List<OrdenProcesoRecord> processes,
+  ) => processes
+      .where(
+        (process) =>
+            process.procesoCodigo != 'RECURTIDO' &&
+            process.procesoCodigo != 'ACABADO',
+      )
+      .toList(growable: false)
+    ..sort((a, b) => a.secuencia.compareTo(b.secuencia));
+
 
   static String _processStatus(OrdenProcesoRecord process) {
     if (process.fechaFin != null) {
@@ -1232,6 +1424,51 @@ class ProductionReportPdfService {
       value == null ? 'Sin registro' : _date.format(value);
   static String _number(double value) =>
       NumberFormat('#,##0.##', 'es_PE').format(value);
+}
+
+/// Muestra los bytes que se abrirÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡n al confirmar, usando el visor PDF nativo
+/// del navegador. AsÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­ se evita que una maqueta HTML/Flutter se desincronice de
+/// la plantilla creada con el paquete `pdf`.
+class _PdfDocumentPreview extends StatefulWidget {
+  const _PdfDocumentPreview({required this.bytes});
+
+  final Uint8List bytes;
+
+  @override
+  State<_PdfDocumentPreview> createState() => _PdfDocumentPreviewState();
+}
+
+class _PdfDocumentPreviewState extends State<_PdfDocumentPreview> {
+  late final String _url;
+  late final String _viewType;
+
+  @override
+  void initState() {
+    super.initState();
+    _url = html.Url.createObjectUrlFromBlob(
+      html.Blob([widget.bytes], 'application/pdf'),
+    );
+    _viewType = 'production-report-pdf-preview-${DateTime.now().microsecondsSinceEpoch}';
+    ui_web.platformViewRegistry.registerViewFactory(_viewType, (viewId) {
+      return html.IFrameElement()
+        ..src = _url
+        ..style.border = '0'
+        ..style.width = '100%'
+        ..style.height = '100%';
+    });
+  }
+
+  @override
+  void dispose() {
+    html.Url.revokeObjectUrl(_url);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AspectRatio(
+    aspectRatio: PdfPageFormat.a4.width / PdfPageFormat.a4.height,
+    child: HtmlElementView(viewType: _viewType),
+  );
 }
 
 class _PdfSection {
@@ -1366,7 +1603,14 @@ class _DocumentPreview extends StatelessWidget {
             padding: const EdgeInsets.all(28),
             child: Column(
               children: [
-                GridView.builder(
+                if (processes.isNotEmpty)
+                  _PreviewStructuredOrder(
+                    summary: summary,
+                    processes: processes,
+                    products: orderProducts,
+                  )
+                else
+                  GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1405,18 +1649,14 @@ class _DocumentPreview extends StatelessWidget {
                     );
                   },
                 ),
-                if (processes.isNotEmpty) ...[
-                  const SizedBox(height: 28),
-                  _PreviewProcessTimeline(processes: processes),
-                ],
-                if (orderProducts.isNotEmpty) ...[
+                if (processes.isEmpty && orderProducts.isNotEmpty) ...[
                   ...orderProducts.map(
                     (product) => _PreviewOrderProductCard(product: product),
                   ),
                   _PreviewOrderSummary(products: orderProducts),
-                ] else if (productGroups.isNotEmpty && sections.isNotEmpty)
+                ] else if (processes.isEmpty && productGroups.isNotEmpty && sections.isNotEmpty)
                   _PreviewCommonProcesses(sections: sections)
-                else
+                else if (processes.isEmpty)
                   ...sections.map(
                     (section) => Padding(
                       padding: const EdgeInsets.only(top: 24),
@@ -1588,6 +1828,98 @@ class _PreviewCommonProcesses extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _PreviewStructuredOrder extends StatelessWidget {
+  const _PreviewStructuredOrder({
+    required this.summary,
+    required this.processes,
+    required this.products,
+  });
+
+  final List<(String, String)> summary;
+  final List<OrdenProcesoRecord> processes;
+  final List<OrdenProductoRecord> products;
+
+  @override
+  Widget build(BuildContext context) {
+    final general = ProductionReportPdfService._generalProcesses(processes);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 18,
+          runSpacing: 10,
+          children: summary
+              .where(
+                (item) => const ['Cliente', 'Lote', 'Inicio', 'Fin estimado']
+                    .contains(item.$1),
+              )
+              .map(
+                (item) => SizedBox(
+                  width: 140,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.$1,
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        item.$2,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'ESTADO DE ETAPAS GENERALES',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 12) / 2;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: general
+                  .map(
+                    (process) => SizedBox(
+                      width: cardWidth,
+                      child: _PreviewOrderStageCard(
+                        title: process.procesoNombre.toUpperCase(),
+                        status: process.estado,
+                        start: process.fechaInicio,
+                        end: process.fechaFin,
+                        responsible: process.responsableNombre,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+        if (products.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const Text(
+            'AVANCE POR PRODUCTO',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+          ),
+          ...products.map(
+            (product) => _PreviewOrderProductCard(product: product),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _PreviewOrderProductCard extends StatelessWidget {
@@ -1881,7 +2213,7 @@ class _PreviewProductGroup extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${ProductionReportPdfService._number(group.cantidadPieles)} pieles · ${ProductionReportPdfService._number(group.cantidadLados)} lados${group.cantidadTerminada == null ? '' : ' · ${ProductionReportPdfService._number(group.cantidadTerminada!)} terminadas'}',
+                    '${ProductionReportPdfService._number(group.cantidadPieles)} pieles ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ProductionReportPdfService._number(group.cantidadLados)} lados${group.cantidadTerminada == null ? '' : ' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ProductionReportPdfService._number(group.cantidadTerminada!)} terminadas'}',
                     style: const TextStyle(color: Colors.black54),
                   ),
                 ],
@@ -2053,78 +2385,7 @@ class _PreviewStatusBadge extends StatelessWidget {
   }
 }
 
-class _PreviewProcessTimeline extends StatelessWidget {
-  const _PreviewProcessTimeline({required this.processes});
 
-  final List<OrdenProcesoRecord> processes;
-
-  @override
-  Widget build(BuildContext context) {
-    const orange = Color(0xFFE8590C);
-    final ordered = [...processes]
-      ..sort((a, b) => a.secuencia.compareTo(b.secuencia));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'LINEA DE TIEMPO DEL PROCESO',
-          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: ordered.map((process) {
-            final completed =
-                process.fechaFin != null || process.estado == 'FINALIZADO';
-            final active = !completed && process.fechaInicio != null;
-            final color = completed || active ? orange : Colors.black26;
-            return Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: completed ? orange : Colors.white,
-                      border: Border.all(color: color, width: 2),
-                    ),
-                    child: completed
-                        ? const Icon(
-                            Icons.check_rounded,
-                            size: 19,
-                            color: Colors.white,
-                          )
-                        : Text(
-                            '${process.secuencia}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: color,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    process.procesoNombre,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    ProductionReportPdfService._processStatus(process),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10, color: color),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
 
 class _PreviewTableHeader extends StatelessWidget {
   const _PreviewTableHeader({required this.headers});
