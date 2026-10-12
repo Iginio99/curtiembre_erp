@@ -22,6 +22,7 @@ dependencies:
   intl: ^0.20.2
   package_info_plus: ^10.1.0
   pdf: ^3.11.3
+  printing: ^5.15.1
   responsive_framework: ^1.5.1
   talker_flutter: ^5.1.17
 

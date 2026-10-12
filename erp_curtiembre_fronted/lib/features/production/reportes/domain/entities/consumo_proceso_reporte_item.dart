@@ -21,6 +21,7 @@ class ConsumoProcesoReporteItem extends Equatable {
     required this.insumoId,
     required this.insumoCodigo,
     required this.insumoNombre,
+    required this.porcentajeFormulacion,
     required this.cantidadPlanificada,
     required this.cantidadReal,
     required this.cantidadDesviacion,
@@ -47,6 +48,7 @@ class ConsumoProcesoReporteItem extends Equatable {
   final int insumoId;
   final String insumoCodigo;
   final String insumoNombre;
+  final double porcentajeFormulacion;
   final double cantidadPlanificada;
   final double cantidadReal;
   final double cantidadDesviacion;
@@ -74,6 +76,7 @@ class ConsumoProcesoReporteItem extends Equatable {
     insumoId,
     insumoCodigo,
     insumoNombre,
+    porcentajeFormulacion,
     cantidadPlanificada,
     cantidadReal,
     cantidadDesviacion,

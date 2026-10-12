@@ -88,6 +88,7 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                     p.orden_proceso_id,
                     p.orden_producto_id,
                     p.insumo_id,
+                    SUM(p.porcentaje) AS porcentaje_formulacion,
                     SUM(p.cantidad_planificada) AS cantidad_planificada
                 FROM produccion.orden_consumo_planificado p
                 GROUP BY p.orden_produccion_id, p.orden_proceso_id, p.orden_producto_id, p.insumo_id
@@ -156,7 +157,29 @@ public sealed class SqlProduccionReportQueryRepository(ISqlConnectionFactory con
                 i.id AS InsumoId,
                 i.codigo AS InsumoCodigo,
                 i.nombre AS InsumoNombre,
-                ISNULL(planned.cantidad_planificada, 0) AS CantidadPlanificada,
+                COALESCE(
+                    NULLIF(planned.porcentaje_formulacion, 0),
+                    CAST(
+                        COALESCE(
+                            NULLIF(planned.cantidad_planificada, 0),
+                            actual.cantidad_real,
+                            0
+                        ) * 100.0 / NULLIF(
+                            COALESCE(
+                                CASE pp.codigo
+                                    WHEN 'RECURTIDO' THEN product.kilos_recurtido
+                                    WHEN 'ACABADO' THEN product.kilos_acabado
+                                    ELSE NULL
+                                END,
+                                opp.peso_base_kg
+                            ),
+                            0
+                        )
+                        AS DECIMAL(18, 4)
+                    ),
+                    0
+                ) AS PorcentajeFormulacion,
+                COALESCE(NULLIF(planned.cantidad_planificada, 0), actual.cantidad_real, 0) AS CantidadPlanificada,
                 ISNULL(actual.cantidad_real, 0) AS CantidadReal,
                 ISNULL(deviation.cantidad_desviacion, CASE WHEN ISNULL(actual.cantidad_real, 0) > ISNULL(planned.cantidad_planificada, 0) THEN ISNULL(actual.cantidad_real, 0) - ISNULL(planned.cantidad_planificada, 0) ELSE 0 END) AS CantidadDesviacion,
                 actual.costo_unitario AS CostoUnitario,

@@ -13,7 +13,6 @@ import 'package:erp_curtiembre_fronted/features/production/reportes/presentation
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/consumo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/costo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/orden_activa_reporte_item.dart';
-import 'package:erp_curtiembre_fronted/features/production/reportes/domain/entities/tiempo_proceso_reporte_item.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
@@ -41,7 +40,7 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
   void initState() {
     super.initState();
     _talker.ui('Se abrio la pantalla de reportes de produccion.');
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabChanged);
   }
 
@@ -59,7 +58,7 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
     }
 
     _talker.ui(
-      'Se cambio a la pestaÃƒÂ±a ${_tabLabel(_currentTab)} de reportes de produccion.',
+      'Se cambio a la pestaña ${_tabLabel(_currentTab)} de reportes de produccion.',
       logLevel: LogLevel.debug,
     );
     context.read<ProduccionReportesCubit>().ensureTabLoaded(_currentTab);
@@ -70,8 +69,6 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
       0 => ProduccionReportesTab.ordenesActivas,
       1 => ProduccionReportesTab.ordenesCliente,
       2 => ProduccionReportesTab.consumoProceso,
-      3 => ProduccionReportesTab.merma,
-      4 => ProduccionReportesTab.tiemposProceso,
       _ => ProduccionReportesTab.costosOrden,
     };
   }
@@ -250,82 +247,6 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
                             );
                       },
                     ),
-                    _MermaTab(
-                      state: state,
-                      processOptionsForOrder: context
-                          .read<ProduccionReportesCubit>()
-                          .processOptionsForOrder,
-                      onApply:
-                          ({
-                            int? ordenProduccionId,
-                            int? ordenProcesoId,
-                            DateTime? fechaDesde,
-                            DateTime? fechaHasta,
-                          }) {
-                            _talker.ui(
-                              'Se aplicaron filtros en merma con ordenProduccionId=$ordenProduccionId, ordenProcesoId=$ordenProcesoId, fechaDesde=${_describeDate(fechaDesde)}, fechaHasta=${_describeDate(fechaHasta)}.',
-                              logLevel: LogLevel.debug,
-                            );
-                            return context
-                                .read<ProduccionReportesCubit>()
-                                .loadMerma(
-                                  ordenProduccionId: ordenProduccionId,
-                                  ordenProcesoId: ordenProcesoId,
-                                  fechaDesde: fechaDesde,
-                                  fechaHasta: fechaHasta,
-                                );
-                          },
-                      onPickDate: _pickDate,
-                      onClear: () {
-                        _talker.ui(
-                          'Se limpiaron los filtros del reporte de merma.',
-                          logLevel: LogLevel.debug,
-                        );
-                        context.read<ProduccionReportesCubit>().loadMerma(
-                          ordenProduccionId: null,
-                          ordenProcesoId: null,
-                          fechaDesde: null,
-                          fechaHasta: null,
-                        );
-                      },
-                    ),
-                    _TiemposProcesoTab(
-                      state: state,
-                      processOptionsForOrder: context
-                          .read<ProduccionReportesCubit>()
-                          .processOptionsForOrder,
-                      onApply:
-                          ({
-                            int? ordenProduccionId,
-                            int? ordenProcesoId,
-                            String? estado,
-                          }) {
-                            _talker.ui(
-                              'Se aplicaron filtros en tiempos de proceso con ordenProduccionId=$ordenProduccionId, ordenProcesoId=$ordenProcesoId, estado=${_describeState(estado)}.',
-                              logLevel: LogLevel.debug,
-                            );
-                            return context
-                                .read<ProduccionReportesCubit>()
-                                .loadTiemposProceso(
-                                  ordenProduccionId: ordenProduccionId,
-                                  ordenProcesoId: ordenProcesoId,
-                                  estado: estado,
-                                );
-                          },
-                      onClear: () {
-                        _talker.ui(
-                          'Se limpiaron los filtros del reporte de tiempos de proceso.',
-                          logLevel: LogLevel.debug,
-                        );
-                        context
-                            .read<ProduccionReportesCubit>()
-                            .loadTiemposProceso(
-                              ordenProduccionId: null,
-                              ordenProcesoId: null,
-                              estado: null,
-                            );
-                      },
-                    ),
                     _CostosOrdenTabV2(
                       state: state,
                       onApply: (ordenProduccionId) {
@@ -364,8 +285,6 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
                       Tab(text: 'Ordenes activas'),
                       Tab(text: 'Ordenes por cliente'),
                       Tab(text: 'Consumo por proceso'),
-                      Tab(text: 'Merma'),
-                      Tab(text: 'Tiempos de proceso'),
                       Tab(text: 'Costos reales'),
                     ],
                   ),
@@ -414,9 +333,7 @@ class _ProduccionReportesPageState extends State<ProduccionReportesPage>
       ProduccionReportesTab.ordenesActivas => 'ordenes-activas',
       ProduccionReportesTab.ordenesCliente => 'ordenes-cliente',
       ProduccionReportesTab.consumoProceso => 'consumo-proceso',
-      ProduccionReportesTab.merma => 'merma',
-      ProduccionReportesTab.tiemposProceso => 'tiempos-proceso',
-      ProduccionReportesTab.costosOrden => 'costos-orden',
+      _ => 'costos-orden',
     };
   }
 
@@ -459,39 +376,148 @@ class _ActiveOrdersDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final orders = state.ordenesActivas;
-    if (state.loadingOrdenesActivas) return const Center(child: CircularProgressIndicator());
+    if (state.loadingOrdenesActivas)
+      return const Center(child: CircularProgressIndicator());
     if (state.ordenesActivasErrorMessage != null) {
-      return _CenteredMessage(child: AppMessageCard.error(title: 'No pudimos cargar las ÃƒÂ³rdenes activas', message: state.ordenesActivasErrorMessage!));
+      return _CenteredMessage(
+        child: AppMessageCard.error(
+          title: 'No pudimos cargar las órdenes activas',
+          message: state.ordenesActivasErrorMessage!,
+        ),
+      );
     }
     return Container(
-      decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
-      child: ListView(padding: const EdgeInsets.all(AppSpacing.lg), children: [
-        Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Ãƒâ€œrdenes activas', style: theme.textTheme.titleLarge), Text('${orders.length} registro(s) visibles.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant))])), _ActiveCountBadge(count: orders.length)]),
-        const Gap(AppSpacing.lg),
-        Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-          _ActiveKpi(icon: Icons.assignment_outlined, label: 'Ãƒâ€œrdenes activas', value: '${orders.length}', detail: 'en producciÃƒÂ³n'),
-          _ActiveKpi(icon: Icons.donut_large_outlined, label: 'Avance promedio', value: '${_activeProgress(orders)}%', detail: 'entre todas las ÃƒÂ³rdenes'),
-        ]),
-        const Gap(AppSpacing.md),
-        Align(alignment: Alignment.centerRight, child: AppButton.secondary(label: 'Actualizar', icon: Icons.refresh_rounded, onPressed: onRefresh)),
-        const Gap(AppSpacing.md),
-        if (orders.isEmpty) AppMessageCard.info(title: 'Sin ÃƒÂ³rdenes activas', message: 'Cuando existan ÃƒÂ³rdenes en ejecuciÃƒÂ³n aparecerÃƒÂ¡n aquÃƒÂ­.') else ...orders.map((order) => Padding(padding: const EdgeInsets.only(bottom: AppSpacing.md), child: _ActiveOrderCard(order: order))),
-      ]),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Órdenes activas', style: theme.textTheme.titleLarge),
+                    Text(
+                      '${orders.length} registro(s) visibles.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _ActiveCountBadge(count: orders.length),
+            ],
+          ),
+          const Gap(AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _ActiveKpi(
+                icon: Icons.assignment_outlined,
+                label: 'Órdenes activas',
+                value: '${orders.length}',
+                detail: 'en producción',
+              ),
+              _ActiveKpi(
+                icon: Icons.donut_large_outlined,
+                label: 'Avance promedio',
+                value: '${_activeProgress(orders)}%',
+                detail: 'entre todas las órdenes',
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AppButton.secondary(
+              label: 'Actualizar',
+              icon: Icons.refresh_rounded,
+              onPressed: onRefresh,
+            ),
+          ),
+          const Gap(AppSpacing.md),
+          if (orders.isEmpty)
+            AppMessageCard.info(
+              title: 'Sin órdenes activas',
+              message: 'Cuando existan órdenes en ejecución aparecerán aquí.',
+            )
+          else
+            ...orders.map(
+              (order) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: _ActiveOrderCard(order: order),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
 class _ActiveKpi extends StatelessWidget {
-  const _ActiveKpi({required this.icon, required this.label, required this.value, required this.detail});
-  final IconData icon; final String label; final String value; final String detail;
+  const _ActiveKpi({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
   @override
-  Widget build(BuildContext context) => Container(width: 250, padding: const EdgeInsets.all(AppSpacing.md), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, size: 15), const Gap(6), Text(label, style: Theme.of(context).textTheme.labelMedium)]), const Gap(4), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineSmall), Text(detail, style: Theme.of(context).textTheme.bodySmall)]));
+  Widget build(BuildContext context) => Container(
+    width: 250,
+    padding: const EdgeInsets.all(AppSpacing.md),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 15),
+            const Gap(6),
+            Text(label, style: Theme.of(context).textTheme.labelMedium),
+          ],
+        ),
+        const Gap(4),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        Text(detail, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    ),
+  );
 }
 
 class _ActiveCountBadge extends StatelessWidget {
-  const _ActiveCountBadge({required this.count}); final int count;
+  const _ActiveCountBadge({required this.count});
+  final int count;
   @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(99)), child: Text('$count resultados', style: Theme.of(context).textTheme.labelMedium));
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      '$count resultados',
+      style: Theme.of(context).textTheme.labelMedium,
+    ),
+  );
 }
 
 class _ActiveOrderCard extends StatefulWidget {
@@ -503,19 +529,23 @@ class _ActiveOrderCard extends StatefulWidget {
 }
 
 class _ActiveOrderCardState extends State<_ActiveOrderCard> {
-  late final Future<(List<OrdenProcesoRecord>, List<OrdenProductoRecord>)> _details;
+  late final Future<(List<OrdenProcesoRecord>, List<OrdenProductoRecord>)>
+  _details;
 
   @override
   void initState() {
     super.initState();
     final cubit = context.read<ProduccionReportesCubit>();
-    _details = Future.wait([
-      cubit.processesForPrint(widget.order.ordenProduccionId),
-      cubit.productsForPrint(widget.order.ordenProduccionId),
-    ]).then((results) => (
-      results[0] as List<OrdenProcesoRecord>,
-      results[1] as List<OrdenProductoRecord>,
-    ));
+    _details =
+        Future.wait([
+          cubit.processesForPrint(widget.order.ordenProduccionId),
+          cubit.productsForPrint(widget.order.ordenProduccionId),
+        ]).then(
+          (results) => (
+            results[0] as List<OrdenProcesoRecord>,
+            results[1] as List<OrdenProductoRecord>,
+          ),
+        );
   }
 
   @override
@@ -542,7 +572,11 @@ class _ActiveOrderCardState extends State<_ActiveOrderCard> {
 }
 
 class _ActiveOrderCardBody extends StatelessWidget {
-  const _ActiveOrderCardBody({required this.order, required this.progress, required this.activeStage});
+  const _ActiveOrderCardBody({
+    required this.order,
+    required this.progress,
+    required this.activeStage,
+  });
   final OrdenActivaReporteItem order;
   final int progress;
   final int activeStage;
@@ -550,36 +584,274 @@ class _ActiveOrderCardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(padding: const EdgeInsets.all(AppSpacing.md), decoration: BoxDecoration(border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Text(order.codigoOrden, style: theme.textTheme.titleMedium), const Gap(10), _cardChip(context, order.estado)]), const Gap(3), Text('${order.cliente} Ã‚Â· Lote ${order.codigoLote}', style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary))])), IconButton.outlined(tooltip: 'Imprimir ficha PDF', onPressed: () async { final cubit = context.read<ProduccionReportesCubit>(); final results = await Future.wait([cubit.processesForPrint(order.ordenProduccionId), cubit.productsForPrint(order.ordenProduccionId)]); if (!context.mounted) return; await ProductionReportPdfService.printActiveOrder(context, order, results[0] as List<OrdenProcesoRecord>, results[1] as List<OrdenProductoRecord>); }, icon: const Icon(Icons.print_outlined))]),
-      const Gap(AppSpacing.lg), _OrderSteps(activeStage: activeStage), const Gap(AppSpacing.md),
-      Row(children: [Expanded(child: LinearProgressIndicator(value: progress / 100, minHeight: 6, borderRadius: BorderRadius.circular(99))), const Gap(AppSpacing.lg), Text('$progress%', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary))]),
-      const Gap(AppSpacing.md), Divider(color: theme.colorScheme.outlineVariant), const Gap(AppSpacing.sm),
-      Wrap(spacing: 22, runSpacing: 8, children: [_OrderDetail(icon: Icons.calendar_today_outlined, label: 'Inicio', value: _formatOptionalDateTime(order.fechaInicioReal)), _OrderDetail(icon: Icons.flag_outlined, label: 'Fin estimado', value: _formatDateTime(order.fechaFinEstimada)), _OrderDetail(icon: Icons.layers_outlined, label: 'ProducciÃƒÂ³n', value: '${_formatDecimal(order.cantidadPieles)} pieles')]),
-    ]));
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          order.codigoOrden,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const Gap(10),
+                        _cardChip(context, order.estado),
+                      ],
+                    ),
+                    const Gap(3),
+                    Text(
+                      '${order.cliente} · Lote ${order.codigoLote}',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton.outlined(
+                tooltip: 'Imprimir ficha PDF',
+                onPressed: () async {
+                  final cubit = context.read<ProduccionReportesCubit>();
+                  final results = await Future.wait([
+                    cubit.processesForPrint(order.ordenProduccionId),
+                    cubit.productsForPrint(order.ordenProduccionId),
+                  ]);
+                  if (!context.mounted) return;
+                  await ProductionReportPdfService.printActiveOrder(
+                    context,
+                    order,
+                    results[0] as List<OrdenProcesoRecord>,
+                    results[1] as List<OrdenProductoRecord>,
+                  );
+                },
+                icon: const Icon(Icons.print_outlined),
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.lg),
+          _OrderSteps(activeStage: activeStage),
+          const Gap(AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: progress / 100,
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const Gap(AppSpacing.lg),
+              Text(
+                '$progress%',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const Gap(AppSpacing.md),
+          Divider(color: theme.colorScheme.outlineVariant),
+          const Gap(AppSpacing.sm),
+          Wrap(
+            spacing: 22,
+            runSpacing: 8,
+            children: [
+              _OrderDetail(
+                icon: Icons.calendar_today_outlined,
+                label: 'Inicio',
+                value: _formatOptionalDateTime(order.fechaInicioReal),
+              ),
+              _OrderDetail(
+                icon: Icons.flag_outlined,
+                label: 'Fin estimado',
+                value: _formatDateTime(order.fechaFinEstimada),
+              ),
+              _OrderDetail(
+                icon: Icons.layers_outlined,
+                label: 'Producción',
+                value: '${_formatDecimal(order.cantidadPieles)} pieles',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _OrderSteps extends StatelessWidget { const _OrderSteps({required this.activeStage}); final int activeStage;
-  @override Widget build(BuildContext context) { const labels = ['Remojo', 'Curtido', 'Recurtido', 'Acabado']; final theme = Theme.of(context); return Row(children: List.generate(labels.length, (index) { final done = index < activeStage; final current = index == activeStage; final color = done ? Colors.green.shade700 : current ? theme.colorScheme.primary : theme.colorScheme.outline; return Expanded(child: Column(children: [Row(children: [Expanded(child: Container(height: 2, color: index == 0 ? Colors.transparent : (done || current ? color : theme.colorScheme.outlineVariant))), Container(width: 22, height: 22, alignment: Alignment.center, decoration: BoxDecoration(color: done || current ? color : theme.colorScheme.surfaceContainerHighest, shape: BoxShape.circle, border: Border.all(color: color)), child: Icon(done ? Icons.check : current ? Icons.timelapse : Icons.schedule, size: 13, color: done || current ? Colors.white : color)), Expanded(child: Container(height: 2, color: index == labels.length - 1 ? Colors.transparent : (done ? color : theme.colorScheme.outlineVariant)))]), const Gap(4), Text(labels[index], style: theme.textTheme.labelSmall?.copyWith(color: current ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant))])); })); }
+class _OrderSteps extends StatelessWidget {
+  const _OrderSteps({required this.activeStage});
+  final int activeStage;
+  @override
+  Widget build(BuildContext context) {
+    const labels = ['Remojo', 'Curtido', 'Recurtido', 'Acabado'];
+    final theme = Theme.of(context);
+    return Row(
+      children: List.generate(labels.length, (index) {
+        final done = index < activeStage;
+        final current = index == activeStage;
+        final color = done
+            ? Colors.green.shade700
+            : current
+            ? theme.colorScheme.primary
+            : theme.colorScheme.outline;
+        return Expanded(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      color: index == 0
+                          ? Colors.transparent
+                          : (done || current
+                                ? color
+                                : theme.colorScheme.outlineVariant),
+                    ),
+                  ),
+                  Container(
+                    width: 22,
+                    height: 22,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: done || current
+                          ? color
+                          : theme.colorScheme.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color),
+                    ),
+                    child: Icon(
+                      done
+                          ? Icons.check
+                          : current
+                          ? Icons.timelapse
+                          : Icons.schedule,
+                      size: 13,
+                      color: done || current ? Colors.white : color,
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      color: index == labels.length - 1
+                          ? Colors.transparent
+                          : (done ? color : theme.colorScheme.outlineVariant),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(4),
+              Text(
+                labels[index],
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: current
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
 }
-class _OrderDetail extends StatelessWidget { const _OrderDetail({required this.icon, required this.label, required this.value}); final IconData icon; final String label; final String value; @override Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15), const Gap(5), Text('$label ', style: Theme.of(context).textTheme.bodySmall), Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700))]); }
-int _activeOrderProgress(OrdenActivaReporteItem order) => order.estado == 'FINALIZADO' ? 100 : order.estado == 'EN_PROCESO' ? 50 : 20;
-int _activeProgress(List<OrdenActivaReporteItem> orders) => orders.isEmpty ? 0 : orders.map(_activeOrderProgress).reduce((a, b) => a + b) ~/ orders.length;
-int _stageProgress(String status) => status == 'FINALIZADO' ? 100 : status == 'EN_PROCESO' ? 50 : 0;
-int _realOrderProgress(List<OrdenProcesoRecord> processes, List<OrdenProductoRecord> products) {
-  if (products.isEmpty) return processes.isEmpty ? 0 : processes.map((item) => _stageProgress(item.estado)).reduce((a, b) => a + b) ~/ processes.length;
-  final average = products.map((item) => (_stageProgress(item.estadoRecurtido) + _stageProgress(item.estadoAcabado)) / 2).reduce((a, b) => a + b) / products.length;
+
+class _OrderDetail extends StatelessWidget {
+  const _OrderDetail({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 15),
+      const Gap(5),
+      Text('$label ', style: Theme.of(context).textTheme.bodySmall),
+      Text(
+        value,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+      ),
+    ],
+  );
+}
+
+int _activeOrderProgress(OrdenActivaReporteItem order) =>
+    order.estado == 'FINALIZADO'
+    ? 100
+    : order.estado == 'EN_PROCESO'
+    ? 50
+    : 20;
+int _activeProgress(List<OrdenActivaReporteItem> orders) => orders.isEmpty
+    ? 0
+    : orders.map(_activeOrderProgress).reduce((a, b) => a + b) ~/ orders.length;
+int _stageProgress(String status) => status == 'FINALIZADO'
+    ? 100
+    : status == 'EN_PROCESO'
+    ? 50
+    : 0;
+int _realOrderProgress(
+  List<OrdenProcesoRecord> processes,
+  List<OrdenProductoRecord> products,
+) {
+  if (products.isEmpty) {
+    if (processes.isEmpty) return 0;
+
+    final total = processes.fold<int>(
+      0,
+      (sum, item) => sum + _stageProgress(item.estado),
+    );
+    return total ~/ processes.length;
+  }
+
+  final average = products
+          .map(
+            (item) =>
+                (_stageProgress(item.estadoRecurtido) +
+                    _stageProgress(item.estadoAcabado)) /
+                2,
+          )
+          .fold<double>(0, (sum, progress) => sum + progress) /
+      products.length;
   return average.round();
 }
-int _realActiveStage(List<OrdenProcesoRecord> processes, List<OrdenProductoRecord> products, int progress) {
+
+int _realActiveStage(
+  List<OrdenProcesoRecord> processes,
+  List<OrdenProductoRecord> products,
+  int progress,
+) {
   if (products.any((item) => item.estadoRecurtido == 'EN_PROCESO')) return 2;
   if (products.any((item) => item.estadoAcabado == 'EN_PROCESO')) return 3;
-  final current = processes.where((item) => item.estado == 'EN_PROCESO').toList();
-  if (current.isNotEmpty) return current.first.secuencia.clamp(1, 4).toInt() - 1;
+  final current = processes
+      .where((item) => item.estado == 'EN_PROCESO')
+      .toList();
+  if (current.isNotEmpty)
+    return current.first.secuencia.clamp(1, 4).toInt() - 1;
   return progress >= 100 ? 3 : 0;
 }
-int _activeOrderStage(OrdenActivaReporteItem order) => order.estado == 'FINALIZADO' ? 3 : 1;
+
+int _activeOrderStage(OrdenActivaReporteItem order) =>
+    order.estado == 'FINALIZADO' ? 3 : 1;
 
 class _OrdenesClienteTab extends StatelessWidget {
   const _OrdenesClienteTab({
@@ -714,7 +986,7 @@ class _OrdenesClienteTab extends StatelessWidget {
             final item = state.ordenesCliente[index];
             return _ReportItemCard(
               title: item.codigoOrden,
-              subtitle: '${item.cliente} Ã‚Â· Lote ${item.codigoLote}',
+              subtitle: '${item.cliente} · Lote ${item.codigoLote}',
               onPrint: () async {
                 final cubit = context.read<ProduccionReportesCubit>();
                 final results = await Future.wait([
@@ -807,7 +1079,7 @@ class _ConsumoProcesoTab extends StatelessWidget {
                     (item) => DropdownMenuItem<int?>(
                       value: item.id,
                       child: Text(
-                        '${item.procesoCodigo} Ã‚Â· ${item.procesoNombre}',
+                        '${item.procesoCodigo} · ${item.procesoNombre}',
                       ),
                     ),
                   ),
@@ -831,6 +1103,7 @@ class _ConsumoProcesoTab extends StatelessWidget {
       resultsCard: _ResultsCard(
         title: 'Consumo por proceso',
         subtitle: '${state.consumoProceso.length} registro(s) visibles.',
+        hideSummary: true,
         itemCount: state.consumoProceso.length,
         isLoading: state.loadingConsumoProceso,
         errorMessage: state.consumoProcesoErrorMessage,
@@ -850,424 +1123,189 @@ class _ConsumoProcesoTab extends StatelessWidget {
   }
 }
 
-class _MermaTab extends StatelessWidget {
-  const _MermaTab({
-    required this.state,
-    required this.processOptionsForOrder,
-    required this.onApply,
-    required this.onPickDate,
-    required this.onClear,
-  });
-
-  final ProduccionReportesState state;
-  final List<OrdenProcesoRecord> Function(int? orderId) processOptionsForOrder;
-  final Future<void> Function({
-    int? ordenProduccionId,
-    int? ordenProcesoId,
-    DateTime? fechaDesde,
-    DateTime? fechaHasta,
-  })
-  onApply;
-  final Future<void> Function({
-    required DateTime? initialDate,
-    required ValueChanged<DateTime?> onChanged,
-  })
-  onPickDate;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final processes = processOptionsForOrder(state.mermaOrdenProduccionId);
-
-    return _ReportTabScaffold(
-      filterCard: _SurfaceCard(
-        title: 'Seguimiento de merma',
-        subtitle:
-            'Filtra por orden, proceso o fechas para ubicar donde se concentran las perdidas.',
-        child: Wrap(
-          spacing: AppSpacing.lg,
-          runSpacing: AppSpacing.lg,
-          children: [
-            SizedBox(
-              width: 360,
-              child: DropdownButtonFormField<int?>(
-                isExpanded: true,
-                initialValue: state.mermaOrdenProduccionId,
-                decoration: const InputDecoration(
-                  labelText: 'Orden de produccion',
-                ),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todas'),
-                  ),
-                  ...state.ordenOptions.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(_ordenOptionLabel(item)),
-                    ),
-                  ),
-                ],
-                onChanged: (value) => onApply(
-                  ordenProduccionId: value,
-                  ordenProcesoId: null,
-                  fechaDesde: state.mermaFechaDesde,
-                  fechaHasta: state.mermaFechaHasta,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 320,
-              child: DropdownButtonFormField<int?>(
-                isExpanded: true,
-                initialValue: state.mermaOrdenProcesoId,
-                decoration: const InputDecoration(labelText: 'Proceso'),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
-                  ...processes.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(
-                        '${item.procesoCodigo} Ã‚Â· ${item.procesoNombre}',
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: state.mermaOrdenProduccionId == null
-                    ? null
-                    : (value) => onApply(
-                        ordenProduccionId: state.mermaOrdenProduccionId,
-                        ordenProcesoId: value,
-                        fechaDesde: state.mermaFechaDesde,
-                        fechaHasta: state.mermaFechaHasta,
-                      ),
-              ),
-            ),
-            _DateButton(
-              label: 'Desde',
-              value: state.mermaFechaDesde,
-              onPressed: () => onPickDate(
-                initialDate: state.mermaFechaDesde,
-                onChanged: (value) => onApply(
-                  ordenProduccionId: state.mermaOrdenProduccionId,
-                  ordenProcesoId: state.mermaOrdenProcesoId,
-                  fechaDesde: value,
-                  fechaHasta: state.mermaFechaHasta,
-                ),
-              ),
-            ),
-            _DateButton(
-              label: 'Hasta',
-              value: state.mermaFechaHasta,
-              onPressed: () => onPickDate(
-                initialDate: state.mermaFechaHasta,
-                onChanged: (value) => onApply(
-                  ordenProduccionId: state.mermaOrdenProduccionId,
-                  ordenProcesoId: state.mermaOrdenProcesoId,
-                  fechaDesde: state.mermaFechaDesde,
-                  fechaHasta: value,
-                ),
-              ),
-            ),
-            AppButton.secondary(
-              label: 'Limpiar',
-              icon: Icons.filter_alt_off_outlined,
-              onPressed: onClear,
-            ),
-          ],
-        ),
-      ),
-      resultsCard: _ResultsCard(
-        title: 'Reporte de merma',
-        subtitle: '${state.mermas.length} registro(s) visibles.',
-        itemCount: state.mermas.length,
-        isLoading: state.loadingMerma,
-        errorMessage: state.mermaErrorMessage,
-        onRetry: () => onApply(
-          ordenProduccionId: state.mermaOrdenProduccionId,
-          ordenProcesoId: state.mermaOrdenProcesoId,
-          fechaDesde: state.mermaFechaDesde,
-          fechaHasta: state.mermaFechaHasta,
-        ),
-        emptyTitle: 'Sin merma visible',
-        emptyMessage:
-            'No encontramos registros de merma con los filtros actuales.',
-        child: ListView.separated(
-          itemCount: state.mermas.length,
-          separatorBuilder: (_, _) => const Gap(AppSpacing.md),
-          itemBuilder: (context, index) {
-            final item = state.mermas[index];
-            return _ReportItemCard(
-              title: '${item.codigoOrden} Ã‚Â· ${item.procesoCodigo}',
-              subtitle: item.procesoNombre,
-              chips: [
-                _cardChip(
-                  context,
-                  '${_formatDecimal(item.cantidadPerdida)} perdidas',
-                ),
-                if ((item.responsable ?? '').trim().isNotEmpty)
-                  _cardChip(context, item.responsable!),
-              ],
-              lines: ['Motivo: ${(item.motivo ?? 'Sin motivo').trim()}'],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _TiemposProcesoTab extends StatelessWidget {
-  const _TiemposProcesoTab({
-    required this.state,
-    required this.processOptionsForOrder,
-    required this.onApply,
-    required this.onClear,
-  });
-
-  final ProduccionReportesState state;
-  final List<OrdenProcesoRecord> Function(int? orderId) processOptionsForOrder;
-  final Future<void> Function({
-    int? ordenProduccionId,
-    int? ordenProcesoId,
-    String? estado,
-  })
-  onApply;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final processes = processOptionsForOrder(state.tiemposOrdenProduccionId);
-
-    return _ReportTabScaffold(
-      filterCard: _SurfaceCard(
-        title: 'Tiempos por proceso',
-        subtitle:
-            'Usa este cruce para revisar cuellos de botella y procesos que siguen abiertos.',
-        child: Wrap(
-          spacing: AppSpacing.lg,
-          runSpacing: AppSpacing.lg,
-          children: [
-            SizedBox(
-              width: 360,
-              child: _SearchableReportFilter<int>(
-                key: ValueKey('tiempo-orden-${state.tiemposOrdenProduccionId}'),
-                label: 'Orden o cliente',
-                hint: 'Escribe codigo o nombre del cliente',
-                selectedValue: state.tiemposOrdenProduccionId,
-                options: state.ordenOptions
-                    .map(
-                      (item) => _SearchOption(item.id, _ordenOptionLabel(item)),
-                    )
-                    .toList(growable: false),
-                onSelected: (value) => onApply(
-                  ordenProduccionId: value,
-                  ordenProcesoId: null,
-                  estado: state.tiemposEstado,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 320,
-              child: DropdownButtonFormField<int?>(
-                isExpanded: true,
-                initialValue: state.tiemposOrdenProcesoId,
-                decoration: const InputDecoration(labelText: 'Proceso'),
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
-                  ...processes.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(
-                        '${item.procesoCodigo} Ã‚Â· ${item.procesoNombre}',
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: state.tiemposOrdenProduccionId == null
-                    ? null
-                    : (value) => onApply(
-                        ordenProduccionId: state.tiemposOrdenProduccionId,
-                        ordenProcesoId: value,
-                        estado: state.tiemposEstado,
-                      ),
-              ),
-            ),
-            SizedBox(
-              width: 240,
-              child: DropdownButtonFormField<String?>(
-                isExpanded: true,
-                initialValue: state.tiemposEstado,
-                decoration: const InputDecoration(
-                  labelText: 'Estado del proceso',
-                ),
-                items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('Todos')),
-                  DropdownMenuItem<String?>(
-                    value: 'PENDIENTE',
-                    child: Text('PENDIENTE'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'EN_PROCESO',
-                    child: Text('EN_PROCESO'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'FINALIZADO',
-                    child: Text('FINALIZADO'),
-                  ),
-                ],
-                onChanged: (value) => onApply(
-                  ordenProduccionId: state.tiemposOrdenProduccionId,
-                  ordenProcesoId: state.tiemposOrdenProcesoId,
-                  estado: value,
-                ),
-              ),
-            ),
-            AppButton.secondary(
-              label: 'Limpiar',
-              icon: Icons.filter_alt_off_outlined,
-              onPressed: onClear,
-            ),
-          ],
-        ),
-      ),
-      resultsCard: _ResultsCard(
-        title: 'Tiempos de proceso',
-        subtitle: '${state.tiemposProceso.length} registro(s) visibles.',
-        itemCount: state.tiemposProceso.length,
-        isLoading: state.loadingTiemposProceso,
-        errorMessage: state.tiemposProcesoErrorMessage,
-        onRetry: () => onApply(
-          ordenProduccionId: state.tiemposOrdenProduccionId,
-          ordenProcesoId: state.tiemposOrdenProcesoId,
-          estado: state.tiemposEstado,
-        ),
-        emptyTitle: 'Sin tiempos visibles',
-        emptyMessage: 'No encontramos procesos para el filtro actual.',
-        child: _TimesGroupedList(
-          items: state.tiemposProceso,
-          orders: state.ordenOptions,
-        ),
-      ),
-    );
-  }
-}
-
-class _TimesGroupedList extends StatelessWidget {
-  const _TimesGroupedList({required this.items, required this.orders});
-
-  final List<TiempoProcesoReporteItem> items;
-  final List<OrdenProduccionRecord> orders;
-
-  @override
-  Widget build(BuildContext context) {
-    final grouped = <int, List<TiempoProcesoReporteItem>>{};
-    for (final item in items) {
-      grouped.putIfAbsent(item.ordenProduccionId, () => []).add(item);
-    }
-    return ListView(
-      children: grouped.entries
-          .map((entry) {
-            final rows = entry.value;
-            OrdenProduccionRecord? order;
-            for (final candidate in orders) {
-              if (candidate.id == entry.key) {
-                order = candidate;
-                break;
-              }
-            }
-            return Card(
-              margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: ExpansionTile(
-                initiallyExpanded: grouped.length == 1,
-                title: Text(
-                  '${rows.first.codigoOrden} Ã‚Â· ${order?.clienteRazonSocial ?? 'Cliente no disponible'}',
-                ),
-                subtitle: Text('${rows.length} etapas productivas'),
-                children: rows
-                    .map(
-                      (item) => ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          child: Text(item.procesoCodigo.substring(0, 1)),
-                        ),
-                        title: Text(
-                          '${item.procesoCodigo} Ã‚Â· ${item.procesoNombre}',
-                        ),
-                        subtitle: Text(
-                          'Inicio: ${_formatOptionalDateTime(item.fechaInicio)}  |  Fin: ${_formatOptionalDateTime(item.fechaFin)}  |  ${(item.responsable ?? 'Sin responsable').trim()}',
-                        ),
-                        trailing: _cardChip(
-                          context,
-                          item.diasReales == null
-                              ? item.estado
-                              : '${item.diasReales} dias',
-                        ),
-                      ),
-                    )
-                    .toList(growable: false),
-              ),
-            );
-          })
-          .toList(growable: false),
-    );
-  }
-}
-
-class _ConsumptionGroupedList extends StatelessWidget {
+class _ConsumptionGroupedList extends StatefulWidget {
   const _ConsumptionGroupedList({required this.items, required this.orders});
 
   final List<ConsumoProcesoReporteItem> items;
   final List<OrdenProduccionRecord> orders;
 
   @override
+  State<_ConsumptionGroupedList> createState() =>
+      _ConsumptionGroupedListState();
+}
+
+class _ConsumptionGroupedListState extends State<_ConsumptionGroupedList> {
+  bool _byProduct = true;
+  bool _orderByConsumption = true;
+  bool _expandAll = true;
+  String? _selectedProduct;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final grouped = <int, List<ConsumoProcesoReporteItem>>{};
-    for (final item in items) {
+    final products =
+        widget.items
+            .where((item) => (item.productoNombre ?? '').trim().isNotEmpty)
+            .map(
+              (item) =>
+                  '${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}',
+            )
+            .toSet()
+            .toList()
+          ..sort();
+    final visibleItems = _selectedProduct == null
+        ? widget.items
+        : widget.items
+              .where((item) {
+                final label =
+                    '${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}';
+                return label == _selectedProduct;
+              })
+              .toList(growable: false);
+    for (final item in visibleItems) {
       grouped.putIfAbsent(item.ordenProduccionId, () => []).add(item);
     }
 
     return ListView(
-      children: grouped.entries
-          .map((entry) {
-            final rows = entry.value;
-            OrdenProduccionRecord? order;
-            for (final candidate in orders) {
-              if (candidate.id == entry.key) {
-                order = candidate;
-                break;
-              }
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.tune_rounded, size: 18, color: colors.primary),
+                  const Gap(AppSpacing.xs),
+                  Text(
+                    'Vista de análisis',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text('Ver por', style: theme.textTheme.labelLarge),
+              ChoiceChip(
+                label: const Text('Producto'),
+                selected: _byProduct,
+                onSelected: (_) => setState(() => _byProduct = true),
+              ),
+              ChoiceChip(
+                label: const Text('Proceso'),
+                selected: !_byProduct,
+                onSelected: (_) => setState(() => _byProduct = false),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text('Ordenar', style: theme.textTheme.labelLarge),
+              ChoiceChip(
+                label: const Text('Mayor consumo'),
+                selected: _orderByConsumption,
+                onSelected: (_) => setState(() => _orderByConsumption = true),
+              ),
+              ChoiceChip(
+                label: const Text('Código'),
+                selected: !_orderByConsumption,
+                onSelected: (_) => setState(() => _orderByConsumption = false),
+              ),
+              TextButton.icon(
+                onPressed: () => setState(() => _expandAll = !_expandAll),
+                icon: Icon(_expandAll ? Icons.unfold_less : Icons.unfold_more),
+                label: Text(_expandAll ? 'Contraer todo' : 'Expandir todo'),
+              ),
+              if (products.isNotEmpty) ...[
+                const SizedBox(width: AppSpacing.sm),
+                FilterChip(
+                  label: const Text('Todos'),
+                  selected: _selectedProduct == null,
+                  onSelected: (_) => setState(() => _selectedProduct = null),
+                ),
+                ...products.map(
+                  (product) => FilterChip(
+                    label: Text(product),
+                    selected: _selectedProduct == product,
+                    onSelected: (_) =>
+                        setState(() => _selectedProduct = product),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        ...grouped.entries.map((entry) {
+          final rows = entry.value;
+          OrdenProduccionRecord? order;
+          for (final candidate in widget.orders) {
+            if (candidate.id == entry.key) {
+              order = candidate;
+              break;
             }
-            final byProcess = <String, List<ConsumoProcesoReporteItem>>{};
-            for (final item in rows) {
-              final product = item.productoNombre == null
-                  ? ''
-                  : ' - ${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' Ã‚Â· ${item.productoColor}'}';
-              byProcess
-                  .putIfAbsent('${item.procesoNombre}$product', () => [])
+          }
+          final byProcess = <String, List<ConsumoProcesoReporteItem>>{};
+          final byProduct = <String, List<ConsumoProcesoReporteItem>>{};
+          for (final item in rows) {
+            final productLabel = (item.productoNombre ?? '').trim();
+            if (productLabel.isNotEmpty) {
+              byProduct
+                  .putIfAbsent(
+                    '$productLabel${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}',
+                    () => [],
+                  )
                   .add(item);
             }
-            final orderNumber = grouped.keys.toList().indexOf(entry.key) + 1;
-            return Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colors.outlineVariant),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Material(
-                color: colors.surface,
-                child: ExpansionTile(
-                initiallyExpanded: grouped.length == 1,
+            final product = item.productoNombre == null
+                ? ''
+                : ' - ${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}';
+            byProcess
+                .putIfAbsent('${item.procesoNombre}$product', () => [])
+                .add(item);
+          }
+          final processEntries = byProcess.entries.toList()
+            ..sort((a, b) {
+              final aIsGeneral = a.value.first.ordenProductoId == null;
+              final bIsGeneral = b.value.first.ordenProductoId == null;
+              if (aIsGeneral != bIsGeneral) return aIsGeneral ? -1 : 1;
+              final stageComparison = _productionStageOrder(
+                a.value.first.procesoCodigo,
+              ).compareTo(_productionStageOrder(b.value.first.procesoCodigo));
+              if (stageComparison != 0) return stageComparison;
+              if (!_orderByConsumption) return a.key.compareTo(b.key);
+              final aTotal = a.value.fold<double>(
+                0,
+                (sum, item) => sum + item.cantidadReal,
+              );
+              final bTotal = b.value.fold<double>(
+                0,
+                (sum, item) => sum + item.cantidadReal,
+              );
+              return bTotal.compareTo(aTotal);
+            });
+          final orderNumber = grouped.keys.toList().indexOf(entry.key) + 1;
+          return Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.outlineVariant),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Material(
+              color: colors.surface,
+              child: ExpansionTile(
+                key: ValueKey('consumo-orden-${entry.key}-$_expandAll'),
+                initiallyExpanded: _expandAll,
                 tilePadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
                   vertical: AppSpacing.xs,
@@ -1285,7 +1323,7 @@ class _ConsumptionGroupedList extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 subtitle: Text(
-                  '${order?.clienteRazonSocial ?? 'Cliente no disponible'} Ã‚Â· ${byProcess.length} procesos Ã‚Â· ${rows.length} insumos',
+                  '${order?.clienteRazonSocial ?? 'Cliente no disponible'} · ${byProcess.length} procesos · ${rows.length} insumos',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1309,17 +1347,22 @@ class _ConsumptionGroupedList extends StatelessWidget {
                     ),
                   ],
                 ),
-                children: byProcess.entries
-                    .toList()
-                    .asMap()
-                    .entries
-                    .map((indexedProcess) {
+                children: [
+                  if (_byProduct)
+                    _ConsumptionProductHierarchy(
+                      rows: rows,
+                      expandAll: _expandAll,
+                    ),
+                  if (!_byProduct)
+                    ...processEntries.toList().asMap().entries.map((
+                      indexedProcess,
+                    ) {
                       final processNumber = indexedProcess.key + 1;
                       final process = indexedProcess.value;
-                      final quantityTotal = process.value.fold<double>(
-                        0,
-                        (sum, item) => sum + item.cantidadReal,
-                      );
+                      final sortedInsumos = [...process.value]
+                        ..sort(
+                          (a, b) => b.cantidadPlanificada.compareTo(a.cantidadPlanificada),
+                        );
                       return Container(
                         margin: const EdgeInsets.fromLTRB(
                           AppSpacing.md,
@@ -1336,63 +1379,507 @@ class _ConsumptionGroupedList extends StatelessWidget {
                         child: Material(
                           color: colors.surfaceContainerLow,
                           child: ExpansionTile(
-                          initiallyExpanded: true,
-                          leading: Container(
-                            width: 5,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(99),
+                            key: ValueKey(
+                              'consumo-proceso-${entry.key}-${process.key}-$_expandAll',
                             ),
-                          ),
-                          title: Text(
-                            '${processNumber.toString().padLeft(2, '0')}  ${process.key}',
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          subtitle: Text(
-                            process.value.first.productoEstado == null
-                                ? '${process.value.length} insumos'
-                                : '${process.value.length} insumos Ã‚Â· Estado: ${process.value.first.productoEstado!.replaceAll('_', ' ')}',
-                          ),
-                          trailing: Text(
-                            '${_formatDecimal(quantityTotal)} total',
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          children: [
-                            Container(
-                              color: colors.surface,
-                              padding: const EdgeInsets.fromLTRB(
-                                AppSpacing.md,
-                                AppSpacing.sm,
-                                AppSpacing.md,
-                                AppSpacing.md,
+                            initiallyExpanded: _expandAll,
+                            leading: Container(
+                              width: 5,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(99),
                               ),
-                              child: Column(
-                                children: [
-                                  const _ConsumptionTableHeader(),
-                                  ...process.value.map(
-                                    (item) => _ConsumptionTableRow(
-                                      item: item,
-                                      totalQuantity: quantityTotal,
+                            ),
+                            title: Text(
+                              '${processNumber.toString().padLeft(2, '0')}  ${process.key}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            subtitle: Text(
+                              process.value.first.productoEstado == null
+                                  ? '${process.value.length} insumos'
+                                  : '${process.value.length} insumos · Estado: ${process.value.first.productoEstado!.replaceAll('_', ' ')}',
+                            ),
+                            children: [
+                              Container(
+                                color: colors.surface,
+                                padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.md,
+                                  AppSpacing.sm,
+                                  AppSpacing.md,
+                                  AppSpacing.md,
+                                ),
+                                child: Column(
+                                  children: [
+                                    const _ConsumptionTableHeader(),
+                                    ...sortedInsumos.map(
+                                      (item) => _ConsumptionTableRow(
+                                        item: item,
+                                      ),
                                     ),
-                                  ),
-                                  _ConsumptionProcessTotal(
-                                    totalQuantity: quantityTotal,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
                           ),
                         ),
                       );
-                    })
-                    .toList(growable: false),
+                    }),
+                ],
               ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _ConsumptionProductHierarchy extends StatelessWidget {
+  const _ConsumptionProductHierarchy({
+    required this.rows,
+    required this.expandAll,
+  });
+
+  final List<ConsumoProcesoReporteItem> rows;
+  final bool expandAll;
+
+  List<MapEntry<String, List<ConsumoProcesoReporteItem>>> _groupProcesses(
+    Iterable<ConsumoProcesoReporteItem> source,
+  ) {
+    final grouped = <String, List<ConsumoProcesoReporteItem>>{};
+    for (final item in source) {
+      grouped
+          .putIfAbsent('${item.procesoCodigo}|${item.procesoNombre}', () => [])
+          .add(item);
+    }
+    final entries = grouped.entries.toList();
+    entries.sort(
+      (a, b) => _productionStageOrder(
+        a.value.first.procesoCodigo,
+      ).compareTo(_productionStageOrder(b.value.first.procesoCodigo)),
+    );
+    return entries;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final generalProcesses = _groupProcesses(
+      rows.where((item) => item.ordenProductoId == null),
+    );
+    final products = <int, List<ConsumoProcesoReporteItem>>{};
+    for (final item in rows.where((item) => item.ordenProductoId != null)) {
+      products.putIfAbsent(item.ordenProductoId!, () => []).add(item);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _ConsumptionScopeChip(
+                label: 'General',
+                color: colors.onSurfaceVariant,
               ),
-            );
-          })
-          .toList(growable: false),
+              for (var index = 0; index < products.length; index++)
+                _ConsumptionScopeChip(
+                  label: _productLabel(products.values.elementAt(index).first),
+                  color: _productAccent(index),
+                ),
+            ],
+          ),
+          if (generalProcesses.isNotEmpty) ...[
+            const Gap(AppSpacing.md),
+            _ConsumptionSectionHeading(
+              title: 'Etapas generales',
+              subtitle: 'Aplican a toda la orden',
+              count: generalProcesses.length,
+              color: colors.onSurfaceVariant,
+            ),
+            const Gap(AppSpacing.sm),
+            for (final process in generalProcesses) ...[
+              _ConsumptionProcessPanel(
+                key: ValueKey(
+                  'general-${process.value.first.ordenProcesoId}-$expandAll',
+                ),
+                rows: process.value,
+                number:
+                    _productionStageOrder(process.value.first.procesoCodigo) +
+                    1,
+                expandAll: expandAll,
+                accentColor: colors.primary,
+              ),
+              const Gap(AppSpacing.sm),
+            ],
+          ],
+          for (var index = 0; index < products.length; index++) ...[
+            const Gap(AppSpacing.md),
+            _ConsumptionProductBlock(
+              rows: products.values.elementAt(index),
+              label: _productLabel(products.values.elementAt(index).first),
+              accentColor: _productAccent(index),
+              expandAll: expandAll,
+              processes: _groupProcesses(products.values.elementAt(index)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _productLabel(ConsumoProcesoReporteItem item) {
+    final name = (item.productoNombre ?? 'Producto').trim();
+    final color = (item.productoColor ?? '').trim();
+    return color.isEmpty ? name : '$name · $color';
+  }
+
+  static Color _productAccent(int index) {
+    const accents = [
+      Color(0xFF2196F3),
+      Color(0xFF7E57C2),
+      Color(0xFF26A69A),
+      Color(0xFFEF6C00),
+    ];
+    return accents[index % accents.length];
+  }
+}
+
+class _ConsumptionScopeChip extends StatelessWidget {
+  const _ConsumptionScopeChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .10),
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const Gap(5),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ConsumptionSectionHeading extends StatelessWidget {
+  const _ConsumptionSectionHeading({
+    required this.title,
+    required this.subtitle,
+    required this.count,
+    required this.color,
+  });
+
+  final String title;
+  final String subtitle;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+      const Gap(AppSpacing.sm),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+      Text('$count etapas', style: Theme.of(context).textTheme.labelSmall),
+    ],
+  );
+}
+
+class _ConsumptionProductBlock extends StatelessWidget {
+  const _ConsumptionProductBlock({
+    required this.rows,
+    required this.label,
+    required this.accentColor,
+    required this.expandAll,
+    required this.processes,
+  });
+
+  final List<ConsumoProcesoReporteItem> rows;
+  final String label;
+  final Color accentColor;
+  final bool expandAll;
+  final List<MapEntry<String, List<ConsumoProcesoReporteItem>>> processes;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(AppSpacing.sm),
+    decoration: BoxDecoration(
+      color: accentColor.withValues(alpha: .035),
+      border: Border(left: BorderSide(color: accentColor, width: 3)),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ConsumptionProductSummary(
+          rows: rows,
+          label: label,
+          accentColor: accentColor,
+        ),
+        const Gap(AppSpacing.sm),
+        for (final process in processes) ...[
+          _ConsumptionProcessPanel(
+            key: ValueKey(
+              'product-${process.value.first.ordenProcesoId}-$expandAll',
+            ),
+            rows: process.value,
+            number:
+                _productionStageOrder(process.value.first.procesoCodigo) + 1,
+            expandAll: expandAll,
+            accentColor: accentColor,
+          ),
+          const Gap(AppSpacing.sm),
+        ],
+      ],
+    ),
+  );
+}
+
+class _ConsumptionProcessPanel extends StatelessWidget {
+  const _ConsumptionProcessPanel({
+    super.key,
+    required this.rows,
+    required this.number,
+    required this.expandAll,
+    required this.accentColor,
+  });
+
+  final List<ConsumoProcesoReporteItem> rows;
+  final int number;
+  final bool expandAll;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sorted = [...rows]
+      ..sort((a, b) => b.cantidadPlanificada.compareTo(a.cantidadPlanificada));
+    final status = rows.first.productoEstado?.replaceAll('_', ' ');
+    final principal = sorted
+        .take(3)
+        .map((item) => '${item.insumoNombre} ${_formatFormulaPercent(item.porcentajeFormulacion)}%')
+        .join(' · ');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: .035),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: theme.colorScheme.surface,
+        child: ExpansionTile(
+          initiallyExpanded: expandAll,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          childrenPadding: EdgeInsets.zero,
+          leading: Container(
+            width: 27,
+            height: 23,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: number <= 2
+                  ? Theme.of(context).colorScheme.primary
+                  : accentColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              number.toString().padLeft(2, '0'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          title: Text(
+            rows.first.procesoNombre,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            principal.isEmpty
+                ? '${rows.length} insumos'
+                : '${rows.length} insumos\nPrincipales: $principal',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall,
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (status != null) ...[
+                _ConsumptionStatusBadge(status: status),
+                const Gap(AppSpacing.sm),
+              ],
+            ],
+          ),
+          children: [
+            Container(
+              color: theme.colorScheme.surface,
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+              child: Column(
+                children: [
+                  const _ConsumptionTableHeader(),
+                  for (final item in sorted)
+                    _ConsumptionTableRow(item: item),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsumptionStatusBadge extends StatelessWidget {
+  const _ConsumptionStatusBadge({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = status == 'FINALIZADO';
+    final color = completed
+        ? const Color(0xFF2E7D32)
+        : Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsumptionProductSummary extends StatelessWidget {
+  const _ConsumptionProductSummary({
+    required this.rows,
+    required this.label,
+    required this.accentColor,
+  });
+
+  final List<ConsumoProcesoReporteItem> rows;
+  final String label;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final first = rows.first;
+    final stages = rows.map((item) => item.procesoCodigo).toSet().length;
+    final completed = rows
+        .where((item) => item.productoEstado == 'FINALIZADO')
+        .map((item) => item.procesoCodigo)
+        .toSet()
+        .length;
+    final progress = stages == 0 ? 0 : (completed / stages * 100).round();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: .06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withValues(alpha: .45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const Gap(AppSpacing.xs),
+          Text(
+            '${_formatDecimal(first.productoCantidadPieles ?? 0)} pieles · $stages etapas',
+            style: theme.textTheme.bodySmall,
+          ),
+          const Gap(AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: progress / 100,
+                  minHeight: 5,
+                  borderRadius: BorderRadius.circular(99),
+                  color: accentColor,
+                  backgroundColor: accentColor.withValues(alpha: .12),
+                ),
+              ),
+              const Gap(AppSpacing.sm),
+              Text(
+                '$progress%',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: accentColor,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1413,7 +1900,7 @@ class _ConsumptionTableHeader extends StatelessWidget {
           Expanded(flex: 6, child: Text('INSUMO', style: style)),
           Expanded(
             flex: 4,
-            child: Text('%', textAlign: TextAlign.right, style: style),
+            child: Text('% FÓRMULA', textAlign: TextAlign.right, style: style),
           ),
           Expanded(
             flex: 2,
@@ -1426,15 +1913,14 @@ class _ConsumptionTableHeader extends StatelessWidget {
 }
 
 class _ConsumptionTableRow extends StatelessWidget {
-  const _ConsumptionTableRow({required this.item, required this.totalQuantity});
+  const _ConsumptionTableRow({required this.item});
 
   final ConsumoProcesoReporteItem item;
-  final double totalQuantity;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final percentage = totalQuantity <= 0 ? 0.0 : item.cantidadReal / totalQuantity * 100;
+    final percentage = item.porcentajeFormulacion;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(
@@ -1447,45 +1933,28 @@ class _ConsumptionTableRow extends StatelessWidget {
           Expanded(
             flex: 6,
             child: Text(
-              '${item.insumoCodigo} Ã‚Â· ${item.insumoNombre}',
+              '${item.insumoCodigo} · ${item.insumoNombre}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
             flex: 4,
-            child: Row(
-              children: [
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: percentage / 100,
-                    minHeight: 4,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const Gap(AppSpacing.sm),
-                SizedBox(
-                  width: 42,
-                  child: Text(
-                    '${percentage.toStringAsFixed(1)}%',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              '${_formatFormulaPercent(percentage)}%',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              _formatDecimal(item.cantidadReal),
+              _formatQuantity(item.cantidadPlanificada),
               textAlign: TextAlign.right,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1494,23 +1963,6 @@ class _ConsumptionTableRow extends StatelessWidget {
   }
 }
 
-class _ConsumptionProcessTotal extends StatelessWidget {
-  const _ConsumptionProcessTotal({required this.totalQuantity});
-  final double totalQuantity;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.only(top: AppSpacing.sm),
-    decoration: BoxDecoration(
-      border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
-    ),
-    child: Row(children: [
-      const Expanded(flex: 6, child: Text('Total del proceso')),
-      const Expanded(flex: 4, child: Text('100%', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w800))),
-      Expanded(flex: 2, child: Text(_formatDecimal(totalQuantity), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w800))),
-    ]),
-  );
-}
 
 class _ReportTabScaffold extends StatelessWidget {
   const _ReportTabScaffold({
@@ -1588,7 +2040,6 @@ class _SurfaceCard extends StatelessWidget {
   }
 }
 
-
 class _ResultsCard extends StatelessWidget {
   const _ResultsCard({
     required this.title,
@@ -1600,6 +2051,7 @@ class _ResultsCard extends StatelessWidget {
     required this.emptyTitle,
     required this.emptyMessage,
     required this.child,
+    this.hideSummary = false,
   });
 
   final String title;
@@ -1611,6 +2063,7 @@ class _ResultsCard extends StatelessWidget {
   final String emptyTitle;
   final String emptyMessage;
   final Widget child;
+  final bool hideSummary;
 
   @override
   Widget build(BuildContext context) {
@@ -1652,36 +2105,40 @@ class _ResultsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(child: Text(title, style: theme.textTheme.titleLarge)),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
+            if (!hideSummary) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(title, style: theme.textTheme.titleLarge),
                   ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '$itemCount resultados',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w700,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '$itemCount resultados',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const Gap(AppSpacing.xs),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                ],
               ),
-            ),
-            const Gap(AppSpacing.lg),
+              const Gap(AppSpacing.xs),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Gap(AppSpacing.lg),
+            ],
             Expanded(
               child: Builder(
                 builder: (_) {
@@ -2052,11 +2509,11 @@ class _CostosOrdenTabV2 extends StatelessWidget {
               child: ExpansionTile(
                 initiallyExpanded: true,
                 title: Text(
-                  '${order.codigoOrden} Ã‚Â· ${order.cliente}',
+                  '${order.codigoOrden} · ${order.cliente}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 subtitle: Text(
-                  '${order.codigoLote} Ã‚Â· Pieles ${order.clienteTraeLote ? 'traidas por cliente' : money.format(order.costoPieles)} Ã‚Â· Materiales ${money.format(order.costoMaterialesReal)}',
+                  '${order.codigoLote} · Pieles ${order.clienteTraeLote ? 'traidas por cliente' : money.format(order.costoPieles)} · Materiales ${money.format(order.costoMaterialesReal)}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 trailing: Row(
@@ -2128,13 +2585,13 @@ class _OrderCostSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final first = groups.isEmpty ? null : groups.first.first;
     final last = groups.isEmpty ? null : groups.last.first;
-    final kilos = first?.pesoBaseKg as double?;
+    final kilos = first?.pesoBaseKg;
     final cells = [
-      ('INICIO', _formatOptionalDate(first?.fechaInicio as DateTime?)),
-      ('FIN ESTIMADO', _formatOptionalDate(last?.fechaFin as DateTime?)),
+      ('INICIO', _formatOptionalDate(first?.fechaInicio)),
+      ('FIN ESTIMADO', _formatOptionalDate(last?.fechaFin)),
       (
         'PIELES / KILOS',
-        '${_formatDecimal(skins)} Ã‚Â· ${kilos == null ? '-' : '${_formatDecimal(kilos)} kg'}',
+        '${_formatDecimal(skins)} · ${kilos == null ? '-' : '${_formatDecimal(kilos)} kg'}',
       ),
       ('COSTO POR PIEL', money.format(costPerSkin)),
       ('COSTO POR LADO', money.format(costPerSide)),
@@ -2256,7 +2713,7 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                       ),
                       const Gap(AppSpacing.xs),
                       Text(
-                        current.procesoNombre as String,
+                        current.procesoNombre,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -2282,7 +2739,7 @@ class _CostProcessTimelineState extends State<_CostProcessTimeline> {
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: _CostRowsBlock(
                   title:
-                      '${stage.procesoNombre} - ${productRows.first.productoNombre ?? 'Producto'}${(productRows.first.productoColor ?? '').trim().isEmpty ? '' : ' Ã‚Â· ${productRows.first.productoColor}'}',
+                      '${stage.procesoNombre} - ${productRows.first.productoNombre ?? 'Producto'}${(productRows.first.productoColor ?? '').trim().isEmpty ? '' : ' · ${productRows.first.productoColor}'}',
                   rows: productRows,
                   money: widget.money,
                   totalLabel: 'COSTO DEL PRODUCTO',
@@ -2409,7 +2866,7 @@ class _CostRowsBlock extends StatelessWidget {
                       Expanded(
                         flex: 4,
                         child: Text(
-                          '${_normalizeInsumoCode(item.insumoCodigo)} Ã‚Â· ${item.insumoNombre}',
+                          '${_normalizeInsumoCode(item.insumoCodigo)} · ${item.insumoNombre}',
                         ),
                       ),
                       Expanded(
@@ -2485,7 +2942,7 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
           Text('Costos reales por orden', style: theme.textTheme.headlineSmall),
           const Gap(AppSpacing.xs),
           Text(
-            'Solo incluye los consumos reales aprobados y entregados por logÃƒÂ­stica.',
+            'Solo incluye los consumos reales aprobados y entregados por logística.',
             style: theme.textTheme.bodyMedium,
           ),
           const Gap(AppSpacing.lg),
@@ -2497,12 +2954,12 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
                   key: ValueKey(_selectedOrderId),
                   initialValue: _selectedOrderId,
                   decoration: const InputDecoration(
-                    labelText: 'Orden de producciÃƒÂ³n',
+                    labelText: 'Orden de producción',
                   ),
                   items: [
                     const DropdownMenuItem<int?>(
                       value: null,
-                      child: Text('Todas las ÃƒÂ³rdenes'),
+                      child: Text('Todas las órdenes'),
                     ),
                     ...widget.state.ordenOptions.map(
                       (item) => DropdownMenuItem<int?>(
@@ -2572,7 +3029,7 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
             const AppMessageCard.info(
               title: 'Sin costos reales',
               message:
-                  'AÃƒÂºn no hay consumos reales entregados para el filtro seleccionado.',
+                  'Aún no hay consumos reales entregados para el filtro seleccionado.',
             )
           else
             Card(
@@ -2642,7 +3099,7 @@ class _CostosOrdenTabState extends State<_CostosOrdenTab> {
                             DataCell(Text(item.codigoOrden)),
                             DataCell(
                               Text(
-                                '${item.procesoCodigo} Ã‚Â· ${item.procesoNombre}',
+                                '${item.procesoCodigo} · ${item.procesoNombre}',
                               ),
                             ),
                             DataCell(
@@ -2741,7 +3198,7 @@ class _SummaryMetric extends StatelessWidget {
 }
 
 String _ordenOptionLabel(OrdenProduccionRecord item) {
-  return '${item.codigo} Ã‚Â· ${item.clienteRazonSocial}';
+  return '${item.codigo} · ${item.clienteRazonSocial}';
 }
 
 String _normalizeInsumoCode(String? value) {
@@ -2750,6 +3207,16 @@ String _normalizeInsumoCode(String? value) {
   if (match == null) return code;
   final number = int.tryParse(match.group(1)!);
   return number == null ? code : 'INS-${number.toString().padLeft(3, '0')}';
+}
+
+int _productionStageOrder(String processCode) {
+  return switch (processCode.trim().toUpperCase()) {
+    'REMOJO' || 'REMOJO_PELAMBRE' || 'REMOJO-PELAMBRE' => 0,
+    'CURTIDO' => 1,
+    'RECURTIDO' => 2,
+    'ACABADO' => 3,
+    _ => 99,
+  };
 }
 
 List<String> _availableOrderStates(List<OrdenProduccionRecord> items) {
@@ -2785,3 +3252,10 @@ String _formatDecimal(double value) {
   }
   return value.toStringAsFixed(2);
 }
+
+String _formatFormulaPercent(double value) {
+  final text = value.toStringAsFixed(4);
+  return text.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+}
+
+String _formatQuantity(double value) => value.toStringAsFixed(3);

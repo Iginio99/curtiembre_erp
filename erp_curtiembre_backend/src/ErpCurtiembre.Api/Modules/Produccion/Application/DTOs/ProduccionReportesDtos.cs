@@ -53,6 +53,7 @@ public sealed record ConsumoPorProcesoReporteItemDto(
     long InsumoId,
     string InsumoCodigo,
     string InsumoNombre,
+    decimal PorcentajeFormulacion,
     decimal CantidadPlanificada,
     decimal CantidadReal,
     decimal CantidadDesviacion,

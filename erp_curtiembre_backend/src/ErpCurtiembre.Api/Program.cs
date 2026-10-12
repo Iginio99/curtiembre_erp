@@ -1,6 +1,7 @@
 using ErpCurtiembre.Shared.Composition;
 using ErpCurtiembre.Modules.Configuracion.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,11 @@ builder.Logging.AddSimpleConsole();
 // Conserva advertencias y errores de EF Core, pero evita imprimir en consola
 // cada consulta SQL ejecutada correctamente (incluido el ajuste idempotente de esquema).
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+
+// JSON se entrega como UTF-8. Al no escapar los caracteres Unicode, los
+// clientes reciben directamente ñ, tildes y demás texto en español.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
 
 builder.Services.AddCors(options =>
 {

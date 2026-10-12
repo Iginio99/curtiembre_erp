@@ -7,13 +7,11 @@ import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cub
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/consumo_planificado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/consumo_real_record.dart';
-import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/control_calidad_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/desviacion_consumo_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/merma_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_proceso_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
-import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
@@ -360,7 +358,7 @@ class _OrdenProductosSection extends StatelessWidget {
           ),
           const Gap(AppSpacing.md),
           Text(
-            'Asignado: ${usedSkins.toStringAsFixed(0)} de ${order?.cantidadPieles.toStringAsFixed(0) ?? '-'} pieles Ã‚Â· ${usedSides.toStringAsFixed(0)} lados',
+            'Asignado: ${usedSkins.toStringAsFixed(0)} de ${order?.cantidadPieles.toStringAsFixed(0) ?? '-'} pieles · ${usedSides.toStringAsFixed(0)} lados',
           ),
           const Gap(AppSpacing.md),
           if (state.ordenProductos.isEmpty)
@@ -402,7 +400,7 @@ class _OrdenProductosSection extends StatelessWidget {
                 (formula) => formula.procesoCodigo == stageCode,
               );
               final processCostText = hasProcessFormula
-                  ? 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} S/ ${processCost.toStringAsFixed(2)} Ã‚Â· S/ ${(p.cantidadLados > 0 ? processCost / p.cantidadLados : 0).toStringAsFixed(2)} por lado'
+                  ? 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} S/ ${processCost.toStringAsFixed(2)} · S/ ${(p.cantidadLados > 0 ? processCost / p.cantidadLados : 0).toStringAsFixed(2)} por lado'
                   : 'Costo estimado de ${stageCode == 'RECURTIDO' ? 'Recurtido' : 'Acabado'} pendiente';
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -412,10 +410,10 @@ class _OrdenProductosSection extends StatelessWidget {
                     children: [
                       ListTile(
                         title: Text(
-                          '${p.nombre}${(p.color ?? '').isEmpty ? '' : ' Ã‚Â· ${p.color}'}',
+                          '${p.nombre}${(p.color ?? '').isEmpty ? '' : ' · ${p.color}'}',
                         ),
                         subtitle: Text(
-                          '${p.cantidadPieles.toStringAsFixed(0)} pieles Ã‚Â· ${p.cantidadLados.toStringAsFixed(0)} lados Ã‚Â· $processWeight\nResponsable: ${processResponsible ?? 'Pendiente de asignar'}\n$processCostText',
+                          '${p.cantidadPieles.toStringAsFixed(0)} pieles · ${p.cantidadLados.toStringAsFixed(0)} lados · $processWeight\nResponsable: ${processResponsible ?? 'Pendiente de asignar'}\n$processCostText',
                         ),
                         isThreeLine: true,
                         trailing: IconButton(
@@ -448,7 +446,7 @@ class _OrdenProductosSection extends StatelessWidget {
                                 ),
                                 label: Text(
                                   hasPendingRequest
-                                      ? 'Solicitud enviada Ã‚Â· Pendiente de aprobacion'
+                                      ? 'Solicitud enviada · Pendiente de aprobacion'
                                       : 'Insumos aprobados',
                                 ),
                               ),
@@ -1299,9 +1297,9 @@ class _OrdenesProduccionPageState extends State<OrdenesProduccionPage> {
     }
 
     return AppShell(
-      title: 'Ãƒâ€œrdenes de producciÃƒÂ³n',
+      title: 'Órdenes de producción',
       currentPath: '/produccion/ordenes',
-      breadcrumbs: const ['Inicio', 'ProducciÃƒÂ³n', 'Ãƒâ€œrdenes'],
+      breadcrumbs: const ['Inicio', 'Producción', 'Órdenes'],
       userName: session.nombreCompleto,
       roleName: session.rolNombre,
       accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
@@ -1671,13 +1669,13 @@ class _OrdenesFiltersCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ãƒâ€œrdenes de producciÃƒÂ³n',
+                      'Órdenes de producción',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
-                      'Gestiona y visualiza el estado de las ÃƒÂ³rdenes.',
+                      'Gestiona y visualiza el estado de las órdenes.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -1863,7 +1861,7 @@ class _OrdenDetailPanel extends StatelessWidget {
                       ),
                       const Gap(AppSpacing.xs),
                       Text(
-                        '${orden.clienteRazonSocial} Ã‚Â· ${orden.loteCodigo}',
+                        '${orden.clienteRazonSocial} · ${orden.loteCodigo}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
                         ),
@@ -2000,7 +1998,7 @@ class _OrdenDetailPanel extends StatelessWidget {
 }
 
 // ============================================================================
-// TABLERO KANBAN DE Ãƒâ€œRDENES - SOLO VISUALIZACIÃƒâ€œN, SIN DRAG & DROP
+// TABLERO KANBAN DE ÓRDENES - SOLO VISUALIZACIÓN, SIN DRAG & DROP
 // ============================================================================
 
 class _OrdersPipelineBoard extends StatelessWidget {
@@ -2029,35 +2027,35 @@ class _OrdersPipelineBoard extends StatelessWidget {
           states: {'PROGRAMADA'},
           tone: Color(0xFFF05A14),
           icon: Icons.event_note_outlined,
-          emptyText: 'Las ÃƒÂ³rdenes programadas aparecerÃƒÂ¡n aquÃƒÂ­.',
+          emptyText: 'Las órdenes programadas aparecerán aquí.',
         ),
         (
-          title: 'PreparaciÃƒÂ³n',
+          title: 'Preparación',
           states: {'ESPERANDO_MATERIALES', 'LISTA_PARA_INICIAR'},
           tone: Color(0xFF2479D6),
           icon: Icons.settings_outlined,
-          emptyText: 'Las ÃƒÂ³rdenes en preparaciÃƒÂ³n aparecerÃƒÂ¡n aquÃƒÂ­.',
+          emptyText: 'Las órdenes en preparación aparecerán aquí.',
         ),
         (
           title: 'En proceso',
           states: {'EN_PROCESO'},
           tone: Color(0xFFF3A414),
           icon: Icons.play_arrow_rounded,
-          emptyText: 'Las ÃƒÂ³rdenes en proceso aparecerÃƒÂ¡n aquÃƒÂ­.',
+          emptyText: 'Las órdenes en proceso aparecerán aquí.',
         ),
         (
           title: 'Finalizadas',
           states: {'FINALIZADA'},
           tone: Color(0xFF15A363),
           icon: Icons.check_rounded,
-          emptyText: 'Las ÃƒÂ³rdenes finalizadas aparecerÃƒÂ¡n aquÃƒÂ­.',
+          emptyText: 'Las órdenes finalizadas aparecerán aquí.',
         ),
         (
           title: 'Anuladas',
           states: {'ANULADA', 'CANCELADA'},
           tone: Color(0xFFE53945),
           icon: Icons.close_rounded,
-          emptyText: 'Las ÃƒÂ³rdenes anuladas aparecerÃƒÂ¡n aquÃƒÂ­.',
+          emptyText: 'Las órdenes anuladas aparecerán aquí.',
         ),
       ];
 
@@ -2072,7 +2070,7 @@ class _OrdersPipelineBoard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppMessageCard.error(
-              title: 'No pudimos cargar las ÃƒÂ³rdenes',
+              title: 'No pudimos cargar las órdenes',
               message: state.errorMessage ?? 'Intenta nuevamente.',
             ),
             const Gap(AppSpacing.md),
@@ -2221,7 +2219,7 @@ class _OrderPipelineColumn extends StatelessWidget {
                           ),
                           const Gap(AppSpacing.md),
                           Text(
-                            'Sin ÃƒÂ³rdenes',
+                            'Sin órdenes',
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -2594,7 +2592,7 @@ class _ProcesoCard extends StatelessWidget {
           const Gap(AppSpacing.sm),
           if (requestedItems.isEmpty)
             Text(
-              'Debes solicitar insumos y esperar su aprobaciÃƒÂ³n para finalizar.',
+              'Debes solicitar insumos y esperar su aprobación para finalizar.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,
                 fontWeight: FontWeight.w600,
@@ -2610,8 +2608,8 @@ class _ProcesoCard extends StatelessWidget {
               ),
               label: Text(
                 proceso.hasPendingSupplyRequest
-                    ? 'Solicitud enviada Ã‚Â· Ver insumos pendientes'
-                    : 'Insumos aprobados Ã‚Â· Ver detalle',
+                    ? 'Solicitud enviada · Ver insumos pendientes'
+                    : 'Insumos aprobados · Ver detalle',
               ),
             ),
           const Gap(AppSpacing.lg),
@@ -2972,7 +2970,7 @@ class _PlanificadoCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               Text(
-                '${item.procesoNombre} Ã‚Â· ${item.insumoCodigo}',
+                '${item.procesoNombre} · ${item.insumoCodigo}',
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
@@ -2997,19 +2995,19 @@ class _PlanificadoCard extends StatelessWidget {
             children: [
               _InlineInfo(
                 label: 'Calidad A',
-                value: '${_formatDecimal(item.cantidadLadosA)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosA)} lados · ${_formatDecimal(item.cantidadLadosA / 2)} pieles',
               ),
               _InlineInfo(
                 label: 'Calidad B',
-                value: '${_formatDecimal(item.cantidadLadosB)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosB)} lados · ${_formatDecimal(item.cantidadLadosB / 2)} pieles',
               ),
               _InlineInfo(
                 label: 'Calidad C',
-                value: '${_formatDecimal(item.cantidadLadosC)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosC)} lados · ${_formatDecimal(item.cantidadLadosC / 2)} pieles',
               ),
               _InlineInfo(
                 label: 'Merma final',
-                value: '${_formatDecimal(item.cantidadLadosMerma)} lados Ã‚Â· ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
+                value: '${_formatDecimal(item.cantidadLadosMerma)} lados · ${_formatDecimal(item.cantidadLadosMerma / 2)} pieles',
               ),
             ],
           ),
@@ -3109,7 +3107,7 @@ class _DesviacionCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               Text(
-                '${item.procesoNombre} Ã‚Â· ${item.insumoCodigo}',
+                '${item.procesoNombre} · ${item.insumoCodigo}',
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
@@ -3185,7 +3183,7 @@ class _MermaCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               Text(
-                '${item.procesoNombre} Ã‚Â· ${item.procesoCodigo}',
+                '${item.procesoNombre} · ${item.procesoCodigo}',
                 style: theme.textTheme.titleMedium,
               ),
               _MiniPill(
@@ -3345,7 +3343,7 @@ String _formatResponsable(String? nombre, String? cargo) {
   final cargoLimpio = cargo?.trim();
   if (nombreLimpio == null || nombreLimpio.isEmpty) return 'Sin asignar';
   if (cargoLimpio == null || cargoLimpio.isEmpty) return nombreLimpio;
-  return '$nombreLimpio Ã‚Â· $cargoLimpio';
+  return '$nombreLimpio · $cargoLimpio';
 }
 
 String _formatSignedDecimal(double value) {

@@ -21,6 +21,7 @@ class ConsumoProcesoReporteItemModel {
     required this.insumoId,
     required this.insumoCodigo,
     required this.insumoNombre,
+    required this.porcentajeFormulacion,
     required this.cantidadPlanificada,
     required this.cantidadReal,
     required this.cantidadDesviacion,
@@ -47,6 +48,7 @@ class ConsumoProcesoReporteItemModel {
   final int insumoId;
   final String insumoCodigo;
   final String insumoNombre;
+  final double porcentajeFormulacion;
   final double cantidadPlanificada;
   final double cantidadReal;
   final double cantidadDesviacion;
@@ -82,6 +84,7 @@ class ConsumoProcesoReporteItemModel {
       insumoId: (json['insumoId'] as num).toInt(),
       insumoCodigo: json['insumoCodigo'] as String,
       insumoNombre: json['insumoNombre'] as String,
+      porcentajeFormulacion: (json['porcentajeFormulacion'] as num).toDouble(),
       cantidadPlanificada: (json['cantidadPlanificada'] as num).toDouble(),
       cantidadReal: (json['cantidadReal'] as num).toDouble(),
       cantidadDesviacion: (json['cantidadDesviacion'] as num).toDouble(),
@@ -111,6 +114,7 @@ class ConsumoProcesoReporteItemModel {
       insumoId: insumoId,
       insumoCodigo: insumoCodigo,
       insumoNombre: insumoNombre,
+      porcentajeFormulacion: porcentajeFormulacion,
       cantidadPlanificada: cantidadPlanificada,
       cantidadReal: cantidadReal,
       cantidadDesviacion: cantidadDesviacion,
