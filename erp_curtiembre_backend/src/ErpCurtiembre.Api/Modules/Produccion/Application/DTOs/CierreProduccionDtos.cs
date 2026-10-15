@@ -71,7 +71,37 @@ public sealed record ProductoTerminadoListItemDto(
     long? OrdenProductoId,
     string? ProductoNombre,
     string? ProductoColor,
-    bool EsProductoIndividual);
+    bool EsProductoIndividual,
+    string? ClienteNombre = null,
+    decimal CantidadLadosProgramados = 0,
+    decimal CantidadLadosEntregados = 0,
+    decimal CantidadLadosPendientes = 0,
+    DateTime? FechaOrden = null,
+    DateTime? FechaTerminacionOrden = null);
+
+public sealed record EntregaProductoTerminadoHistorialDto(
+    long Id,
+    string Codigo,
+    DateTime Fecha,
+    string ClienteNombre,
+    string? Responsable,
+    string? RecibidoPor,
+    string? Observacion,
+    long ProductoTerminadoId,
+    string Producto,
+    decimal CantidadLados,
+    string Estado);
+
+public sealed record RegistrarEntregaProductoTerminadoDetalleDto(
+    [property: Range(1, long.MaxValue)] long ProductoTerminadoId,
+    [property: Range(typeof(decimal), "0.0001", "999999999999999")] decimal CantidadLados);
+
+public sealed record RegistrarEntregaProductosTerminadosRequestDto(
+    [property: Range(1, long.MaxValue)] long OrdenProduccionId,
+    DateTime? FechaEntrega,
+    [property: StringLength(500)] string? Observacion,
+    [property: StringLength(150)] string? RecibidoPor,
+    [property: Required, MinLength(1)] IReadOnlyCollection<RegistrarEntregaProductoTerminadoDetalleDto> Detalles);
 
 public sealed record ProductoTerminadoDetailDto(
     long Id,

@@ -10,6 +10,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entiti
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_produccion_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/entrega_producto_terminado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 
 class SolicitarConsumoProduccionDetalleInput {
@@ -66,6 +67,16 @@ class FinalizarOrdenProduccionInput {
 
   final double cantidadLados;
   final String? observacion;
+}
+
+class RegistrarEntregaProductoTerminadoInput {
+  const RegistrarEntregaProductoTerminadoInput({
+    required this.productoTerminadoId,
+    required this.cantidadLados,
+  });
+
+  final int productoTerminadoId;
+  final double cantidadLados;
 }
 
 abstract class OrdenesProduccionRepository {
@@ -152,6 +163,18 @@ abstract class OrdenesProduccionRepository {
   });
 
   Future<List<ProductoTerminadoRecord>> listProductosTerminados();
+
+  Future<void> registrarEntregaProductosTerminados({
+    required int ordenProduccionId,
+    required List<RegistrarEntregaProductoTerminadoInput> detalles,
+    DateTime? fechaEntrega,
+    String? observacion,
+    String? recibidoPor,
+  });
+
+  Future<List<EntregaProductoTerminadoRecord>> listEntregasProductoTerminado(
+    int ordenProduccionId,
+  );
 
   Future<void> generarConsumoPlanificado(int ordenId);
 

@@ -46,8 +46,11 @@ class FormulasCubit extends Cubit<FormulasState> {
     emit(const FormulasState.loading());
 
     try {
-      final processOptions = await _repository.listActiveProcesses();
-      final insumoOptions = await _repository.listActiveInsumos();
+      final processOptionsFuture = _repository.listActiveProcesses();
+      final insumoOptionsFuture = _repository.listActiveInsumos();
+      await Future.wait([processOptionsFuture, insumoOptionsFuture]);
+      final processOptions = await processOptionsFuture;
+      final insumoOptions = await insumoOptionsFuture;
       emit(
         state.copyWith(
           processOptions: processOptions,

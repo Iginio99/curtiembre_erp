@@ -117,26 +117,43 @@ await using (var scope = app.Services.CreateAsyncScope())
             );
         END;
 
-        /* El cierre vigente es por cada producto de la orden. Retira el modelo
-           anterior que generaba un solo producto terminado y lo dividia A/B/C. */
-        IF OBJECT_ID(N'produccion.control_calidad', N'U') IS NOT NULL
-            DROP TABLE produccion.control_calidad;
-        IF OBJECT_ID(N'produccion.producto_terminado', N'U') IS NOT NULL
+        IF OBJECT_ID(N'produccion.entrega_producto_terminado', N'U') IS NULL
         BEGIN
-            DECLARE @dropProductoTerminadoFks NVARCHAR(MAX) = N'';
-
-            SELECT @dropProductoTerminadoFks = @dropProductoTerminadoFks
-                + N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(fk.parent_object_id))
-                + N'.' + QUOTENAME(OBJECT_NAME(fk.parent_object_id))
-                + N' DROP CONSTRAINT ' + QUOTENAME(fk.name) + N';'
-            FROM sys.foreign_keys fk
-            WHERE fk.referenced_object_id = OBJECT_ID(N'produccion.producto_terminado');
-
-            IF LEN(@dropProductoTerminadoFks) > 0
-                EXEC sys.sp_executesql @dropProductoTerminadoFks;
-
-            DROP TABLE produccion.producto_terminado;
+            CREATE TABLE produccion.entrega_producto_terminado (
+                id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                orden_producto_terminado_id BIGINT NOT NULL,
+                cantidad_lados DECIMAL(18,4) NOT NULL,
+                entregado_en DATETIME2 NOT NULL CONSTRAINT DF_entrega_producto_terminado_fecha DEFAULT SYSDATETIME(),
+                observacion NVARCHAR(500) NULL,
+                entregado_por_usuario_id BIGINT NOT NULL,
+                CONSTRAINT CK_entrega_producto_terminado_cantidad CHECK (cantidad_lados > 0),
+                CONSTRAINT FK_entrega_producto_terminado_producto FOREIGN KEY (orden_producto_terminado_id) REFERENCES produccion.orden_producto_terminado(id),
+                CONSTRAINT FK_entrega_producto_terminado_usuario FOREIGN KEY (entregado_por_usuario_id) REFERENCES seguridad.usuario(id)
+            );
+            CREATE INDEX IX_entrega_producto_terminado_producto ON produccion.entrega_producto_terminado(orden_producto_terminado_id, entregado_en DESC);
         END;
+
+        IF OBJECT_ID(N'produccion.entrega_producto_terminado_cabecera', N'U') IS NULL
+        BEGIN
+            CREATE TABLE produccion.entrega_producto_terminado_cabecera (
+                id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                codigo NVARCHAR(30) NULL,
+                orden_produccion_id BIGINT NOT NULL,
+                entregado_en DATETIME2 NOT NULL CONSTRAINT DF_entrega_pt_cabecera_fecha DEFAULT SYSDATETIME(),
+                recibido_por NVARCHAR(150) NULL,
+                observacion NVARCHAR(500) NULL,
+                entregado_por_usuario_id BIGINT NOT NULL,
+                CONSTRAINT FK_entrega_pt_cabecera_orden FOREIGN KEY (orden_produccion_id) REFERENCES produccion.orden_produccion(id),
+                CONSTRAINT FK_entrega_pt_cabecera_usuario FOREIGN KEY (entregado_por_usuario_id) REFERENCES seguridad.usuario(id)
+            );
+        END;
+        IF COL_LENGTH(N'produccion.entrega_producto_terminado_cabecera', N'recibido_por') IS NULL
+            ALTER TABLE produccion.entrega_producto_terminado_cabecera ADD recibido_por NVARCHAR(150) NULL;
+        IF COL_LENGTH(N'produccion.entrega_producto_terminado', N'entrega_cabecera_id') IS NULL
+            ALTER TABLE produccion.entrega_producto_terminado ADD entrega_cabecera_id BIGINT NULL;
+
+        /* Se conservan control_calidad y producto_terminado: el flujo de cierre
+           de órdenes todavía los consulta y registra resultados en esas tablas. */
 
         IF OBJECT_ID(N'produccion.solicitud_insumo', N'U') IS NOT NULL
            AND COL_LENGTH(N'produccion.solicitud_insumo', N'orden_producto_id') IS NULL
@@ -214,6 +231,36 @@ await using (var scope = app.Services.CreateAsyncScope())
             WHERE estados.inicio IS NOT NULL
               AND opp.estado <> 'FINALIZADO';
         END;
+        """);
+
+    // El lote anterior agrega entrega_cabecera_id. Ejecutar estas referencias
+    // en otro lote evita que SQL Server las compile antes de aplicar el ALTER.
+    await db.Database.ExecuteSqlRawAsync("""
+        /* Conserva los movimientos que ya existan: los anteriores se convierten
+           en operaciones individuales antes de enlazar el detalle con su cabecera. */
+        DECLARE @legacyEntregaMap TABLE (detalle_id BIGINT NOT NULL, cabecera_id BIGINT NOT NULL);
+        MERGE produccion.entrega_producto_terminado_cabecera AS target
+        USING (
+            SELECT e.id AS DetalleId, p.orden_produccion_id AS OrdenId,
+                   e.entregado_en AS Fecha, e.observacion AS Observacion, e.entregado_por_usuario_id AS UsuarioId
+            FROM produccion.entrega_producto_terminado e
+            INNER JOIN produccion.orden_producto_terminado opt ON opt.id = e.orden_producto_terminado_id
+            INNER JOIN produccion.orden_producto p ON p.id = opt.orden_producto_id
+            WHERE e.entrega_cabecera_id IS NULL
+        ) AS source ON 1 = 0
+        WHEN NOT MATCHED THEN INSERT (orden_produccion_id, entregado_en, observacion, entregado_por_usuario_id)
+            VALUES (source.OrdenId, source.Fecha, source.Observacion, source.UsuarioId)
+        OUTPUT source.DetalleId, inserted.id INTO @legacyEntregaMap(detalle_id, cabecera_id);
+        UPDATE h SET codigo = CONCAT('ENT-', RIGHT(CONCAT('000000', h.id), 6))
+        FROM produccion.entrega_producto_terminado_cabecera h WHERE h.codigo IS NULL;
+        UPDATE e SET entrega_cabecera_id = m.cabecera_id
+        FROM produccion.entrega_producto_terminado e
+        INNER JOIN @legacyEntregaMap m ON m.detalle_id = e.id;
+        IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_entrega_pt_detalle_cabecera')
+            ALTER TABLE produccion.entrega_producto_terminado WITH CHECK ADD CONSTRAINT FK_entrega_pt_detalle_cabecera
+                FOREIGN KEY (entrega_cabecera_id) REFERENCES produccion.entrega_producto_terminado_cabecera(id);
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_entrega_pt_cabecera_codigo' AND object_id = OBJECT_ID(N'produccion.entrega_producto_terminado_cabecera'))
+            CREATE UNIQUE INDEX UX_entrega_pt_cabecera_codigo ON produccion.entrega_producto_terminado_cabecera(codigo) WHERE codigo IS NOT NULL;
         """);
 
     await db.Database.ExecuteSqlRawAsync("""

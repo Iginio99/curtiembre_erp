@@ -37,20 +37,14 @@ class CostosProcesoCubit extends Cubit<CostosProcesoState> {
 
     try {
       final ordenes = await _ordenesRepository.listOrdenes();
-      final processOptionsByOrderId = <int, List<OrdenProcesoRecord>>{};
-      for (final orden in ordenes) {
-        processOptionsByOrderId[orden.id] = await _ordenesRepository
-            .listProcesos(orden.id);
-      }
       _talker.cubit(
-        'Base de costos por proceso preparada con ${ordenes.length} ordenes y ${processOptionsByOrderId.length} mapas de procesos.',
+        'Base de costos por proceso preparada con ${ordenes.length} ordenes.',
         logLevel: LogLevel.debug,
       );
 
       emit(
         state.copyWith(
           ordenOptions: ordenes,
-          processOptionsByOrderId: processOptionsByOrderId,
         ),
       );
       await load();
@@ -107,6 +101,7 @@ class CostosProcesoCubit extends Cubit<CostosProcesoState> {
     );
 
     try {
+      await _ensureProcessOptionsForOrder(nextOrderId);
       await _reloadCostosProceso(
         ordenProduccionIdFilter: nextOrderId,
         ordenProcesoIdFilter: normalizedProcessId,
@@ -136,6 +131,18 @@ class CostosProcesoCubit extends Cubit<CostosProcesoState> {
         ),
       );
     }
+  }
+
+  Future<void> _ensureProcessOptionsForOrder(int? orderId) async {
+    if (orderId == null || state.processOptionsByOrderId.containsKey(orderId)) {
+      return;
+    }
+
+    final processes = await _ordenesRepository.listProcesos(orderId);
+    final nextMap = Map<int, List<OrdenProcesoRecord>>.from(
+      state.processOptionsByOrderId,
+    )..[orderId] = processes;
+    emit(state.copyWith(processOptionsByOrderId: nextMap));
   }
 
   Future<void> selectCostoProceso(int costoProcesoId) async {

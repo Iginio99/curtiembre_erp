@@ -820,6 +820,119 @@ public static class ProduccionEndpoints
             return Results.Ok(await service.ListProductosTerminadosAsync(cancellationToken));
         });
 
+        group.MapGet("/productos-terminados/ordenes/{ordenId:long}/entregas", async (
+            HttpRequest request,
+            long ordenId,
+            ValidateSessionUseCase validateSessionUseCase,
+            ISqlConnectionFactory connectionFactory,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
+                request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            const string sql = """
+                SELECT h.id AS Id, h.codigo AS Codigo, h.entregado_en AS Fecha,
+                       c.razon_social AS ClienteNombre, LTRIM(RTRIM(CONCAT(u.nombres, ' ', u.apellidos))) AS Responsable,
+                       h.recibido_por AS RecibidoPor,
+                       h.observacion AS Observacion, e.orden_producto_terminado_id AS ProductoTerminadoId,
+                       CONCAT(p.nombre, CASE WHEN NULLIF(p.color, '') IS NULL THEN '' ELSE CONCAT(' · ', p.color) END) AS Producto,
+                       e.cantidad_lados AS CantidadLados, CAST('CONFIRMADA' AS NVARCHAR(30)) AS Estado
+                FROM produccion.entrega_producto_terminado_cabecera h
+                INNER JOIN produccion.entrega_producto_terminado e ON e.entrega_cabecera_id = h.id
+                INNER JOIN produccion.orden_producto_terminado opt ON opt.id = e.orden_producto_terminado_id
+                INNER JOIN produccion.orden_producto p ON p.id = opt.orden_producto_id
+                INNER JOIN produccion.orden_produccion op ON op.id = h.orden_produccion_id
+                INNER JOIN produccion.lote l ON l.id = op.lote_id
+                INNER JOIN produccion.cliente c ON c.id = l.cliente_id
+                INNER JOIN seguridad.usuario u ON u.id = h.entregado_por_usuario_id
+                WHERE h.orden_produccion_id = @OrderId
+                ORDER BY h.entregado_en DESC, h.id DESC, e.id;
+                """;
+            using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+            var items = await connection.QueryAsync<EntregaProductoTerminadoHistorialDto>(
+                new CommandDefinition(sql, new { OrderId = ordenId }, cancellationToken: cancellationToken));
+            return Results.Ok(items);
+        });
+
+        group.MapPost("/productos-terminados/entregas", async (
+            HttpRequest request,
+            RegistrarEntregaProductosTerminadosRequestDto body,
+            ValidateSessionUseCase validateSessionUseCase,
+            ISqlConnectionFactory connectionFactory,
+            CancellationToken cancellationToken) =>
+        {
+            var authorization = await ProduccionEndpointResults.RequireAuthenticatedAsync(
+                request, validateSessionUseCase, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            if (body.Detalles is null || body.Detalles.Count == 0 || body.Detalles.Any(x => x.CantidadLados <= 0))
+                return Results.BadRequest(new { message = "Agrega al menos una cantidad mayor a cero." });
+            if (body.Detalles.GroupBy(x => x.ProductoTerminadoId).Any(x => x.Count() > 1))
+                return Results.BadRequest(new { message = "Un producto solo puede registrarse una vez por entrega." });
+
+            using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+            using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
+            try
+            {
+                const string headerSql = """
+                    INSERT INTO produccion.entrega_producto_terminado_cabecera
+                        (orden_produccion_id, entregado_en, observacion, recibido_por, entregado_por_usuario_id)
+                    VALUES (@OrderId, @FechaEntrega, @Observacion, @RecibidoPor, @ActorId);
+                    DECLARE @Id BIGINT = CAST(SCOPE_IDENTITY() AS BIGINT);
+                    UPDATE produccion.entrega_producto_terminado_cabecera
+                    SET codigo = CONCAT('ENT-', RIGHT(CONCAT('000000', @Id), 6))
+                    WHERE id = @Id;
+                    SELECT @Id;
+                    """;
+                var headerId = await connection.ExecuteScalarAsync<long>(new CommandDefinition(
+                    headerSql,
+                    new { OrderId = body.OrdenProduccionId, FechaEntrega = body.FechaEntrega ?? DateTime.Now, body.Observacion, body.RecibidoPor, ActorId = authorization.Session!.UsuarioId },
+                    transaction,
+                    cancellationToken: cancellationToken));
+                foreach (var detail in body.Detalles.OrderBy(item => item.ProductoTerminadoId))
+                {
+                    const string validationSql = """
+                        SELECT CAST(opt.cantidad_pieles * 2 AS DECIMAL(18,4)) - ISNULL(SUM(e.cantidad_lados), 0)
+                        FROM produccion.orden_producto_terminado opt WITH (UPDLOCK, HOLDLOCK)
+                        INNER JOIN produccion.orden_producto p ON p.id = opt.orden_producto_id
+                        LEFT JOIN produccion.entrega_producto_terminado e WITH (UPDLOCK, HOLDLOCK) ON e.orden_producto_terminado_id = opt.id
+                        WHERE opt.id = @ProductId AND p.orden_produccion_id = @OrderId
+                        GROUP BY opt.cantidad_pieles;
+                        """;
+                    var available = await connection.ExecuteScalarAsync<decimal?>(new CommandDefinition(
+                        validationSql, new { ProductId = detail.ProductoTerminadoId, OrderId = body.OrdenProduccionId }, transaction, cancellationToken: cancellationToken));
+                    if (available is null)
+                    {
+                        transaction.Rollback();
+                        return Results.NotFound(new { message = "Uno de los productos no pertenece a la orden seleccionada." });
+                    }
+                    if (detail.CantidadLados > available.Value)
+                    {
+                        transaction.Rollback();
+                        return Results.BadRequest(new { message = "La cantidad entregada no puede superar el saldo pendiente." });
+                    }
+                    const string insertSql = """
+                        INSERT INTO produccion.entrega_producto_terminado
+                            (entrega_cabecera_id, orden_producto_terminado_id, cantidad_lados, observacion, entregado_por_usuario_id)
+                        VALUES (@HeaderId, @ProductId, @CantidadLados, @Observacion, @ActorId);
+                        """;
+                    await connection.ExecuteAsync(new CommandDefinition(insertSql, new {
+                        HeaderId = headerId,
+                        ProductId = detail.ProductoTerminadoId,
+                        detail.CantidadLados,
+                        body.Observacion,
+                        ActorId = authorization.Session!.UsuarioId,
+                    }, transaction, cancellationToken: cancellationToken));
+                }
+                transaction.Commit();
+                return Results.Ok(new { message = "Entrega registrada correctamente." });
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        });
+
         var reportes = group.MapGroup("/reportes");
         reportes.MapGet("/ordenes-activas", async (
             HttpRequest request,

@@ -1,66 +1,77 @@
 import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_breakpoints.dart';
+import 'package:erp_curtiembre_fronted/core/theme/app_colors.dart';
 import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
-
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
-
-import 'package:erp_curtiembre_fronted/features/inventory/salidas/domain/entities/salida_detail.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/domain/entities/salida_record.dart';
-
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/cubit/salidas_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/cubit/salidas_state.dart';
-
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/widgets/salida_upsert_dialog.dart';
-
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
-
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
-
+import 'package:erp_curtiembre_fronted/shared/widgets/data/app_table_pagination.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
+IconData _movementIcon(String type) => switch (type.toUpperCase()) {
+  'DEVOLUCION_PROVEEDOR' => Icons.undo_rounded,
+  'AJUSTE_NEGATIVO' => Icons.remove_circle_outline,
+  'PROCESO' => Icons.settings_outlined,
+  _ => Icons.inventory_2_outlined,
+};
+Widget _lineTag(String value, Color background, Color foreground) => Container(
+  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+  decoration: BoxDecoration(
+    color: background,
+    borderRadius: BorderRadius.circular(8),
+  ),
+  child: Text(
+    value,
+    style: TextStyle(color: foreground, fontWeight: FontWeight.w700),
+  ),
+);
+
 class SalidasPage extends StatefulWidget {
   const SalidasPage({super.key});
-
   @override
   State<SalidasPage> createState() => _SalidasPageState();
 }
 
 class _SalidasPageState extends State<SalidasPage> {
   final _searchController = TextEditingController();
-
+  // Nullable backing values also keep hot reload safe after these fields are
+  // added to an already mounted State object.
+  int? _page;
+  int? _pageSize;
+  String? _dateFilter;
+  bool? _newestFirst;
   final Talker _talker = getIt<Talker>();
-
   @override
   void initState() {
     super.initState();
-
     _talker.ui('Se abrio la pantalla de salidas.');
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-
     super.dispose();
   }
 
   void _applySearch() {
     FocusScope.of(context).unfocus();
-
     _talker.ui(
       'Se aplico la busqueda de salidas con texto=${_describeText(_searchController.text)}.',
     );
-
     context.read<SalidasCubit>().load(
       searchTerm: _searchController.text.trim(),
     );
@@ -71,13 +82,10 @@ class _SalidasPageState extends State<SalidasPage> {
       'Se selecciono la salida $id desde el listado.',
       logLevel: LogLevel.debug,
     );
-
     context.read<SalidasCubit>().selectSalida(id);
-
     if (!openMobileDetail) {
       return;
     }
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -104,12 +112,10 @@ class _SalidasPageState extends State<SalidasPage> {
         'Este flujo sigue disponible para regularizaciones operativas directas.',
       ),
     };
-
     _talker.ui(
       'Se abrio el dialogo para ${_describeDraftType(type)}.',
       logLevel: LogLevel.warning,
     );
-
     final payload = await showDialog<SalidaUpsertFormData>(
       context: context,
       builder: (_) => SalidaUpsertDialog(
@@ -119,25 +125,20 @@ class _SalidasPageState extends State<SalidasPage> {
         isSubmitting: state.isSubmittingAction,
       ),
     );
-
     if (payload == null || !mounted) {
       _talker.ui(
         'Se cerro el dialogo de ${_describeDraftType(type)} sin confirmar.',
         logLevel: LogLevel.debug,
       );
-
       return;
     }
-
     _talker.ui(
       'Se confirmo ${_describeDraftType(type)} '
       'con motivo=${_describeText(payload.motivo)} '
       'y ${payload.detalles.length} detalles.',
       logLevel: LogLevel.warning,
     );
-
     final cubit = context.read<SalidasCubit>();
-
     final result = switch (type) {
       SalidaDraftType.general => await cubit.registerGeneral(
         motivo: payload.motivo,
@@ -155,11 +156,9 @@ class _SalidasPageState extends State<SalidasPage> {
         detalles: payload.detalles,
       ),
     };
-
     if (!mounted) {
       return;
     }
-
     _showActionResult(result);
   }
 
@@ -170,11 +169,8 @@ class _SalidasPageState extends State<SalidasPage> {
           : 'La accion en salidas fallo: ${result.message}',
       logLevel: result.success ? LogLevel.debug : LogLevel.error,
     );
-
     final messenger = ScaffoldMessenger.of(context);
-
     messenger.hideCurrentSnackBar();
-
     messenger.showSnackBar(
       SnackBar(
         content: Text(result.message),
@@ -187,22 +183,19 @@ class _SalidasPageState extends State<SalidasPage> {
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
-
     final isSigningOut = context.select(
       (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
     );
-
     final permissionCodes = context.select(
       (SecurityAccessCubit cubit) =>
           cubit.state.snapshot?.userPermissionCodes.toSet() ?? const <String>{},
     );
-
     if (session == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     return AppShell(
       title: 'Salidas',
+      titleIcon: Icons.inventory_2_outlined,
       currentPath: '/inventario/salidas',
       breadcrumbs: const ['Inicio', 'Inventario', 'Salidas'],
       userName: session.nombreCompleto,
@@ -214,22 +207,16 @@ class _SalidasPageState extends State<SalidasPage> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           return Padding(
-            /*
-            Más compacto que xl.
-            */
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1440),
+                constraints: const BoxConstraints(maxWidth: 1800),
                 child: BlocBuilder<SalidasCubit, SalidasState>(
                   builder: (context, state) {
                     final isWide = constraints.maxWidth >= 1040;
-
                     final isMobile =
                         constraints.maxWidth < AppBreakpoints.mobileLarge;
-
                     final compactHeight = constraints.maxHeight < 820;
-
                     if (_searchController.text != state.searchTerm) {
                       _searchController.value = TextEditingValue(
                         text: state.searchTerm,
@@ -238,50 +225,86 @@ class _SalidasPageState extends State<SalidasPage> {
                         ),
                       );
                     }
-
+                    final visibleSalidas =
+                        state.items.where((item) {
+                          final now = DateTime.now();
+                          final date = item.fechaSalida;
+                          final matchesDate = switch (_dateFilter) {
+                            'today' =>
+                              date.year == now.year &&
+                                  date.month == now.month &&
+                                  date.day == now.day,
+                            'week' =>
+                              now.difference(date).inDays < 7 &&
+                                  !date.isAfter(now),
+                            'month' =>
+                              date.year == now.year && date.month == now.month,
+                            _ => true,
+                          };
+                          return matchesDate;
+                        }).toList()..sort(
+                          (a, b) => (_newestFirst ?? true)
+                              ? b.fechaSalida.compareTo(a.fechaSalida)
+                              : a.fechaSalida.compareTo(b.fechaSalida),
+                        );
                     final listPanel = _SalidasListPanel(
                       state: state,
+                      items: visibleSalidas,
+                      page: _page ?? 0,
+                      pageSize: _pageSize ?? 10,
+                      newestFirst: _newestFirst ?? true,
+                      onSortChanged: (value) => setState(() {
+                        _newestFirst = value;
+                        _page = 0;
+                      }),
+                      onPageChanged: (value) => setState(() => _page = value),
+                      onPageSizeChanged: (value) => setState(() {
+                        _pageSize = value;
+                        _page = 0;
+                      }),
                       onRetry: () {
                         _talker.ui(
                           'Se solicito reintentar la carga del listado de salidas.',
                         );
-
                         context.read<SalidasCubit>().initialize();
                       },
                       onSelectSalida: (id) =>
                           _selectSalida(id, openMobileDetail: isMobile),
                     );
-
                     final detailPanel = _SalidaDetailPanel(
                       state: state,
                       onRetry: () {
                         _talker.ui(
                           'Se solicito reintentar el detalle de la salida seleccionada.',
                         );
-
                         context.read<SalidasCubit>().retryDetail();
                       },
                     );
-
-                    /*
-                    ═══════════════════════════════
-                    FILTROS SUPERIORES
-                    ═══════════════════════════════
-
-                    Quitamos el texto explicativo
-                    largo que ocupaba espacio.
-                    */
-
                     final filters = _SalidasFiltersCard(
                       state: state,
                       controller: _searchController,
                       onSearch: _applySearch,
+                      dateFilter: _dateFilter ?? 'all',
+                      onDateChanged: (value) => setState(() {
+                        _dateFilter = value;
+                        _page = 0;
+                      }),
+                      onClear: () {
+                        _searchController.clear();
+                        setState(() {
+                          _dateFilter = 'all';
+                          _page = 0;
+                        });
+                        context.read<SalidasCubit>().load(
+                          searchTerm: '',
+                          tipoSalidaFilter: null,
+                        );
+                      },
                       onTipoSalidaChanged: (value) {
                         _talker.ui(
                           'Se cambio el filtro de tipo de salida a ${_describeType(value)}.',
                           logLevel: LogLevel.debug,
                         );
-
                         context.read<SalidasCubit>().load(
                           tipoSalidaFilter: value,
                         );
@@ -295,13 +318,6 @@ class _SalidasPageState extends State<SalidasPage> {
                       onCreateNegativeAdjustment: () =>
                           _openDialog(SalidaDraftType.ajusteNegativo, state),
                     );
-
-                    /*
-                    ═══════════════════════════════
-                    PANTALLA BAJA
-                    ═══════════════════════════════
-                    */
-
                     if (compactHeight) {
                       if (isWide) {
                         return SingleChildScrollView(
@@ -309,20 +325,16 @@ class _SalidasPageState extends State<SalidasPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               filters,
-
                               const Gap(AppSpacing.md),
-
                               SizedBox(
                                 height: 610,
                                 child: Row(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    Expanded(flex: 9, child: listPanel),
-
+                                    Expanded(child: listPanel),
                                     const Gap(AppSpacing.md),
-
-                                    Expanded(flex: 8, child: detailPanel),
+                                    Expanded(child: detailPanel),
                                   ],
                                 ),
                               ),
@@ -330,51 +342,35 @@ class _SalidasPageState extends State<SalidasPage> {
                           ),
                         );
                       }
-
                       return SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             filters,
-
                             const Gap(AppSpacing.md),
-
                             SizedBox(height: 560, child: listPanel),
-
                             if (!isMobile) ...[
                               const Gap(AppSpacing.md),
-
                               SizedBox(height: 560, child: detailPanel),
                             ],
                           ],
                         ),
                       );
                     }
-
-                    /*
-                    ═══════════════════════════════
-                    PANTALLA NORMAL
-                    ═══════════════════════════════
-                    */
-
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         filters,
-
                         const Gap(AppSpacing.md),
-
                         Expanded(
                           child: isWide
                               ? Row(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    Expanded(flex: 9, child: listPanel),
-
+                                    Expanded(child: listPanel),
                                     const Gap(AppSpacing.md),
-
-                                    Expanded(flex: 8, child: detailPanel),
+                                    Expanded(child: detailPanel),
                                   ],
                                 )
                               : isMobile
@@ -382,9 +378,7 @@ class _SalidasPageState extends State<SalidasPage> {
                               : Column(
                                   children: [
                                     Expanded(child: listPanel),
-
                                     const Gap(AppSpacing.md),
-
                                     Expanded(child: detailPanel),
                                   ],
                                 ),
@@ -403,21 +397,17 @@ class _SalidasPageState extends State<SalidasPage> {
 
   String _describeText(String? value) {
     final normalized = value?.trim();
-
     if (normalized == null || normalized.isEmpty) {
       return 'vacio';
     }
-
     return '${normalized.length} caracteres';
   }
 
   String _describeType(String? value) {
     final normalized = value?.trim();
-
     if (normalized == null || normalized.isEmpty) {
       return 'vacio';
     }
-
     return normalized;
   }
 
@@ -430,56 +420,37 @@ class _SalidasPageState extends State<SalidasPage> {
   }
 }
 
-/*
-══════════════════════════════════════════════════════════════
-FILTROS + ACCIONES
-══════════════════════════════════════════════════════════════
-*/
-
 class _SalidasFiltersCard extends StatelessWidget {
   const _SalidasFiltersCard({
     required this.state,
     required this.controller,
     required this.onSearch,
+    required this.dateFilter,
+    required this.onDateChanged,
+    required this.onClear,
     required this.onTipoSalidaChanged,
     required this.onCreateGeneral,
     required this.onCreateSupplierReturn,
     required this.onCreateNegativeAdjustment,
   });
-
   final SalidasState state;
-
   final TextEditingController controller;
-
   final VoidCallback onSearch;
-
+  final String dateFilter;
+  final ValueChanged<String> onDateChanged;
+  final VoidCallback onClear;
   final ValueChanged<String?> onTipoSalidaChanged;
-
   final VoidCallback onCreateGeneral;
-
   final VoidCallback onCreateSupplierReturn;
-
   final VoidCallback onCreateNegativeAdjustment;
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AppSurfaceCard(
-      /*
-      Antes AppSpacing.lg.
-      */
-      padding: const EdgeInsets.all(AppSpacing.md),
-
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /*
-          ═══════════════════════════════
-          FILA FILTROS
-          ═══════════════════════════════
-          */
           LayoutBuilder(
             builder: (context, constraints) {
               final search = TextField(
@@ -487,124 +458,159 @@ class _SalidasFiltersCard extends StatelessWidget {
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => onSearch(),
                 decoration: const InputDecoration(
-                  hintText: 'Buscar salida',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  hintText: 'Buscar salida, proveedor, solicitud...',
                   prefixIcon: Icon(Icons.search_rounded, size: 18),
                 ),
               );
-
-              final type = DropdownButtonFormField<String?>(
+              final type = DropdownButtonFormField<String>(
                 isExpanded: true,
-                initialValue: state.tipoSalidaFilter,
-                decoration: const InputDecoration(labelText: 'Tipo de salida'),
-                items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('Todas')),
-                  DropdownMenuItem<String?>(
-                    value: 'GENERAL',
-                    child: Text('General'),
+                key: ValueKey(state.tipoSalidaFilter),
+                initialValue: state.tipoSalidaFilter ?? '',
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
                   ),
-                  DropdownMenuItem<String?>(
+                  labelText: 'Tipo de salida',
+                  prefixIcon: Icon(Icons.layers_outlined, size: 19),
+                ),
+                items: const [
+                  DropdownMenuItem(value: '', child: Text('Todas')),
+                  DropdownMenuItem(value: 'GENERAL', child: Text('General')),
+                  DropdownMenuItem(
                     value: 'DEVOLUCION_PROVEEDOR',
                     child: Text('Devolución proveedor'),
                   ),
-                  DropdownMenuItem<String?>(
+                  DropdownMenuItem(
                     value: 'AJUSTE_NEGATIVO',
                     child: Text('Ajuste negativo'),
                   ),
-                  DropdownMenuItem<String?>(
-                    value: 'PROCESO',
-                    child: Text('Proceso'),
-                  ),
+                  DropdownMenuItem(value: 'PROCESO', child: Text('Proceso')),
                 ],
-                onChanged: onTipoSalidaChanged,
+                onChanged: (value) => onTipoSalidaChanged(
+                  value == null || value.isEmpty ? null : value,
+                ),
               );
-
+              final date = DropdownButtonFormField<String>(
+                key: ValueKey(dateFilter),
+                initialValue: dateFilter,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  labelText: 'Fecha',
+                  prefixIcon: Icon(Icons.calendar_today_outlined, size: 19),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'all',
+                    child: Text('Todas las fechas'),
+                  ),
+                  DropdownMenuItem(value: 'today', child: Text('Hoy')),
+                  DropdownMenuItem(
+                    value: 'week',
+                    child: Text('Últimos 7 días'),
+                  ),
+                  DropdownMenuItem(value: 'month', child: Text('Este mes')),
+                ],
+                onChanged: (value) {
+                  if (value != null) onDateChanged(value);
+                },
+              );
               final button = FilledButton.icon(
                 onPressed: onSearch,
                 icon: const Icon(Icons.search_rounded, size: 17),
                 label: const Text('Buscar'),
               );
-
-              /*
-              Desktop
-              */
-
-              if (constraints.maxWidth >= 760) {
+              final clear = OutlinedButton.icon(
+                onPressed: onClear,
+                icon: const Icon(Icons.filter_alt_off_outlined, size: 17),
+                label: const Text('Limpiar'),
+              );
+              if (constraints.maxWidth >= 950) {
                 return Row(
                   children: [
                     Expanded(flex: 5, child: search),
-
-                    const Gap(AppSpacing.md),
-
-                    Expanded(flex: 4, child: type),
-
-                    const Gap(AppSpacing.md),
-
-                    SizedBox(width: 130, child: button),
+                    const Gap(AppSpacing.sm),
+                    Expanded(flex: 3, child: date),
+                    const Gap(AppSpacing.sm),
+                    Expanded(flex: 3, child: type),
+                    const Gap(AppSpacing.sm),
+                    SizedBox(width: 114, height: 42, child: button),
+                    const Gap(AppSpacing.sm),
+                    SizedBox(width: 105, height: 42, child: clear),
                   ],
                 );
               }
-
-              /*
-              Tablet/móvil
-              */
-
-              return Column(
+              final fieldWidth = constraints.maxWidth >= 760
+                  ? (constraints.maxWidth - AppSpacing.sm * 2) / 3
+                  : constraints.maxWidth >= 580
+                  ? (constraints.maxWidth - AppSpacing.sm) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  search,
-
-                  const Gap(AppSpacing.sm),
-
-                  type,
-
-                  const Gap(AppSpacing.sm),
-
-                  Align(alignment: Alignment.centerRight, child: button),
+                  SizedBox(
+                    width: constraints.maxWidth >= 760
+                        ? constraints.maxWidth
+                        : fieldWidth,
+                    child: search,
+                  ),
+                  SizedBox(width: fieldWidth, child: date),
+                  SizedBox(width: fieldWidth, child: type),
+                  SizedBox(width: 114, height: 42, child: button),
+                  SizedBox(width: 105, height: 42, child: clear),
                 ],
               );
             },
           ),
-
           const Gap(AppSpacing.sm),
-
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-
+          const SizedBox.shrink(),
           const Gap(AppSpacing.sm),
-
-          /*
-          ═══════════════════════════════
-          ACCIONES
-          ═══════════════════════════════
-          */
           Align(
             alignment: Alignment.centerLeft,
             child: Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
-                FilledButton(
-                  onPressed: state.isSubmittingAction ? null : onCreateGeneral,
-                  child: const Text('Salida general'),
+                SizedBox(
+                  height: 38,
+                  child: FilledButton.icon(
+                    onPressed: state.isSubmittingAction
+                        ? null
+                        : onCreateGeneral,
+                    icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                    label: const Text('Salida general'),
+                  ),
                 ),
-
-                OutlinedButton(
-                  onPressed: state.isSubmittingAction
-                      ? null
-                      : onCreateSupplierReturn,
-                  child: const Text('Devolución a proveedor'),
+                SizedBox(
+                  height: 38,
+                  child: OutlinedButton.icon(
+                    onPressed: state.isSubmittingAction
+                        ? null
+                        : onCreateSupplierReturn,
+                    icon: const Icon(Icons.undo_rounded, size: 18),
+                    label: const Text('Devolución a proveedor'),
+                  ),
                 ),
-
-                OutlinedButton(
-                  onPressed: state.isSubmittingAction
-                      ? null
-                      : onCreateNegativeAdjustment,
-                  child: const Text('Ajuste negativo'),
-                ),
-
-                Tooltip(
-                  message: 'Pendiente de integración con Producción.',
-                  child: OutlinedButton(
-                    onPressed: null,
-                    child: const Text('Salida por proceso'),
+                SizedBox(
+                  height: 38,
+                  child: OutlinedButton.icon(
+                    onPressed: state.isSubmittingAction
+                        ? null
+                        : onCreateNegativeAdjustment,
+                    icon: const Icon(Icons.remove_circle_outline, size: 18),
+                    label: const Text('Ajuste negativo'),
                   ),
                 ),
               ],
@@ -616,33 +622,41 @@ class _SalidasFiltersCard extends StatelessWidget {
   }
 }
 
-/*
-══════════════════════════════════════════════════════════════
-LISTADO
-══════════════════════════════════════════════════════════════
-*/
-
 class _SalidasListPanel extends StatelessWidget {
   const _SalidasListPanel({
     required this.state,
+    required this.items,
+    required this.page,
+    required this.pageSize,
+    required this.newestFirst,
+    required this.onSortChanged,
+    required this.onPageChanged,
+    required this.onPageSizeChanged,
     required this.onRetry,
     required this.onSelectSalida,
   });
-
   final SalidasState state;
-
+  final List<SalidaRecord> items;
+  final int page;
+  final int pageSize;
+  final bool newestFirst;
+  final ValueChanged<bool> onSortChanged;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<int> onPageSizeChanged;
   final VoidCallback onRetry;
-
   final ValueChanged<int> onSelectSalida;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    final total = items.length;
+    final totalPages = (total / pageSize).ceil().clamp(1, 1 << 30).toInt();
+    final currentPage = page.clamp(0, totalPages - 1).toInt();
+    final start = currentPage * pageSize;
+    final end = (start + pageSize).clamp(0, total).toInt();
+    final visibleItems = items.sublist(start, end);
     if (state.status == SalidasStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (state.status == SalidasStatus.error) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,9 +665,7 @@ class _SalidasListPanel extends StatelessWidget {
             title: 'No pudimos cargar las salidas',
             message: state.errorMessage ?? 'Intenta nuevamente.',
           ),
-
           const Gap(AppSpacing.md),
-
           AppButton.secondary(
             label: 'Reintentar',
             icon: Icons.refresh_rounded,
@@ -662,61 +674,62 @@ class _SalidasListPanel extends StatelessWidget {
         ],
       );
     }
-
-    if (state.items.isEmpty) {
+    if (items.isEmpty) {
       return const AppMessageCard.info(
         title: 'Sin salidas registradas',
         message: 'No hay movimientos que coincidan con los filtros actuales.',
       );
     }
-
     return AppSurfaceCard(
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          /*
-          CABECERA LISTA
-          */
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     'Listado de salidas',
-                    style: theme.textTheme.titleLarge?.copyWith(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-
+                const SizedBox(width: 8),
                 Text(
-                  '${state.items.length} salidas',
+                  '$total salidas',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                const SizedBox(width: 12),
+                DropdownButton<bool>(
+                  value: newestFirst,
+                  isDense: true,
+                  underline: const SizedBox.shrink(),
+                  items: const [
+                    DropdownMenuItem(value: true, child: Text('Más recientes')),
+                    DropdownMenuItem(value: false, child: Text('Más antiguas')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) onSortChanged(value);
+                  },
+                ),
               ],
             ),
           ),
-
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
-
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: state.items.length,
+              itemCount: visibleItems.length,
               separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
               itemBuilder: (context, index) {
-                final item = state.items[index];
-
+                final item = visibleItems[index];
                 final selected = state.selectedSalidaId == item.id;
-
                 return _SalidaListTile(
                   item: item,
                   selected: selected,
@@ -725,17 +738,23 @@ class _SalidasListPanel extends StatelessWidget {
               },
             ),
           ),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          AppTablePagination(
+            page: currentPage,
+            totalPages: totalPages,
+            start: start,
+            end: end,
+            total: total,
+            pageSize: pageSize,
+            pageSizeOptions: const [10, 20, 50],
+            onPageChanged: onPageChanged,
+            onPageSizeChanged: onPageSizeChanged,
+          ),
         ],
       ),
     );
   }
 }
-
-/*
-══════════════════════════════════════════════════════════════
-ITEM DEL LISTADO
-══════════════════════════════════════════════════════════════
-*/
 
 class _SalidaListTile extends StatelessWidget {
   const _SalidaListTile({
@@ -743,143 +762,126 @@ class _SalidaListTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   final SalidaRecord item;
-
   final bool selected;
-
   final VoidCallback onTap;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-
-        padding: const EdgeInsets.all(AppSpacing.md),
-
-        decoration: BoxDecoration(
-          color: selected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: .30)
-              : theme.colorScheme.surfaceContainerLowest,
-
-          borderRadius: BorderRadius.circular(12),
-
-          border: Border.all(
+    const orange = Color(0xFFF45100);
+    final secondary = theme.colorScheme.onSurfaceVariant;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
             color: selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
-            width: selected ? 1.25 : 1,
+                ? const Color(0xFFFFF6F1)
+                : theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? orange : theme.colorScheme.outlineVariant,
+              width: selected ? 1.5 : 1,
+            ),
           ),
-        ),
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /*
-            CÓDIGO + TIPO + FLECHA
-            */
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.codigo,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-
-                _StatusPill(label: item.tipoSalida, highlighted: selected),
-
-                const Gap(AppSpacing.xs),
-
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
+          child: Row(
+            children: [
+              Container(
+                height: 46,
+                width: 46,
+                decoration: BoxDecoration(
                   color: selected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
+                      ? const Color(0xFFFFE9DC)
+                      : const Color(0xFFF0F3F6),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-
-            const Gap(AppSpacing.xs),
-
-            /*
-            MOTIVO
-            */
-            Text(
-              item.motivo ?? 'Sin motivo registrado',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                child: Icon(
+                  _movementIcon(item.tipoSalida),
+                  color: selected ? orange : const Color(0xFF263244),
+                  size: 26,
+                ),
               ),
-            ),
-
-            const Gap(AppSpacing.sm),
-
-            /*
-            METADATOS EN LÍNEA
-            */
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              runSpacing: AppSpacing.xs,
-              children: [
-                _InlineInfo(
-                  value: DateFormat('dd/MM/yyyy').format(item.fechaSalida),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.codigo,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (MediaQuery.sizeOf(context).width > 1170)
+                          _StatusPill(
+                            label: item.tipoSalida,
+                            highlighted: selected,
+                          ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.motivo ?? 'Sin motivo registrado',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: secondary,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 14,
+                          color: secondary,
+                        ),
+                        _InlineInfo(
+                          value: DateFormat(
+                            'dd/MM/yyyy HH:mm',
+                          ).format(item.fechaSalida),
+                        ),
+                        const _MetaDivider(),
+                        _InlineInfo(
+                          value:
+                              '${item.totalItems} ${item.totalItems == 1 ? 'ítem' : 'ítems'}',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-
-                const _MetaDivider(),
-
-                _InlineInfo(
-                  value:
-                      '${item.totalItems} '
-                      '${item.totalItems == 1 ? 'ítem' : 'ítems'}',
-                ),
-
-                const _MetaDivider(),
-
-                _InlineInfo(
-                  value: 'Cant. ${item.cantidadTotal.toStringAsFixed(2)}',
-                ),
-
-                const _MetaDivider(),
-
-                _InlineInfo(
-                  value: 'Monto ${item.montoTotal.toStringAsFixed(2)}',
-                ),
-
-                const _MetaDivider(),
-
-                _InlineInfo(value: item.estado, strong: true),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: selected ? orange : secondary,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/*
-══════════════════════════════════════════════════════════════
-DETALLE MÓVIL
-══════════════════════════════════════════════════════════════
-*/
-
 class _MobileSalidaDetailSheet extends StatelessWidget {
   const _MobileSalidaDetailSheet();
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-
     return FractionallySizedBox(
       heightFactor: .88,
       child: Material(
@@ -905,9 +907,7 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
-
                 const Gap(AppSpacing.sm),
-
                 Row(
                   children: [
                     Expanded(
@@ -916,7 +916,6 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-
                     IconButton(
                       tooltip: 'Cerrar detalle',
                       onPressed: () => Navigator.of(context).pop(),
@@ -924,9 +923,7 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const Gap(AppSpacing.sm),
-
                 Expanded(
                   child: BlocBuilder<SalidasCubit, SalidasState>(
                     builder: (context, state) => _SalidaDetailPanel(
@@ -944,32 +941,20 @@ class _MobileSalidaDetailSheet extends StatelessWidget {
   }
 }
 
-/*
-══════════════════════════════════════════════════════════════
-PANEL DETALLE
-══════════════════════════════════════════════════════════════
-*/
-
 class _SalidaDetailPanel extends StatelessWidget {
   const _SalidaDetailPanel({required this.state, required this.onRetry});
-
   final SalidasState state;
-
   final VoidCallback onRetry;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     final detail = state.selectedSalida;
-
     if (state.isDetailLoading) {
       return AppSurfaceCard(
         padding: EdgeInsets.zero,
         child: const Center(child: CircularProgressIndicator()),
       );
     }
-
     if (state.detailErrorMessage != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -978,9 +963,7 @@ class _SalidaDetailPanel extends StatelessWidget {
             title: 'No pudimos cargar el detalle',
             message: state.detailErrorMessage!,
           ),
-
           const Gap(AppSpacing.md),
-
           AppButton.secondary(
             label: 'Reintentar',
             icon: Icons.refresh_rounded,
@@ -989,364 +972,376 @@ class _SalidaDetailPanel extends StatelessWidget {
         ],
       );
     }
-
     if (detail == null) {
       return const AppMessageCard.info(
         title: 'Selecciona una salida',
         message: 'Elige un movimiento para revisar su detalle.',
       );
     }
-
+    final movementTotal = detail.detalles.fold<double>(
+      0,
+      (sum, line) => sum + line.costoTotal,
+    );
+    final color = theme.colorScheme;
+    const orange = Color(0xFFF45100);
+    final observations = detail.observacion?.trim();
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /*
-          HEADER
-          */
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+      padding: const EdgeInsets.all(16),
+      child: SingleChildScrollView(
+        child: LayoutBuilder(
+          builder: (context, _) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBDD),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: Icon(
+                        _movementIcon(detail.tipoSalida),
+                        color: orange,
+                        size: 29,
+                      ),
+                    ),
+                    const SizedBox(width: 17),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            detail.codigo,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            detail.motivo ?? 'Sin motivo',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Salida registrada en el sistema',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: color.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 17),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 15,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: color.outlineVariant),
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, infoConstraints) {
+                      final infos = <Widget>[
+                        _DetailInfo(
+                          label: 'Tipo de salida',
+                          value: detail.tipoSalida,
+                          icon: Icons.layers_outlined,
+                        ),
+                        _DetailInfo(
+                          label: 'Fecha y hora',
+                          value: DateFormat(
+                            'dd/MM/yyyy HH:mm',
+                          ).format(detail.fechaSalida),
+                          icon: Icons.calendar_today_outlined,
+                        ),
+                        _DetailInfo(
+                          label: 'N° de ítems',
+                          value: '${detail.detalles.length}',
+                          icon: Icons.format_list_bulleted_rounded,
+                        ),
+                        _DetailInfo(
+                          label: 'Monto total',
+                          value: 'S/ ${movementTotal.toStringAsFixed(2)}',
+                          icon: Icons.paid_outlined,
+                          strong: true,
+                        ),
+                      ];
+                      if (infoConstraints.maxWidth < 610) {
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 15,
+                          children: infos
+                              .map(
+                                (w) => SizedBox(
+                                  width: (infoConstraints.maxWidth - 16) / 2,
+                                  child: w,
+                                ),
+                              )
+                              .toList(),
+                        );
+                      }
+                      return Row(
+                        children: [
+                          for (var i = 0; i < infos.length; i++) ...[
+                            Expanded(child: infos[i]),
+                            if (i < infos.length - 1)
+                              Container(
+                                height: 39,
+                                width: 1,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                color: color.outlineVariant,
+                              ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.inventory_2_outlined,
+                      color: orange,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Líneas afectadas',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                     Text(
-                      detail.codigo,
-                      style: theme.textTheme.headlineSmall?.copyWith(
+                      '${detail.detalles.length} ${detail.detalles.length == 1 ? 'ítem' : 'ítems'}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: color.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // La tabla ocupa solamente el alto necesario, evitando enormes huecos.
+                // Si hay muchas líneas, el área es desplazable independientemente.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 315),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: color.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SingleChildScrollView(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowColor: WidgetStatePropertyAll(
+                              color.surfaceContainerLow,
+                            ),
+                            dataRowMinHeight: 51,
+                            dataRowMaxHeight: 72,
+                            columnSpacing: 13,
+                            horizontalMargin: 12,
+                            columns: const [
+                              DataColumn(label: Text('#')),
+                              DataColumn(label: Text('Código')),
+                              DataColumn(label: Text('Descripción')),
+                              DataColumn(label: Text('Cantidad')),
+                              DataColumn(label: Text('Costo unitario')),
+                              DataColumn(label: Text('Total')),
+                              DataColumn(label: Text('Stock actual')),
+                            ],
+                            rows: [
+                              for (var i = 0; i < detail.detalles.length; i++)
+                                DataRow(
+                                  cells: [
+                                    DataCell(Text('${i + 1}')),
+                                    DataCell(
+                                      Text(detail.detalles[i].insumoCodigo),
+                                    ),
+                                    DataCell(
+                                      Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(detail.detalles[i].insumoNombre),
+                                          if (detail.detalles[i].observacion
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true)
+                                            Text(
+                                              detail.detalles[i].observacion!,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        color.onSurfaceVariant,
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    DataCell(
+                                      _lineTag(
+                                        '${detail.detalles[i].cantidad.toStringAsFixed(2)} ${detail.detalles[i].unidadMedidaCodigo}',
+                                        const Color(0xFFEAF3FF),
+                                        const Color(0xFF1465C0),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text(
+                                        'S/ ${detail.detalles[i].costoUnitario.toStringAsFixed(2)}',
+                                      ),
+                                    ),
+                                    DataCell(
+                                      _lineTag(
+                                        'S/ ${detail.detalles[i].costoTotal.toStringAsFixed(2)}',
+                                        const Color(0xFFDCF8E8),
+                                        const Color(0xFF087745),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      _lineTag(
+                                        '${detail.detalles[i].stockActual.toStringAsFixed(2)} ${detail.detalles[i].unidadMedidaCodigo}',
+                                        const Color(0xFFF0F2F8),
+                                        const Color(0xFF455472),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 19),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: orange,
+                      size: 21,
+                    ),
+                    const SizedBox(width: 9),
+                    Text(
+                      'Observaciones',
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-
-                    const Gap(AppSpacing.xs),
-
-                    Text(
-                      detail.motivo ?? 'Sin motivo',
-                      style: theme.textTheme.titleMedium,
-                    ),
                   ],
                 ),
-              ),
-
-              _StatusPill(label: detail.estado, highlighted: true),
-            ],
-          ),
-
-          const Gap(AppSpacing.lg),
-
-          /*
-          RESUMEN HORIZONTAL
-          */
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLowest,
-
-              borderRadius: BorderRadius.circular(10),
-
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final items = <Widget>[
-                  _DetailInfo(label: 'Tipo', value: detail.tipoSalida),
-
-                  _DetailInfo(
-                    label: 'Fecha',
-                    value: DateFormat(
-                      'dd/MM/yyyy HH:mm',
-                    ).format(detail.fechaSalida),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
                   ),
-
-                  if (detail.ordenProduccionId != null)
-                    _DetailInfo(
-                      label: 'OP',
-                      value: 'OP ${detail.ordenProduccionId}',
-                    ),
-
-                  if (detail.ordenProcesoId != null)
-                    _DetailInfo(
-                      label: 'Proceso',
-                      value: '${detail.ordenProcesoId}',
-                    ),
-                ];
-
-                if (constraints.maxWidth < 560) {
-                  return Wrap(
-                    spacing: AppSpacing.lg,
-                    runSpacing: AppSpacing.md,
-                    children: items
-                        .map((item) => SizedBox(width: 145, child: item))
-                        .toList(),
-                  );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  decoration: BoxDecoration(
+                    color: color.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Text(
+                    observations == null || observations.isEmpty
+                        ? '—'
+                        : observations,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 9,
+                  runSpacing: 9,
+                  alignment: WrapAlignment.start,
                   children: [
-                    for (int index = 0; index < items.length; index++) ...[
-                      Expanded(child: items[index]),
-
-                      if (index < items.length - 1)
-                        Container(
-                          width: 1,
-                          height: 38,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                          ),
-                          color: theme.colorScheme.outlineVariant,
-                        ),
-                    ],
-                  ],
-                );
-              },
-            ),
-          ),
-
-          /*
-          OBSERVACIÓN
-          */
-          if (detail.observacion != null &&
-              detail.observacion!.trim().isNotEmpty) ...[
-            const Gap(AppSpacing.md),
-
-            Text(
-              detail.observacion!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-
-          const Gap(AppSpacing.lg),
-
-          /*
-          LÍNEAS AFECTADAS
-          */
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Líneas afectadas',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-
-              Text(
-                '${detail.detalles.length} '
-                '${detail.detalles.length == 1 ? 'ítem' : 'ítems'}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-
-          const Gap(AppSpacing.md),
-
-          Expanded(
-            child: ListView.separated(
-              itemCount: detail.detalles.length,
-
-              separatorBuilder: (_, _) => const Gap(AppSpacing.sm),
-
-              itemBuilder: (context, index) =>
-                  _SalidaDetailLineTile(line: detail.detalles[index]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/*
-══════════════════════════════════════════════════════════════
-LÍNEA AFECTADA
-══════════════════════════════════════════════════════════════
-*/
-
-class _SalidaDetailLineTile extends StatelessWidget {
-  const _SalidaDetailLineTile({required this.line});
-
-  final SalidaDetalleLine line;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-
-        borderRadius: BorderRadius.circular(12),
-
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /*
-          INSUMO
-          */
-          Text(
-            '${line.insumoCodigo} - ${line.insumoNombre}',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const Gap(AppSpacing.md),
-
-          /*
-          DATOS
-          */
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final values = <Widget>[
-                _DetailInfo(
-                  label: 'Cantidad',
-                  value:
-                      '${line.cantidad.toStringAsFixed(2)} ${line.unidadMedidaCodigo}',
-                ),
-
-                _DetailInfo(
-                  label: 'Costo',
-                  value: line.costoUnitario.toStringAsFixed(2),
-                ),
-
-                _DetailInfo(
-                  label: 'Total',
-                  value: line.costoTotal.toStringAsFixed(2),
-                  strong: true,
-                ),
-
-                _DetailInfo(
-                  label: 'Stock actual',
-                  value: line.stockActual.toStringAsFixed(2),
-                ),
-              ];
-
-              if (constraints.maxWidth < 500) {
-                return Wrap(
-                  spacing: AppSpacing.lg,
-                  runSpacing: AppSpacing.md,
-                  children: values
-                      .map((item) => SizedBox(width: 120, child: item))
-                      .toList(),
-                );
-              }
-
-              return Row(
-                children: [
-                  for (int index = 0; index < values.length; index++) ...[
-                    Expanded(child: values[index]),
-
-                    if (index < values.length - 1)
-                      Container(
-                        width: 1,
-                        height: 34,
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                        ),
-                        color: theme.colorScheme.outlineVariant,
+                    if (detail.tipoSalida == 'DEVOLUCION_PROVEEDOR')
+                      FilledButton.icon(
+                        onPressed: null,
+                        icon: Icon(Icons.refresh_rounded, size: 18),
+                        label: Text('Generar devolución similar'),
                       ),
                   ],
-                ],
-              );
-            },
-          ),
-
-          if (line.observacion != null &&
-              line.observacion!.trim().isNotEmpty) ...[
-            const Gap(AppSpacing.sm),
-
-            Text(
-              line.observacion!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/*
-══════════════════════════════════════════════════════════════
-STATUS
-══════════════════════════════════════════════════════════════
-*/
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, this.highlighted = false});
-
-  final String label;
-
-  final bool highlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: highlighted
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHighest,
-
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-
-          color: highlighted
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-/*
-══════════════════════════════════════════════════════════════
-INFO INLINE
-══════════════════════════════════════════════════════════════
-*/
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, this.highlighted = false});
+  final String label;
+  final bool highlighted;
+  @override
+  Widget build(BuildContext context) {
+    final isProcess = label.toUpperCase() == 'PROCESO';
+    final foreground = isProcess
+        ? const Color(0xFF1664C4)
+        : highlighted
+        ? const Color(0xFFE64A00)
+        : const Color(0xFF445367);
+    final background = isProcess
+        ? const Color(0xFFEAF3FF)
+        : highlighted
+        ? const Color(0xFFFFEADC)
+        : const Color(0xFFF1F3F6);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: foreground,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
 
 class _InlineInfo extends StatelessWidget {
   const _InlineInfo({required this.value, this.strong = false});
-
   final String value;
-
   final bool strong;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Text(
       value,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
-
         fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
       ),
     );
@@ -1355,11 +1350,9 @@ class _InlineInfo extends StatelessWidget {
 
 class _MetaDivider extends StatelessWidget {
   const _MetaDivider();
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 9),
       child: Container(
@@ -1371,30 +1364,21 @@ class _MetaDivider extends StatelessWidget {
   }
 }
 
-/*
-══════════════════════════════════════════════════════════════
-INFO DEL DETALLE
-══════════════════════════════════════════════════════════════
-*/
-
 class _DetailInfo extends StatelessWidget {
   const _DetailInfo({
     required this.label,
     required this.value,
     this.strong = false,
+    this.icon,
   });
-
   final String label;
-
   final String value;
-
   final bool strong;
-
+  final IconData? icon;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Column(
+    final info = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1404,9 +1388,7 @@ class _DetailInfo extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-
         const Gap(3),
-
         Text(
           value,
           maxLines: 1,
@@ -1415,6 +1397,15 @@ class _DetailInfo extends StatelessWidget {
             fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
+      ],
+    );
+    if (icon == null) return info;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: AppColors.primary),
+        const Gap(AppSpacing.sm),
+        Flexible(child: info),
       ],
     );
   }

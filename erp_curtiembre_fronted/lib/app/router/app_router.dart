@@ -62,8 +62,6 @@ import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/c
 import 'package:erp_curtiembre_fronted/features/inventory/salidas/presentation/pages/salidas_page.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/stock/presentation/cubit/stock_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/stock/presentation/pages/stock_page.dart';
-import 'package:erp_curtiembre_fronted/features/inventory/ajustes/presentation/cubit/ajustes_cubit.dart';
-import 'package:erp_curtiembre_fronted/features/inventory/ajustes/presentation/pages/ajustes_page.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/presentation/cubit/clientes_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/presentation/pages/clientes_page.dart';
 import 'package:erp_curtiembre_fronted/features/production/lotes/presentation/cubit/lotes_cubit.dart';
@@ -376,10 +374,8 @@ class AppRouter {
           ),
           GoRoute(
             path: _ajustesPath,
-            builder: (context, state) => BlocProvider<AjustesCubit>(
-              create: (_) => getIt<AjustesCubit>()..initialize(),
-              child: const AjustesPage(),
-            ),
+            // Módulo temporalmente deshabilitado: tampoco es accesible por URL.
+            redirect: (_, _) => '/home',
           ),
           GoRoute(
             path: _kardexPath,

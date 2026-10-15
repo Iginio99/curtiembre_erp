@@ -21,6 +21,7 @@ import 'package:erp_curtiembre_fronted/features/users/presentation/widgets/user_
 
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/data/app_table_pagination.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1051,7 +1052,16 @@ class _UsersListPanel extends StatelessWidget {
           // --------------------------------------------------
           // PAGINACION
           // --------------------------------------------------
-          Padding(
+          AppTablePagination(
+            page: currentPage,
+            totalPages: totalPages,
+            start: start,
+            end: end,
+            total: total,
+            emptyLabel: '0 usuarios',
+            onPageChanged: onPageChanged,
+          ),
+          /* Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: [
@@ -1108,7 +1118,7 @@ class _UsersListPanel extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          ), */
         ],
       ),
     );

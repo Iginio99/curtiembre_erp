@@ -209,10 +209,23 @@ public sealed class SqlCierreProduccionRepository(
                 p.id AS OrdenProductoId,
                 p.nombre AS ProductoNombre,
                 p.color AS ProductoColor,
-                CAST(1 AS BIT) AS EsProductoIndividual
+                CAST(1 AS BIT) AS EsProductoIndividual,
+                c.razon_social AS ClienteNombre,
+                p.cantidad_lados AS CantidadLadosProgramados,
+                op.creado_en AS FechaOrden,
+                op.fecha_fin_real AS FechaTerminacionOrden,
+                ISNULL(entregado.CantidadLadosEntregados, 0) AS CantidadLadosEntregados,
+                CAST(CASE WHEN (opt.cantidad_pieles * 2) - ISNULL(entregado.CantidadLadosEntregados, 0) < 0 THEN 0 ELSE (opt.cantidad_pieles * 2) - ISNULL(entregado.CantidadLadosEntregados, 0) END AS DECIMAL(18,4)) AS CantidadLadosPendientes
             FROM produccion.orden_producto_terminado opt
             INNER JOIN produccion.orden_producto p ON p.id = opt.orden_producto_id
             INNER JOIN produccion.orden_produccion op ON op.id = p.orden_produccion_id
+            INNER JOIN produccion.lote l ON l.id = op.lote_id
+            INNER JOIN produccion.cliente c ON c.id = l.cliente_id
+            OUTER APPLY (
+                SELECT SUM(e.cantidad_lados) AS CantidadLadosEntregados
+                FROM produccion.entrega_producto_terminado e
+                WHERE e.orden_producto_terminado_id = opt.id
+            ) entregado
             ORDER BY FechaIngreso DESC, Id DESC;
             """;
 

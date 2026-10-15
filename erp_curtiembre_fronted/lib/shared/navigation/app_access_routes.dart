@@ -34,7 +34,6 @@ abstract final class AppAccessRoutes {
         '/inventario/compras',
         '/inventario/entradas',
         '/inventario/salidas',
-        '/inventario/ajustes',
         '/inventario/fisico',
         '/produccion/solicitudes-insumos',
       });

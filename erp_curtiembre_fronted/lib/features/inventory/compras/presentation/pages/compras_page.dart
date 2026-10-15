@@ -15,6 +15,7 @@ import 'package:erp_curtiembre_fronted/features/inventory/compras/presentation/w
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/data/app_table_pagination.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -788,7 +789,21 @@ class _ComprasListPanelState
             height: 1,
             color: colors.outlineVariant,
           ),
-          Padding(
+          AppTablePagination(
+            page: currentPage,
+            totalPages: pageCount,
+            start: start,
+            end: end,
+            total: total,
+            pageSize: _pageSize,
+            pageSizeOptions: const [5, 10, 20, 50],
+            onPageSizeChanged: (value) => setState(() {
+              _pageSize = value;
+              _page = 0;
+            }),
+            onPageChanged: (value) => setState(() => _page = value),
+          ),
+          /* Padding(
             padding: const EdgeInsets.all(10),
             child: Wrap(
               alignment: WrapAlignment.spaceBetween,
@@ -872,7 +887,7 @@ class _ComprasListPanelState
                 ),
               ],
             ),
-          ),
+          ), */
         ],
       ),
     );
@@ -1373,7 +1388,16 @@ class _CompraDetailPanelState
                   color: colors.outlineVariant,
                 ),
 
-                Padding(
+                AppTablePagination(
+                  page: currentPage,
+                  totalPages: totalPages,
+                  start: start,
+                  end: math.min(start + _itemsPerPage, lines.length),
+                  total: lines.length,
+                  emptyLabel: 'Sin ítems',
+                  onPageChanged: (value) => setState(() => _itemsPage = value),
+                ),
+                /* Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 5,
@@ -1422,7 +1446,7 @@ class _CompraDetailPanelState
                       ),
                     ],
                   ),
-                ),
+                ), */
               ],
             ),
           ),

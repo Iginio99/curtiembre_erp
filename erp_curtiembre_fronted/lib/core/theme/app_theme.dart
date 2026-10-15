@@ -42,6 +42,12 @@ abstract final class AppTheme {
       textButtonTheme: _buildTextButtonTheme(_lightColorScheme),
       iconButtonTheme: _buildIconButtonTheme(_lightColorScheme),
       dataTableTheme: _buildDataTableTheme(_lightColorScheme),
+      // Fondo uniforme blanco para todos los Dialog/AlertDialog del tema
+      // claro, sin el tono gris de los contenedores Material 3.
+      dialogTheme: const DialogThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+      ),
       dividerTheme: DividerThemeData(
         color: _lightColorScheme.outlineVariant,
         thickness: 1,

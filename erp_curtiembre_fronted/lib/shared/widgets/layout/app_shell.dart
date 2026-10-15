@@ -20,6 +20,7 @@ class AppShell extends StatelessWidget {
     this.alertCount,
     this.accessibleRoutes = const {},
     this.showTopbar = true,
+    this.titleIcon,
   });
 
   final Widget child;
@@ -32,6 +33,7 @@ class AppShell extends StatelessWidget {
   final int? alertCount;
   final Set<String> accessibleRoutes;
   final bool showTopbar;
+  final IconData? titleIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +75,7 @@ class AppShell extends StatelessWidget {
                       if (showTopbar)
                         _Topbar(
                           title: title,
+                          titleIcon: titleIcon,
                           breadcrumbs: breadcrumbs,
                           compact: isMobile,
                           userName: userName,
@@ -442,6 +445,7 @@ class _SidebarItem extends StatelessWidget {
 class _Topbar extends StatelessWidget {
   const _Topbar({
     required this.title,
+    required this.titleIcon,
     required this.breadcrumbs,
     required this.compact,
     required this.userName,
@@ -451,6 +455,7 @@ class _Topbar extends StatelessWidget {
   });
 
   final String title;
+  final IconData? titleIcon;
   final List<String> breadcrumbs;
   final bool compact;
   final String userName;
@@ -482,6 +487,19 @@ class _Topbar extends StatelessWidget {
               icon: const Icon(Icons.menu_rounded),
             ),
           if (compact) const SizedBox(width: AppSpacing.xs),
+          if (titleIcon != null) ...[
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(titleIcon, color: AppColors.primary, size: 25),
+            ),
+            const SizedBox(width: AppSpacing.md),
+          ],
           Expanded(
             child: compact
                 ? Text(title, style: theme.textTheme.titleMedium)
@@ -902,11 +920,6 @@ const _inventoryNavigationItems = [
     label: 'Solicitudes SOL',
     icon: Icons.assignment_turned_in_outlined,
     route: '/produccion/solicitudes-insumos',
-  ),
-  _NavigationItem(
-    label: 'Ajustes',
-    icon: Icons.tune_rounded,
-    route: '/inventario/ajustes',
   ),
   _NavigationItem(
     label: 'Inventario físico',

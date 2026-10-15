@@ -22,6 +22,12 @@ class ProductoTerminadoRecordModel {
     this.productoNombre,
     this.productoColor,
     this.esProductoIndividual = false,
+    this.clienteNombre,
+    this.cantidadLadosProgramados = 0,
+    this.cantidadLadosEntregados = 0,
+    this.cantidadLadosPendientes = 0,
+    this.fechaOrden,
+    this.fechaTerminacionOrden,
   });
 
   final int id;
@@ -43,6 +49,12 @@ class ProductoTerminadoRecordModel {
   final int? ordenProductoId;
   final String? productoNombre, productoColor;
   final bool esProductoIndividual;
+  final String? clienteNombre;
+  final double cantidadLadosProgramados;
+  final double cantidadLadosEntregados;
+  final double cantidadLadosPendientes;
+  final DateTime? fechaOrden;
+  final DateTime? fechaTerminacionOrden;
 
   factory ProductoTerminadoRecordModel.fromJson(Map<String, dynamic> json) {
     return ProductoTerminadoRecordModel(
@@ -67,6 +79,15 @@ class ProductoTerminadoRecordModel {
       productoNombre: json['productoNombre'] as String?,
       productoColor: json['productoColor'] as String?,
       esProductoIndividual: json['esProductoIndividual'] as bool? ?? false,
+      clienteNombre: json['clienteNombre'] as String?,
+      cantidadLadosProgramados:
+          (json['cantidadLadosProgramados'] as num?)?.toDouble() ?? 0,
+      cantidadLadosEntregados:
+          (json['cantidadLadosEntregados'] as num?)?.toDouble() ?? 0,
+      cantidadLadosPendientes:
+          (json['cantidadLadosPendientes'] as num?)?.toDouble() ?? 0,
+      fechaOrden: _parseOptionalDate(json['fechaOrden']),
+      fechaTerminacionOrden: _parseOptionalDate(json['fechaTerminacionOrden']),
     );
   }
 
@@ -92,6 +113,12 @@ class ProductoTerminadoRecordModel {
       productoNombre: productoNombre,
       productoColor: productoColor,
       esProductoIndividual: esProductoIndividual,
+      clienteNombre: clienteNombre,
+      cantidadLadosProgramados: cantidadLadosProgramados,
+      cantidadLadosEntregados: cantidadLadosEntregados,
+      cantidadLadosPendientes: cantidadLadosPendientes,
+      fechaOrden: fechaOrden,
+      fechaTerminacionOrden: fechaTerminacionOrden,
     );
   }
 
@@ -99,4 +126,7 @@ class ProductoTerminadoRecordModel {
     if (value is num) return value.toInt();
     return null;
   }
+
+  static DateTime? _parseOptionalDate(dynamic value) =>
+      value is String ? DateTime.tryParse(value) : null;
 }

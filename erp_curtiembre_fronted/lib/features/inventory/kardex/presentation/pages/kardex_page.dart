@@ -1,27 +1,21 @@
-import 'package:erp_curtiembre_fronted/core/di/service_locator.dart';
-import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
-import 'package:erp_curtiembre_fronted/core/theme/app_spacing.dart';
+import 'dart:math' as math;
 
+import 'package:erp_curtiembre_fronted/core/theme/app_colors.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/auth/presentation/cubit/auth_state.dart';
-
 import 'package:erp_curtiembre_fronted/features/inventory/kardex/domain/entities/kardex_record.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/kardex/presentation/cubit/kardex_cubit.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/kardex/presentation/cubit/kardex_state.dart';
-
+import 'package:erp_curtiembre_fronted/features/inventory/kardex/presentation/kardex_export.dart';
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
-
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/buttons/app_button.dart';
-import 'package:erp_curtiembre_fronted/shared/widgets/feedback/app_message_card.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/data/app_table_pagination.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_surface_card.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:talker_flutter/talker_flutter.dart';
 
 class KardexPage extends StatefulWidget {
   const KardexPage({super.key});
@@ -31,78 +25,103 @@ class KardexPage extends StatefulWidget {
 }
 
 class _KardexPageState extends State<KardexPage> {
-  final _usuarioResponsableController = TextEditingController();
+  final _insumoSearchController = TextEditingController();
+  final _insumoFocusNode = FocusNode();
+  int? _selectedId;
+  DateTime? _from;
+  DateTime? _to;
 
-  final Talker _talker = getIt<Talker>();
+  int _page = 0;
+  int _pageSize = 10;
+  bool _newestFirst = true;
 
   @override
   void initState() {
     super.initState();
-
-    _talker.ui('Se abrio la pantalla de kardex.');
+    _insumoFocusNode.addListener(() {
+      if (_insumoFocusNode.hasFocus) _selectInsumoText();
+    });
   }
 
   @override
   void dispose() {
-    _usuarioResponsableController.dispose();
-
+    _insumoSearchController.dispose();
+    _insumoFocusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _pickDate({
-    required bool isStart,
-    required KardexState state,
-  }) async {
-    final initial = isStart
-        ? (state.fechaDesde ?? DateTime.now())
-        : (state.fechaHasta ?? DateTime.now());
+  void _selectInsumoText() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _insumoSearchController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _insumoSearchController.text.length,
+      );
+    });
+  }
 
+  String _normalizeInsumoSearch(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[áàäâ]'), 'a')
+      .replaceAll(RegExp(r'[éèëê]'), 'e')
+      .replaceAll(RegExp(r'[íìïî]'), 'i')
+      .replaceAll(RegExp(r'[óòöô]'), 'o')
+      .replaceAll(RegExp(r'[úùüû]'), 'u')
+      .trim();
+
+  // =========================================================
+  // FILTROS Y FECHAS
+  // =========================================================
+
+  Future<void> _pickDate(bool from) async {
     final selected = await showDatePicker(
       context: context,
-      initialDate: initial,
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2035),
+      initialDate: (from ? _from : _to) ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
 
-    if (selected == null || !mounted) {
-      _talker.ui(
-        'Se cerro el selector de fecha de kardex sin confirmar.',
-        logLevel: LogLevel.debug,
-      );
+    if (selected == null || !mounted) return;
 
+    setState(() {
+      if (from) {
+        _from = selected;
+      } else {
+        _to = selected;
+      }
+    });
+  }
+
+  void _apply(KardexState state) {
+    if (_from != null && _to != null && _from!.isAfter(_to!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La fecha inicial debe ser anterior a la final.'),
+        ),
+      );
       return;
     }
 
-    _talker.ui(
-      'Se selecciono ${isStart ? 'fecha desde' : 'fecha hasta'} '
-      'en kardex: ${DateFormat('dd/MM/yyyy').format(selected)}.',
-      logLevel: LogLevel.debug,
-    );
+    setState(() => _page = 0);
 
-    await context.read<KardexCubit>().load(
-      fechaDesde: isStart ? selected : state.fechaDesde,
-      fechaHasta: isStart ? state.fechaHasta : selected,
+    final selectedId = _selectedId ?? state.selectedInsumoId;
+
+    context.read<KardexCubit>().load(
+      selectedInsumoId: selectedId,
+      fechaDesde: _from,
+      fechaHasta: _to,
     );
   }
 
-  void _applyResponsibleFilter() {
-    final raw = _usuarioResponsableController.text.trim();
-
-    final parsed = raw.isEmpty ? null : int.tryParse(raw);
-
-    _talker.ui(
-      'Se aplico el filtro de responsable en kardex '
-      'con valor=${parsed ?? 'vacio'}.',
-    );
-
-    context.read<KardexCubit>().load(usuarioResponsableIdFilter: parsed);
-  }
+  // =========================================================
+  // PANTALLA PRINCIPAL
+  // =========================================================
 
   @override
   Widget build(BuildContext context) {
     final session = context.select((AuthCubit cubit) => cubit.state.session);
 
-    final isSigningOut = context.select(
+    final signingOut = context.select(
       (AuthCubit cubit) => cubit.state.status == AuthStatus.signingOut,
     );
 
@@ -122,1397 +141,959 @@ class _KardexPageState extends State<KardexPage> {
       userName: session.nombreCompleto,
       roleName: session.rolNombre,
       accessibleRoutes: AppAccessRoutes.forPermissions(permissionCodes),
-      onSignOut: isSigningOut
-          ? () {}
-          : () => context.read<AuthCubit>().signOut(),
-      child: Padding(
-        /*
-        Antes xl.
-        Más compacto para aprovechar pantalla.
-        */
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1440),
-            child: BlocBuilder<KardexCubit, KardexState>(
-              builder: (context, state) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /*
-                    ═══════════════════════════
-                    KPIs
-                    ═══════════════════════════
-                    */
-                    _KardexSummary(items: state.items),
+      onSignOut: signingOut ? () {} : () => context.read<AuthCubit>().signOut(),
+      child: BlocBuilder<KardexCubit, KardexState>(
+        builder: (context, state) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _filters(state),
 
-                    const Gap(AppSpacing.md),
+                const SizedBox(height: 14),
 
-                    /*
-                    ═══════════════════════════
-                    FILTROS
-                    ═══════════════════════════
-                    */
-                    _KardexFiltersCard(
-                      state: state,
-                      usuarioResponsableController:
-                          _usuarioResponsableController,
-
-                      onInsumoChanged: (value) {
-                        _talker.ui(
-                          'Se cambio el filtro de insumo '
-                          'en kardex a ${value ?? 'todos'}.',
-                          logLevel: LogLevel.debug,
-                        );
-
-                        context.read<KardexCubit>().load(
-                          selectedInsumoId: value,
-                        );
-                      },
-
-                      onTipoMovimientoChanged: (value) {
-                        _talker.ui(
-                          'Se cambio el filtro de tipo '
-                          'de movimiento en kardex a '
-                          '${_describeState(value)}.',
-                          logLevel: LogLevel.debug,
-                        );
-
-                        context.read<KardexCubit>().load(
-                          tipoMovimientoFilter: value,
-                        );
-                      },
-
-                      onDocumentoTipoChanged: (value) {
-                        _talker.ui(
-                          'Se cambio el filtro de documento '
-                          'en kardex a ${_describeState(value)}.',
-                          logLevel: LogLevel.debug,
-                        );
-
-                        context.read<KardexCubit>().load(
-                          documentoTipoFilter: value,
-                        );
-                      },
-
-                      onApplyResponsibleFilter: _applyResponsibleFilter,
-
-                      onPickStartDate: () =>
-                          _pickDate(isStart: true, state: state),
-
-                      onPickEndDate: () =>
-                          _pickDate(isStart: false, state: state),
-
-                      onClearDates: () {
-                        _talker.ui(
-                          'Se limpiaron los filtros '
-                          'de fechas en kardex.',
-                          logLevel: LogLevel.debug,
-                        );
-
-                        context.read<KardexCubit>().load(
-                          fechaDesde: null,
-                          fechaHasta: null,
-                        );
-                      },
-                    ),
-
-                    const Gap(AppSpacing.md),
-
-                    /*
-                    ═══════════════════════════
-                    MOVIMIENTOS + DETALLE
-                    ═══════════════════════════
-                    */
-                    Expanded(
-                      child: _KardexListPanel(
-                        state: state,
-                        onRetry: () {
-                          _talker.ui(
-                            'Se solicito reintentar '
-                            'la carga del kardex.',
-                          );
-
-                          context.read<KardexCubit>().initialize();
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _describeState(String? value) {
-    final normalized = value?.trim();
-
-    if (normalized == null || normalized.isEmpty) {
-      return 'vacio';
-    }
-
-    return normalized;
-  }
-}
-
-/*
-══════════════════════════════════════════════════
-KPIs
-══════════════════════════════════════════════════
-*/
-
-class _KardexSummary extends StatelessWidget {
-  const _KardexSummary({required this.items});
-
-  final List<KardexRecord> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final entries = items.fold<double>(0, (sum, item) => sum + item.entrada);
-
-    final exits = items.fold<double>(0, (sum, item) => sum + item.salida);
-
-    final value = items.fold<double>(0, (sum, item) => sum + item.costoTotal);
-
-    /*
-    Quitamos "Insumos".
-    Kardex debe enfocarse en movimientos.
-    */
-
-    final metrics = [
-      ('Movimientos', '${items.length}', Icons.swap_vert_rounded),
-      ('Entradas', _formatQuantity(entries), Icons.south_west_rounded),
-      ('Salidas', _formatQuantity(exits), Icons.north_east_rounded),
-      ('Valor movido', _formatMoney(value), Icons.payments_outlined),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth >= 900
-            ? (constraints.maxWidth - AppSpacing.md * 3) / 4
-            : 220.0;
-
-        return Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
-          children: metrics
-              .map(
-                (metric) => SizedBox(
-                  width: width,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
+                if (state.status == KardexStatus.error)
+                  AppSurfaceCard(
                     child: Row(
                       children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            metric.$3,
-                            size: 21,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-
-                        const Gap(AppSpacing.md),
-
                         Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                metric.$1,
-                                style: theme.textTheme.labelMedium,
-                              ),
-
-                              const Gap(2),
-
-                              Text(
-                                metric.$2,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            state.errorMessage ?? 'Error al cargar Kardex',
                           ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              context.read<KardexCubit>().initialize(),
+                          child: const Text('Reintentar'),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              )
-              .toList(),
-        );
-      },
+                  )
+                else if (state.status == KardexStatus.loading)
+                  const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else ...[
+                  _summary(state),
+
+                  const SizedBox(height: 14),
+
+                  _movements(state),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
-}
 
-/*
-══════════════════════════════════════════════════
-FILTROS
-══════════════════════════════════════════════════
-*/
+  // =========================================================
+  // FILTROS COMPACTOS - SIN TÍTULO
+  // =========================================================
 
-class _KardexFiltersCard extends StatelessWidget {
-  const _KardexFiltersCard({
-    required this.state,
-    required this.usuarioResponsableController,
-    required this.onInsumoChanged,
-    required this.onTipoMovimientoChanged,
-    required this.onDocumentoTipoChanged,
-    required this.onApplyResponsibleFilter,
-    required this.onPickStartDate,
-    required this.onPickEndDate,
-    required this.onClearDates,
-  });
-
-  final KardexState state;
-
-  final TextEditingController usuarioResponsableController;
-
-  final ValueChanged<int?> onInsumoChanged;
-
-  final ValueChanged<String?> onTipoMovimientoChanged;
-
-  final ValueChanged<String?> onDocumentoTipoChanged;
-
-  final VoidCallback onApplyResponsibleFilter;
-
-  final VoidCallback onPickStartDate;
-
-  final VoidCallback onPickEndDate;
-
-  final VoidCallback onClearDates;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (usuarioResponsableController.text !=
-        (state.usuarioResponsableIdFilter?.toString() ?? '')) {
-      final value = state.usuarioResponsableIdFilter?.toString() ?? '';
-
-      usuarioResponsableController.value = TextEditingValue(
-        text: value,
-        selection: TextSelection.collapsed(offset: value.length),
-      );
-    }
+  Widget _filters(KardexState state) {
+    final selectedId = _selectedId ?? state.selectedInsumoId;
 
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.filter_alt_outlined,
-                size: 18,
-                color: theme.colorScheme.primary,
-              ),
-
-              const Gap(AppSpacing.sm),
-
-              Text(
-                'Filtros de trazabilidad',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-
-          const Gap(AppSpacing.md),
-
-          /*
-          Todos los filtros juntos
-          en desktop.
-          */
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final insumo = DropdownButtonFormField<int?>(
-                isExpanded: true,
-
-                initialValue: state.selectedInsumoId,
-
-                decoration: const InputDecoration(labelText: 'Insumo'),
-
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
-
-                  ...state.insumos.map(
-                    (item) => DropdownMenuItem<int?>(
-                      value: item.id,
-                      child: Text(
-                        item.displayName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-
-                onChanged: onInsumoChanged,
-              );
-
-              final movement = DropdownButtonFormField<String?>(
-                isExpanded: true,
-
-                initialValue: state.tipoMovimientoFilter,
-
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de movimiento',
-                ),
-
-                items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('Todos')),
-                  DropdownMenuItem<String?>(
-                    value: 'ENTRADA',
-                    child: Text('Entrada'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'SALIDA',
-                    child: Text('Salida'),
-                  ),
-                ],
-
-                onChanged: onTipoMovimientoChanged,
-              );
-
-              final document = DropdownButtonFormField<String?>(
-                isExpanded: true,
-
-                initialValue: state.documentoTipoFilter,
-
-                decoration: const InputDecoration(labelText: 'Documento'),
-
-                items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('Todos')),
-                  DropdownMenuItem<String?>(
-                    value: 'ORDEN_COMPRA',
-                    child: Text('Orden compra'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'ENTRADA_INVENTARIO',
-                    child: Text('Entrada inventario'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'SALIDA_INVENTARIO',
-                    child: Text('Salida inventario'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'AJUSTE_INVENTARIO',
-                    child: Text('Ajuste inventario'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'INVENTARIO_FISICO',
-                    child: Text('Inventario físico'),
-                  ),
-                ],
-
-                onChanged: onDocumentoTipoChanged,
-              );
-
-              final responsable = TextField(
-                controller: usuarioResponsableController,
-
-                keyboardType: TextInputType.number,
-
-                decoration: const InputDecoration(
-                  labelText: 'Responsable',
-                  hintText: 'Usuario ID',
-                ),
-
-                onSubmitted: (_) => onApplyResponsibleFilter(),
-              );
-
-              final startDate = _DateFilterButton(
-                label: 'Fecha desde',
-                value: state.fechaDesde == null
-                    ? null
-                    : DateFormat('dd/MM/yyyy').format(state.fechaDesde!),
-                onPressed: onPickStartDate,
-              );
-
-              final endDate = _DateFilterButton(
-                label: 'Fecha hasta',
-                value: state.fechaHasta == null
-                    ? null
-                    : DateFormat('dd/MM/yyyy').format(state.fechaHasta!),
-                onPressed: onPickEndDate,
-              );
-
-              /*
-              DESKTOP
-              */
-
-              if (constraints.maxWidth >= 1100) {
-                return Row(
-                  children: [
-                    Expanded(flex: 5, child: insumo),
-
-                    const Gap(AppSpacing.sm),
-
-                    Expanded(flex: 4, child: movement),
-
-                    const Gap(AppSpacing.sm),
-
-                    Expanded(flex: 4, child: document),
-
-                    const Gap(AppSpacing.sm),
-
-                    Expanded(flex: 4, child: responsable),
-
-                    const Gap(AppSpacing.sm),
-
-                    SizedBox(width: 145, child: startDate),
-
-                    const Gap(AppSpacing.sm),
-
-                    SizedBox(width: 145, child: endDate),
-
-                    const Gap(AppSpacing.sm),
-
-                    FilledButton.icon(
-                      onPressed: onApplyResponsibleFilter,
-                      icon: const Icon(Icons.filter_alt_outlined, size: 17),
-                      label: const Text('Aplicar'),
-                    ),
-
-                    const Gap(AppSpacing.sm),
-
-                    OutlinedButton.icon(
-                      onPressed: onClearDates,
-                      icon: const Icon(Icons.close, size: 17),
-                      label: const Text('Limpiar'),
-                    ),
-                  ],
-                );
-              }
-
-              /*
-              TABLET / PEQUEÑO
-              */
-
-              return Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  SizedBox(width: 230, child: insumo),
-
-                  SizedBox(width: 210, child: movement),
-
-                  SizedBox(width: 210, child: document),
-
-                  SizedBox(width: 180, child: responsable),
-
-                  SizedBox(width: 150, child: startDate),
-
-                  SizedBox(width: 150, child: endDate),
-
-                  AppButton.primary(
-                    label: 'Aplicar',
-                    icon: Icons.filter_alt_outlined,
-                    onPressed: onApplyResponsibleFilter,
-                  ),
-
-                  AppButton.secondary(
-                    label: 'Limpiar',
-                    icon: Icons.close,
-                    onPressed: onClearDates,
-                  ),
-                ],
-              );
+      padding: const EdgeInsets.all(12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final insumo = DropdownMenu<int>(
+            key: ValueKey(selectedId),
+            initialSelection: selectedId,
+            menuHeight: math.min(300, MediaQuery.sizeOf(context).height * .4),
+            controller: _insumoSearchController,
+            focusNode: _insumoFocusNode,
+            enableFilter: true,
+            enableSearch: true,
+            filterCallback: (entries, query) {
+              final text = _normalizeInsumoSearch(query);
+              if (text.isEmpty) return entries;
+              return entries
+                  .where(
+                    (entry) =>
+                        _normalizeInsumoSearch(entry.label).contains(text),
+                  )
+                  .toList();
             },
-          ),
-        ],
-      ),
-    );
-  }
-}
+            requestFocusOnTap: true,
+            label: const Text('Insumo'),
+            leadingIcon: const Icon(Icons.search_rounded, size: 20),
+            expandedInsets: EdgeInsets.zero,
+            dropdownMenuEntries: state.insumos
+                .map(
+                  (item) => DropdownMenuEntry<int>(
+                    value: item.id,
+                    label: '${item.codigo} - ${item.nombre}',
+                  ),
+                )
+                .toList(),
+            onSelected: (value) {
+              setState(() {
+                _selectedId = value;
+              });
+              _selectInsumoText();
+            },
+          );
 
-/*
-══════════════════════════════════════════════════
-BOTÓN DE FECHA
-══════════════════════════════════════════════════
-*/
+          final from = _dateField('Fecha desde', _from, () => _pickDate(true));
 
-class _DateFilterButton extends StatelessWidget {
-  const _DateFilterButton({
-    required this.label,
-    required this.value,
-    required this.onPressed,
-  });
+          final to = _dateField('Fecha hasta', _to, () => _pickDate(false));
 
-  final String label;
-  final String? value;
-  final VoidCallback onPressed;
+          final clearDates = IconButton(
+            tooltip: 'Limpiar fechas',
+            onPressed: () {
+              setState(() {
+                _from = null;
+                _to = null;
+              });
+            },
+            icon: const Icon(Icons.close_rounded, size: 18),
+          );
 
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      ),
-
-      child: Row(
-        children: [
-          const Icon(Icons.calendar_today_outlined, size: 16),
-
-          const Gap(7),
-
-          Expanded(
-            child: Text(
-              value ?? label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          final filterButton = SizedBox(
+            width: 126,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: state.status == KardexStatus.loading
+                  ? null
+                  : () => _apply(state),
+              icon: const Icon(Icons.filter_alt_outlined, size: 18),
+              label: const Text('Filtrar'),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+          );
 
-/*
-══════════════════════════════════════════════════
-PANEL PRINCIPAL
-══════════════════════════════════════════════════
-*/
-
-class _KardexListPanel extends StatefulWidget {
-  const _KardexListPanel({required this.state, required this.onRetry});
-
-  final KardexState state;
-  final VoidCallback onRetry;
-
-  @override
-  State<_KardexListPanel> createState() => _KardexListPanelState();
-}
-
-class _KardexListPanelState extends State<_KardexListPanel> {
-  int? selectedId;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final state = widget.state;
-
-    KardexRecord? selected;
-
-    for (final item in state.items) {
-      if (item.id == selectedId) {
-        selected = item;
-        break;
-      }
-    }
-
-    return AppSurfaceCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /*
-          CABECERA
-          */
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.sm,
+          final exportButton = SizedBox(
+            width: 184,
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed:
+                  state.status != KardexStatus.success ||
+                      state.selectedInsumoId == null
+                  ? null
+                  : () => _export(state),
+              icon: const Icon(Icons.table_view_outlined, size: 18),
+              label: const Text('Exportar a Excel'),
             ),
-            child: Row(
+          );
+
+          final showClear = _from != null || _to != null;
+
+          // ESCRITORIO: UNA FILA
+          if (constraints.maxWidth >= (showClear ? 1100 : 1040)) {
+            return Row(
               children: [
-                Icon(
-                  Icons.format_list_bulleted_rounded,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
+                Expanded(child: insumo),
 
-                const Gap(AppSpacing.sm),
+                const SizedBox(width: 10),
 
-                Text(
-                  'Movimientos',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                from,
 
-                const Spacer(),
+                const SizedBox(width: 10),
 
-                Text(
-                  '${state.items.length} registros',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
+                to,
+
+                if (showClear) ...[const SizedBox(width: 4), clearDates],
+
+                const SizedBox(width: 10),
+
+                filterButton,
+
+                const SizedBox(width: 10),
+
+                exportButton,
               ],
-            ),
-          ),
+            );
+          }
 
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          // TABLET Y MÓVIL
+          final width = constraints.maxWidth;
 
-          /*
-          CONTENIDO
-          */
-          Expanded(
-            child: switch (state.status) {
-              KardexStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
+          return Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(width: width < 620 ? width : 310, child: insumo),
 
-              KardexStatus.error => Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppMessageCard.error(
-                        title: 'No pudimos cargar el kardex',
-                        message:
-                            state.errorMessage ??
-                            'Intenta nuevamente para consultar los movimientos.',
-                      ),
+              from,
 
-                      const Gap(AppSpacing.md),
+              to,
 
-                      AppButton.secondary(
-                        label: 'Reintentar',
-                        icon: Icons.refresh_rounded,
-                        onPressed: widget.onRetry,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              if (showClear) clearDates,
 
-              KardexStatus.success =>
-                state.items.isEmpty
-                    ? Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          child: const AppMessageCard.info(
-                            title: 'Sin resultados',
-                            message:
-                                'No encontramos movimientos con los filtros actuales.',
-                          ),
-                        ),
-                      )
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          final wide = constraints.maxWidth >= 980;
+              filterButton,
 
-                          final table = _KardexMovementsTable(
-                            items: state.items,
-                            selectedId: selectedId,
-                            onSelected: (item) {
-                              setState(() {
-                                selectedId = item.id;
-                              });
-                            },
-                          );
-
-                          if (!wide) {
-                            return table;
-                          }
-
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              /*
-                              Tabla más ancha.
-                              */
-                              Expanded(flex: 72, child: table),
-
-                              VerticalDivider(
-                                width: 1,
-                                color: theme.colorScheme.outlineVariant,
-                              ),
-
-                              /*
-                              Detalle 28%.
-                              */
-                              Expanded(
-                                flex: 28,
-                                child: _KardexDetailPanel(item: selected),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-            },
-          ),
-        ],
+              exportButton,
+            ],
+          );
+        },
       ),
     );
   }
-}
 
-/*
-══════════════════════════════════════════════════
-TABLA
-══════════════════════════════════════════════════
-*/
+  // =========================================================
+  // SELECTOR DE FECHA
+  // =========================================================
 
-class _KardexMovementsTable extends StatelessWidget {
-  const _KardexMovementsTable({
-    required this.items,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  final List<KardexRecord> items;
-
-  final int? selectedId;
-
-  final ValueChanged<KardexRecord> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(2.4),
-            1: FlexColumnWidth(1.30),
-            2: FlexColumnWidth(1.40),
-            3: FlexColumnWidth(1.75),
-            4: FlexColumnWidth(1.00),
-            5: FlexColumnWidth(1.00),
-            6: FlexColumnWidth(1.00),
-            7: FlexColumnWidth(1.30),
-          },
-
+  Widget _dateField(String label, DateTime? value, VoidCallback onTap) {
+    return SizedBox(
+      width: 185,
+      height: 50,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Row(
           children: [
-            /*
-            HEADER
-            */
-            TableRow(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-              ),
+            const Icon(Icons.calendar_today_outlined, size: 18),
 
-              children: const [
-                _KardexHeaderCell('INSUMO'),
-                _KardexHeaderCell('FECHA'),
-                _KardexHeaderCell('MOVIMIENTO'),
-                _KardexHeaderCell('DOCUMENTO'),
-                _KardexHeaderCell('ENTRADA', end: true),
-                _KardexHeaderCell('SALIDA', end: true),
-                _KardexHeaderCell('STOCK', end: true),
-                _KardexHeaderCell('COSTO', end: true),
-              ],
-            ),
+            const SizedBox(width: 9),
 
-            /*
-            FILAS
-            */
-            ...items.map((item) {
-              final selected = item.id == selectedId;
-
-              return TableRow(
-                decoration: BoxDecoration(
-                  color: selected
-                      ? theme.colorScheme.primaryContainer.withValues(
-                          alpha: .40,
-                        )
-                      : theme.colorScheme.surface,
-                ),
-
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.insumoCodigo,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-
-                        Text(
-                          item.insumoNombre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.primary,
                     ),
                   ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          DateFormat(
-                            'dd/MM/yyyy',
-                          ).format(item.fechaMovimiento.toLocal()),
-                        ),
-
-                        Text(
-                          DateFormat(
-                            'HH:mm',
-                          ).format(item.fechaMovimiento.toLocal()),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    child: _MovementBadge(item: item),
-                  ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.documentoTipo ?? '-',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
-                        ),
-
-                        if (item.documentoId != null)
-                          Text(
-                            item.documentoId.toString(),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    end: true,
-                    child: Text(_formatQuantity(item.entrada)),
-                  ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    end: true,
-                    child: Text(_formatQuantity(item.salida)),
-                  ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    end: true,
-                    child: Text(
-                      _formatQuantity(item.stockActual),
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-
-                  _KardexDataCell(
-                    onTap: () => onSelected(item),
-                    end: true,
-                    child: Text(
-                      _formatMoney(item.costoTotal),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                  Text(
+                    value == null
+                        ? 'Todas'
+                        : DateFormat('dd/MM/yyyy').format(value),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              );
-            }),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-/*
-══════════════════════════════════════════════════
-HEADER TABLA
-══════════════════════════════════════════════════
-*/
+  // =========================================================
+  // RESUMEN DEL INSUMO
+  // =========================================================
 
-class _KardexHeaderCell extends StatelessWidget {
-  const _KardexHeaderCell(this.text, {this.end = false});
-
-  final String text;
-  final bool end;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-      child: Text(
-        text,
-        textAlign: end ? TextAlign.right : TextAlign.left,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+  Widget _summary(KardexState state) {
+    final matches = state.insumos.where(
+      (item) => item.id == state.selectedInsumoId,
     );
-  }
-}
 
-/*
-══════════════════════════════════════════════════
-CELDA TABLA
-══════════════════════════════════════════════════
-*/
+    final insumo = matches.isEmpty ? null : matches.first;
 
-class _KardexDataCell extends StatelessWidget {
-  const _KardexDataCell({
-    required this.child,
-    required this.onTap,
-    this.end = false,
-  });
+    final stock = state.stock;
 
-  final Widget child;
-
-  final VoidCallback onTap;
-
-  final bool end;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-
-      child: Container(
-        alignment: end ? Alignment.centerRight : Alignment.centerLeft,
-
-        constraints: const BoxConstraints(minHeight: 52),
-
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          ),
-        ),
-
-        child: child,
-      ),
-    );
-  }
-}
-
-/*
-══════════════════════════════════════════════════
-BADGE MOVIMIENTO
-══════════════════════════════════════════════════
-*/
-
-class _MovementBadge extends StatelessWidget {
-  const _MovementBadge({required this.item});
-
-  final KardexRecord item;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final type = item.tipoMovimiento.toUpperCase();
-
-    final isInitial = type.contains('STOCK_INICIAL');
-
-    final badgeColor = isInitial
-        ? const Color(0xFFE7EDF3)
-        : item.isEntrada
-        ? const Color(0xFFE2F6E8)
-        : const Color(0xFFFFE3DF);
-
-    final foreground = isInitial
-        ? const Color(0xFF54616E)
-        : item.isEntrada
-        ? const Color(0xFF20633A)
-        : const Color(0xFFB93825);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-
-      decoration: BoxDecoration(
-        color: badgeColor,
-
-        borderRadius: BorderRadius.circular(999),
-      ),
-
-      child: Text(
-        item.tipoMovimiento,
-
-        maxLines: 1,
-
-        overflow: TextOverflow.ellipsis,
-
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/*
-══════════════════════════════════════════════════
-PANEL DERECHO
-══════════════════════════════════════════════════
-*/
-
-class _KardexDetailPanel extends StatelessWidget {
-  const _KardexDetailPanel({required this.item});
-
-  final KardexRecord? item;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (item == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.description_outlined,
-                  size: 34,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-
-              const Gap(AppSpacing.md),
-
-              const Text(
-                'Selecciona un movimiento',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-
-              const Gap(AppSpacing.xs),
-
-              Text(
-                'Haz clic en una fila para revisar su trazabilidad.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
+    if (insumo == null) {
+      return const AppSurfaceCard(
+        child: Text('Selecciona un insumo para ver su kardex.'),
       );
     }
 
-    final record = item!;
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 16,
+        runSpacing: 12,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE9DD),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.science_outlined,
+              color: AppColors.primary,
+              size: 26,
+            ),
+          ),
 
-    /*
-    Stock anterior derivado:
-    anterior + entrada - salida = actual
+          SizedBox(
+            width: 220,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  insumo.codigo,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(insumo.nombre),
+              ],
+            ),
+          ),
 
-    Por lo tanto:
-    anterior = actual - entrada + salida
-    */
+          _summaryText('Categoría', insumo.tipoBien),
 
-    final previousStock = record.stockActual - record.entrada + record.salida;
+          _summaryText('Unidad', insumo.unidadMedidaCodigo),
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+          _summaryValue(
+            'Stock actual',
+            '${_qty(stock?.cantidadActual ?? insumo.stockActual)} ${insumo.unidadMedidaCodigo}',
+            const Color(0xFFE6F3FF),
+            const Color(0xFF074987),
+          ),
+
+          _summaryValue(
+            'Costo unitario',
+            stock == null ? '—' : _money(stock.costoPromedioActual),
+            const Color(0xFFFFF0E8),
+            const Color(0xFF432A20),
+          ),
+
+          _summaryValue(
+            'Valor del stock',
+            stock == null
+                ? '—'
+                : _money(stock.cantidadActual * stock.costoPromedioActual),
+            const Color(0xFFE7FBEA),
+            const Color(0xFF125A29),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryText(String title, String value) {
+    return SizedBox(
+      width: 140,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /*
-          CABECERA
-          */
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.inventory_2_outlined,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
 
-              const Gap(AppSpacing.md),
+  Widget _summaryValue(
+    String title,
+    String value,
+    Color background,
+    Color foreground,
+  ) {
+    return Container(
+      width: 175,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(fontSize: 12, color: foreground)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      record.insumoCodigo,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+  // =========================================================
+  // FILTRAR REGISTROS
+  // =========================================================
+
+  List<KardexRecord> _filtered(KardexState state) {
+    final rows = state.items.where((row) {
+      if (state.fechaDesde != null &&
+          row.fechaMovimiento.isBefore(state.fechaDesde!)) {
+        return false;
+      }
+
+      if (state.fechaHasta != null &&
+          row.fechaMovimiento.isAfter(
+            DateTime(
+              state.fechaHasta!.year,
+              state.fechaHasta!.month,
+              state.fechaHasta!.day,
+              23,
+              59,
+              59,
+              999,
+            ),
+          )) {
+        return false;
+      }
+
+      return true;
+    }).toList();
+
+    rows.sort((a, b) {
+      final comparison = a.fechaMovimiento.compareTo(b.fechaMovimiento);
+
+      if (comparison != 0) {
+        return _newestFirst ? -comparison : comparison;
+      }
+
+      return _newestFirst ? b.id.compareTo(a.id) : a.id.compareTo(b.id);
+    });
+
+    return rows;
+  }
+
+  // =========================================================
+  // TABLA DE MOVIMIENTOS - SIN TÍTULO
+  // =========================================================
+
+  Widget _movements(KardexState state) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    final rows = _filtered(state);
+
+    final pages = math.max(1, (rows.length / _pageSize).ceil());
+
+    final page = math.min(_page, pages - 1);
+
+    final start = page * _pageSize;
+
+    final visible = rows.skip(start).take(_pageSize).toList();
+
+    final chronological = [...rows]
+      ..sort((a, b) {
+        final comparison = a.fechaMovimiento.compareTo(b.fechaMovimiento);
+
+        return comparison != 0 ? comparison : a.id.compareTo(b.id);
+      });
+
+    final entrySum = rows.fold<double>(0, (sum, row) => sum + row.entrada);
+
+    final exitSum = rows.fold<double>(0, (sum, row) => sum + row.salida);
+
+    final opening = chronological.isNotEmpty
+        ? chronological.first.stockActual -
+              chronological.first.entrada +
+              chronological.first.salida
+        : _balanceBeforeRange(state);
+
+    final closing = chronological.isNotEmpty
+        ? chronological.last.stockActual
+        : opening;
+
+    final inconsistent = (opening + entrySum - exitSum - closing).abs() > 0.011;
+
+    return AppSurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ORDENAMIENTO Y CONTADOR
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    '${rows.length} registros',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+
+                  DropdownButton<bool>(
+                    value: _newestFirst,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(
+                        value: true,
+                        child: Text('Más recientes'),
                       ),
+                      DropdownMenuItem(
+                        value: false,
+                        child: Text('Más antiguos'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _newestFirst = value ?? true;
+                        _page = 0;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // TABLA DE MOVIMIENTOS
+          LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: math.max(1100, constraints.maxWidth),
+                child: Table(
+                  columnWidths: const {
+                    0: FlexColumnWidth(1.3),
+                    1: FlexColumnWidth(1),
+                    2: FlexColumnWidth(1.25),
+                    3: FlexColumnWidth(1.55),
+                    4: FlexColumnWidth(.7),
+                    5: FlexColumnWidth(.7),
+                    6: FlexColumnWidth(.8),
+                    7: FlexColumnWidth(.85),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: dark
+                            ? const Color(0xFF292D33)
+                            : const Color(0xFFF4F6F8),
+                      ),
+                      children:
+                          [
+                                'INSUMO',
+                                'FECHA',
+                                'MOVIMIENTO',
+                                'DOCUMENTO',
+                                'ENTRADA',
+                                'SALIDA',
+                                'STOCK',
+                                'COSTO',
+                              ]
+                              .map(
+                                (label) => _cell(
+                                  label,
+                                  header: true,
+                                  centered: const [
+                                    'ENTRADA',
+                                    'SALIDA',
+                                    'STOCK',
+                                    'COSTO',
+                                  ].contains(label),
+                                ),
+                              )
+                              .toList(),
                     ),
 
-                    Text(
-                      record.insumoNombre,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    // REGISTROS REALES
+                    ...visible.map(
+                      (row) => TableRow(
+                        decoration: BoxDecoration(
+                          color:
+                              row.tipoMovimiento.toUpperCase().contains(
+                                'AJUSTE',
+                              )
+                              ? (dark
+                                    ? const Color(0xFF1E354F)
+                                    : const Color(0xFFEDF4FD))
+                              : row.entrada > 0
+                              ? (dark
+                                    ? const Color(0xFF1E3A29)
+                                    : const Color(0xFFEAF9ED))
+                              : row.salida > 0
+                              ? (dark
+                                    ? const Color(0xFF432825)
+                                    : const Color(0xFFFFF0EF))
+                              : (dark
+                                    ? const Color(0xFF1E354F)
+                                    : const Color(0xFFEDF4FD)),
+                          border: const Border(
+                            bottom: BorderSide(color: Color(0xFFE5E8EC)),
+                          ),
+                        ),
+                        children: [
+                          _cell(
+                            '${row.insumoCodigo}\n${row.insumoNombre}',
+                            bold: true,
+                          ),
+
+                          _cell(
+                            DateFormat(
+                              'dd/MM/yyyy\nHH:mm',
+                            ).format(row.fechaMovimiento),
+                          ),
+
+                          _cell(
+                            row.tipoMovimiento.replaceAll('_', ' '),
+                            badge: true,
+                            isEntry: row.entrada > 0,
+                            isAdjustment: row.tipoMovimiento
+                                .toUpperCase()
+                                .contains('AJUSTE'),
+                          ),
+
+                          Tooltip(
+                            message:
+                                'Responsable: ${row.usuarioResponsable ?? row.usuarioResponsableId?.toString() ?? 'No registrado'}\nObservación: ${row.observacion ?? 'Sin observación'}',
+                            child: _cell(
+                              '${row.documentoTipo ?? '—'}\n${row.documentoId ?? '—'}',
+                            ),
+                          ),
+
+                          _cell(_qty(row.entrada), centered: true),
+
+                          _cell(_qty(row.salida), centered: true),
+
+                          _cell(
+                            _qty(row.stockActual),
+                            centered: true,
+                            bold: true,
+                          ),
+
+                          _cell(
+                            _money(row.costoTotal),
+                            centered: true,
+                            bold: true,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
+            ),
+          ),
 
-              _MovementBadge(item: record),
+          if (rows.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(30),
+              child: Center(
+                child: Text('No hay movimientos para estos filtros.'),
+              ),
+            ),
+
+          // PAGINACIÓN ORIGINAL
+          AppTablePagination(
+            page: page,
+            totalPages: pages,
+            start: start,
+            end: math.min(start + _pageSize, rows.length),
+            total: rows.length,
+            pageSize: _pageSize,
+            pageSizeOptions: const [10, 20, 50],
+            onPageChanged: (value) {
+              setState(() {
+                _page = value;
+              });
+            },
+            onPageSizeChanged: (value) {
+              setState(() {
+                _pageSize = value;
+                _page = 0;
+              });
+            },
+          ),
+
+          const Divider(height: 1),
+
+          // RESUMEN INFERIOR
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final totals = [
+                  _balanceTile(
+                    Icons.description_outlined,
+                    'Saldo anterior',
+                    '${_qty(opening)} ${_unit(state)}',
+                    const Color(0xFF42546C),
+                  ),
+                  _balanceTile(
+                    Icons.arrow_upward_rounded,
+                    'Entradas',
+                    '${_qty(entrySum)} ${_unit(state)}',
+                    const Color(0xFF168040),
+                  ),
+                  _balanceTile(
+                    Icons.arrow_downward_rounded,
+                    'Salidas',
+                    '${_qty(exitSum)} ${_unit(state)}',
+                    const Color(0xFFD42C26),
+                  ),
+                  _balanceTile(
+                    Icons.inventory_2_outlined,
+                    'Saldo final',
+                    '${_qty(closing)} ${_unit(state)}',
+                    const Color(0xFF0864BA),
+                  ),
+                ];
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (constraints.maxWidth >= 850)
+                      Row(
+                        children: [
+                          for (int i = 0; i < totals.length; i++) ...[
+                            Expanded(child: totals[i]),
+
+                            if (i < totals.length - 1)
+                              Container(
+                                width: 1,
+                                height: 40,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                color: Theme.of(context).dividerColor,
+                              ),
+                          ],
+                        ],
+                      )
+                    else
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: totals
+                            .map((item) => SizedBox(width: 215, child: item))
+                            .toList(),
+                      ),
+
+                    if (inconsistent) ...[
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Advertencia: los movimientos no concilian con el saldo registrado.',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // TARJETAS COMPACTAS DE SALDOS
+  // =========================================================
+
+  Widget _balanceTile(IconData icon, String title, String value, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .10),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+
+        const SizedBox(width: 10),
+
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 12)),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
             ],
           ),
-
-          const Gap(AppSpacing.lg),
-
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-
-          const Gap(AppSpacing.sm),
-
-          /*
-          DOCUMENTO
-          */
-          _DetailRow(
-            label: 'Documento',
-            value: record.documentoTipo ?? 'Sin documento',
-          ),
-
-          _DetailRow(
-            label: 'Documento ID',
-            value: record.documentoId?.toString() ?? '-',
-          ),
-
-          _DetailRow(
-            label: 'Fecha y hora',
-            value: DateFormat(
-              'dd/MM/yyyy HH:mm',
-            ).format(record.fechaMovimiento.toLocal()),
-          ),
-
-          const Gap(AppSpacing.sm),
-
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-
-          const Gap(AppSpacing.sm),
-
-          /*
-          MOVIMIENTO
-          */
-          _DetailRow(
-            label: 'Entrada',
-            value: '${_formatQuantity(record.entrada)} KG',
-          ),
-
-          _DetailRow(
-            label: 'Salida',
-            value: '${_formatQuantity(record.salida)} KG',
-          ),
-
-          _DetailRow(
-            label: 'Stock anterior',
-            value: '${_formatQuantity(previousStock)} KG',
-          ),
-
-          _DetailRow(
-            label: 'Stock resultante',
-            value: '${_formatQuantity(record.stockActual)} KG',
-            strong: true,
-          ),
-
-          const Gap(AppSpacing.sm),
-
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-
-          const Gap(AppSpacing.sm),
-
-          /*
-          COSTOS
-          */
-          _DetailRow(
-            label: 'Costo unitario',
-            value: _formatMoney(record.costoUnitario),
-          ),
-
-          _DetailRow(
-            label: 'Costo total',
-            value: _formatMoney(record.costoTotal),
-            strong: true,
-          ),
-
-          const Gap(AppSpacing.sm),
-
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-
-          const Gap(AppSpacing.sm),
-
-          _DetailRow(
-            label: 'Responsable',
-            value: record.usuarioResponsable ?? 'Sin responsable',
-          ),
-
-          _DetailRow(
-            label: 'Observación',
-            value: record.observacion ?? 'Sin observación',
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
-}
 
-/*
-══════════════════════════════════════════════════
-FILA DEL DETALLE
-══════════════════════════════════════════════════
-*/
+  // =========================================================
+  // CÁLCULO DE SALDO ANTERIOR
+  // =========================================================
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.strong = false,
-  });
+  double _balanceBeforeRange(KardexState state) {
+    final before =
+        state.items
+            .where(
+              (row) =>
+                  state.fechaDesde == null ||
+                  row.fechaMovimiento.isBefore(state.fechaDesde!),
+            )
+            .toList()
+          ..sort((a, b) {
+            final comparison = b.fechaMovimiento.compareTo(a.fechaMovimiento);
 
-  final String label;
-  final String value;
-  final bool strong;
+            return comparison != 0 ? comparison : b.id.compareTo(a.id);
+          });
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    if (before.isNotEmpty) {
+      return before.first.stockActual;
+    }
 
+    if (state.items.isNotEmpty) {
+      final oldest = [...state.items]
+        ..sort((a, b) {
+          final comparison = a.fechaMovimiento.compareTo(b.fechaMovimiento);
+
+          return comparison != 0 ? comparison : a.id.compareTo(b.id);
+        });
+
+      final first = oldest.first;
+
+      return first.stockActual - first.entrada + first.salida;
+    }
+
+    return state.stock?.cantidadActual ?? 0;
+  }
+
+  String _unit(KardexState state) {
+    for (final item in state.insumos) {
+      if (item.id == state.selectedInsumoId) {
+        return item.unidadMedidaCodigo;
+      }
+    }
+
+    return '';
+  }
+
+  // =========================================================
+  // CELDAS DE TABLA
+  // =========================================================
+
+  Widget _cell(
+    String value, {
+    bool header = false,
+    bool bold = false,
+    bool centered = false,
+    bool badge = false,
+    bool isEntry = false,
+    bool isAdjustment = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 4,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      child: Align(
+        alignment: centered ? Alignment.center : Alignment.centerLeft,
+        child: badge
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isAdjustment
+                      ? const Color(0xFFDCEBFF)
+                      : isEntry
+                      ? const Color(0xFFD8F2DE)
+                      : const Color(0xFFFFDAD8),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isAdjustment
+                        ? const Color(0xFF18549B)
+                        : isEntry
+                        ? const Color(0xFF11672B)
+                        : const Color(0xFFB42318),
+                  ),
+                ),
+              )
+            : Text(
+                value,
+                style: TextStyle(
+                  fontSize: header ? 11 : 12,
+                  fontWeight: header || bold
+                      ? FontWeight.w700
+                      : FontWeight.normal,
+                  color: header ? const Color(0xFF586476) : null,
+                ),
               ),
-            ),
-          ),
-
-          const Gap(AppSpacing.sm),
-
-          Expanded(
-            flex: 5,
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
+    );
+  }
+
+  // =========================================================
+  // EXPORTACIÓN A EXCEL - LÓGICA ORIGINAL
+  // =========================================================
+
+  void _export(KardexState state) {
+    final stock = state.stock;
+
+    final matches = state.insumos.where(
+      (item) => item.id == state.selectedInsumoId,
+    );
+
+    if (matches.isEmpty) return;
+
+    final insumo = matches.first;
+
+    final rows = _filtered(state);
+
+    final chronological = [...rows]
+      ..sort((a, b) {
+        final comparison = a.fechaMovimiento.compareTo(b.fechaMovimiento);
+
+        return comparison != 0 ? comparison : a.id.compareTo(b.id);
+      });
+
+    final opening = chronological.isNotEmpty
+        ? chronological.first.stockActual -
+              chronological.first.entrada +
+              chronological.first.salida
+        : _balanceBeforeRange(state);
+
+    final closing = chronological.isNotEmpty
+        ? chronological.last.stockActual
+        : opening;
+
+    exportKardex(
+      insumo,
+      stock,
+      rows,
+      state.fechaDesde,
+      state.fechaHasta,
+      opening: opening,
+      entries: rows.fold<double>(0, (sum, row) => sum + row.entrada),
+      exits: rows.fold<double>(0, (sum, row) => sum + row.salida),
+      closing: closing,
     );
   }
 }
 
-/*
-══════════════════════════════════════════════════
-FORMATOS
-══════════════════════════════════════════════════
-*/
+// ============================================================
+// FORMATO NUMÉRICO
+// ============================================================
 
-/*
-IMPORTANTE:
-
-ANTES:
-1000 -> 1.000
-
-AHORA:
-1000 -> 1000
-15.695 -> 15.70 si realmente es decimal.
-
-No usamos separador de miles en cantidades.
-*/
-String _formatQuantity(double value) {
-  if (value == value.roundToDouble()) {
-    return value.toStringAsFixed(0);
-  }
-
-  /*
-  Hasta 2 decimales,
-  eliminando ceros finales.
-  */
-
-  var result = value.toStringAsFixed(2);
-
-  result = result.replaceFirst(RegExp(r'\.?0+$'), '');
-
-  return result;
+String _qty(double value) {
+  return NumberFormat('#,##0.00').format(value);
 }
 
-/*
-Dinero:
-3500 -> S/ 3,500.00
-1360 -> S/ 1,360.00
-3.5  -> S/ 3.50
-*/
-String _formatMoney(double value) {
-  return NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'S/ ',
-    decimalDigits: 2,
-  ).format(value);
+String _money(double value) {
+  return 'S/ ${_qty(value)}';
 }

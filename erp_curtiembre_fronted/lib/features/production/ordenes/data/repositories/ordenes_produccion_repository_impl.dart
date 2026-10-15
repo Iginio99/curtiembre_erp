@@ -2,6 +2,7 @@ import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/features/production/clientes/domain/entities/cliente_option.dart';
 import 'package:erp_curtiembre_fronted/features/inventory/shared/domain/entities/insumo_lookup.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/consumo_planificado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/entrega_producto_terminado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/consumo_real_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/control_calidad_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/desviacion_consumo_record.dart';
@@ -341,6 +342,31 @@ class OrdenesProduccionRepositoryImpl implements OrdenesProduccionRepository {
     );
     return items.map((item) => item.toEntity()).toList(growable: false);
   }
+
+  @override
+  Future<void> registrarEntregaProductosTerminados({
+    required int ordenProduccionId,
+    required List<RegistrarEntregaProductoTerminadoInput> detalles,
+    DateTime? fechaEntrega,
+    String? observacion,
+    String? recibidoPor,
+  }) => _remoteDataSource.registrarEntregaProductosTerminados(
+    ordenProduccionId: ordenProduccionId,
+    fechaEntrega: fechaEntrega,
+    observacion: observacion,
+    recibidoPor: recibidoPor,
+    detalles: detalles
+        .map((item) => {
+              'productoTerminadoId': item.productoTerminadoId,
+              'cantidadLados': item.cantidadLados,
+            })
+        .toList(growable: false),
+  );
+
+  @override
+  Future<List<EntregaProductoTerminadoRecord>> listEntregasProductoTerminado(
+    int ordenProduccionId,
+  ) => _remoteDataSource.listEntregasProductoTerminado(ordenProduccionId);
 
   @override
   Future<void> generarConsumoPlanificado(int ordenId) async {

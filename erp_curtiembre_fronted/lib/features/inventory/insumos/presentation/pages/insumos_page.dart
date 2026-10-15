@@ -14,6 +14,7 @@ import 'package:erp_curtiembre_fronted/features/inventory/insumos/presentation/w
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/data/app_table_pagination.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1077,7 +1078,19 @@ class _InsumosListPanel extends StatelessWidget {
   // ===========================================================
 
   Widget _buildPagination(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    return AppTablePagination(
+      page: page,
+      totalPages: totalPages,
+      start: start,
+      end: end,
+      total: total,
+      pageSize: pageSize,
+      pageSizeOptions: const [10, 20, 50],
+      onPageSizeChanged: onPageSize,
+      onPageChanged: onPage,
+    );
+
+    /* final colors = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -1181,7 +1194,7 @@ class _InsumosListPanel extends StatelessWidget {
         ],
       ),
     );
-  }
+  */ }
 }
 
 // =============================================================

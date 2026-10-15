@@ -34,20 +34,14 @@ class ManoObraCubit extends Cubit<ManoObraState> {
 
     try {
       final ordenes = await _ordenesRepository.listOrdenes();
-      final processOptionsByOrderId = <int, List<OrdenProcesoRecord>>{};
-      for (final orden in ordenes) {
-        processOptionsByOrderId[orden.id] = await _ordenesRepository
-            .listProcesos(orden.id);
-      }
       _talker.cubit(
-        'Base de mano de obra preparada con ${ordenes.length} ordenes y ${processOptionsByOrderId.length} mapas de procesos.',
+        'Base de mano de obra preparada con ${ordenes.length} ordenes.',
         logLevel: LogLevel.debug,
       );
 
       emit(
         state.copyWith(
           ordenOptions: ordenes,
-          processOptionsByOrderId: processOptionsByOrderId,
         ),
       );
       await load();

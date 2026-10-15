@@ -1,7 +1,10 @@
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/network/api_exception.dart';
 import 'package:dio/dio.dart';
+import 'package:erp_curtiembre_fronted/features/inventory/shared/domain/entities/insumo_lookup.dart';
+import 'package:erp_curtiembre_fronted/features/production/clientes/domain/entities/cliente_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/lote_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/presentation/cubit/ordenes_produccion_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,14 +56,24 @@ class OrdenesProduccionCubit extends Cubit<OrdenesProduccionState> {
     emit(const OrdenesProduccionState.loading());
 
     try {
-      final clienteOptions = await _repository.listActiveClientes();
-      final loteOptions = await _repository.listLotesDisponibles();
-      final personalOptions = await _repository.listPersonal();
-      final insumoOptions = await _repository.listActiveInsumos();
-      final formulaProduccionOptions = await _repository
-          .listFormulaProduccionOptions();
-      final productoProduccionOptions = await _repository
-          .listProductoProduccionOptions();
+      // Estos catálogos son independientes. Cargarlos en paralelo evita
+      // sumar el tiempo de red de cada consulta al abrir la bandeja.
+      final results = await Future.wait<dynamic>([
+        _repository.listActiveClientes(),
+        _repository.listLotesDisponibles(),
+        _repository.listPersonal(),
+        _repository.listActiveInsumos(),
+        _repository.listFormulaProduccionOptions(),
+        _repository.listProductoProduccionOptions(),
+      ]);
+      final clienteOptions = results[0] as List<ClienteOption>;
+      final loteOptions = results[1] as List<LoteOption>;
+      final personalOptions = results[2] as List<PersonalEmpresaOption>;
+      final insumoOptions = results[3] as List<InsumoLookup>;
+      final formulaProduccionOptions =
+          results[4] as List<FormulaProduccionOption>;
+      final productoProduccionOptions =
+          results[5] as List<ProductoProduccionOption>;
       _talker.cubit(
         'Catalogos base cargados para ordenes: clientes=${clienteOptions.length}, lotes=${loteOptions.length}, insumos=${insumoOptions.length}.',
         logLevel: LogLevel.debug,

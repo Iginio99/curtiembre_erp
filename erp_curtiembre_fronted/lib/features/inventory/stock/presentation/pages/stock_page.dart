@@ -10,6 +10,7 @@ import 'package:erp_curtiembre_fronted/features/inventory/stock/presentation/cub
 import 'package:erp_curtiembre_fronted/features/security/presentation/cubit/security_access_cubit.dart';
 import 'package:erp_curtiembre_fronted/shared/navigation/app_access_routes.dart';
 import 'package:erp_curtiembre_fronted/shared/widgets/layout/app_shell.dart';
+import 'package:erp_curtiembre_fronted/shared/widgets/data/app_table_pagination.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -612,7 +613,19 @@ class _StockListPanel extends StatelessWidget {
   }
 
   Widget _pager(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    return AppTablePagination(
+      page: page,
+      totalPages: totalPages,
+      start: start,
+      end: end,
+      total: total,
+      pageSize: pageSize,
+      pageSizeOptions: const [10, 20, 50],
+      onPageSizeChanged: onPageSize,
+      onPageChanged: onPage,
+    );
+
+    /* final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: LayoutBuilder(
@@ -675,7 +688,7 @@ class _StockListPanel extends StatelessWidget {
         ),
       ),
     );
-  }
+  */ }
 }
 
 class _StockDetailPanel extends StatelessWidget {

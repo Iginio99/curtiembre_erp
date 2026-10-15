@@ -43,8 +43,11 @@ class CostosOrdenCubit extends Cubit<CostosOrdenState> {
     emit(const CostosOrdenState.loading());
 
     try {
-      final ordenes = await _ordenesRepository.listOrdenes();
-      final periodos = await _periodosRepository.listPeriodos();
+      final ordenesFuture = _ordenesRepository.listOrdenes();
+      final periodosFuture = _periodosRepository.listPeriodos();
+      await Future.wait([ordenesFuture, periodosFuture]);
+      final ordenes = await ordenesFuture;
+      final periodos = await periodosFuture;
       _talker.cubit(
         'Base de costos por orden preparada con ${ordenes.length} ordenes y ${periodos.length} periodos.',
         logLevel: LogLevel.debug,

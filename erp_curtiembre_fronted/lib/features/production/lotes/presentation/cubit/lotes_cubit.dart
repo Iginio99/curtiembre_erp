@@ -30,8 +30,11 @@ class LotesCubit extends Cubit<LotesState> {
     emit(const LotesState.loading());
 
     try {
-      final clienteOptions = await _repository.listActiveClientes();
-      final tipoPielOptions = await _repository.listActiveTiposPiel();
+      final clienteOptionsFuture = _repository.listActiveClientes();
+      final tipoPielOptionsFuture = _repository.listActiveTiposPiel();
+      await Future.wait([clienteOptionsFuture, tipoPielOptionsFuture]);
+      final clienteOptions = await clienteOptionsFuture;
+      final tipoPielOptions = await tipoPielOptionsFuture;
       emit(
         state.copyWith(
           clienteOptions: clienteOptions,

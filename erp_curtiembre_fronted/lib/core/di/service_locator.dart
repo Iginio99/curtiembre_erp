@@ -365,7 +365,7 @@ Future<void> configureDependencies() async {
     )
     ..registerFactory<InsumosCubit>(() => InsumosCubit(getIt(), getIt()))
     ..registerFactory<StockCubit>(() => StockCubit(getIt(), getIt()))
-    ..registerFactory<KardexCubit>(() => KardexCubit(getIt(), getIt()))
+    ..registerFactory<KardexCubit>(() => KardexCubit(getIt(), getIt(), getIt()))
     ..registerFactory<ComprasCubit>(() => ComprasCubit(getIt(), getIt()))
     ..registerFactory<EntradasCubit>(() => EntradasCubit(getIt(), getIt()))
     ..registerFactory<InventarioFisicoCubit>(

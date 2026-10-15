@@ -639,12 +639,13 @@ class _InsumoUpsertDialogState extends State<InsumoUpsertDialog> {
   Widget _buildBatchControl() {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+    return Material(
+      color: theme.colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
+      clipBehavior: Clip.antiAlias,
       child: SwitchListTile.adaptive(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         secondary: Container(

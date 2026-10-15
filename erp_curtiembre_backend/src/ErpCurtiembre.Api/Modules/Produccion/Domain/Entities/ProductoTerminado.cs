@@ -41,4 +41,16 @@ public sealed class ProductoTerminado
     public string? ProductoColor { get; init; }
 
     public bool EsProductoIndividual { get; init; }
+
+    public string? ClienteNombre { get; init; }
+
+    public decimal CantidadLadosProgramados { get; init; }
+
+    public decimal CantidadLadosEntregados { get; init; }
+
+    public decimal CantidadLadosPendientes { get; init; }
+
+    public DateTime? FechaOrden { get; init; }
+
+    public DateTime? FechaTerminacionOrden { get; init; }
 }

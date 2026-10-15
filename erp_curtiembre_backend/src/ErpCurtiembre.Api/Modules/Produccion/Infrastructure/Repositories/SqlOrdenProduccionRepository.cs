@@ -423,8 +423,6 @@ public sealed class SqlOrdenProduccionRepository(
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
 

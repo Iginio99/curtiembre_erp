@@ -22,6 +22,12 @@ class ProductoTerminadoRecord extends Equatable {
     this.productoNombre,
     this.productoColor,
     this.esProductoIndividual = false,
+    this.clienteNombre,
+    this.cantidadLadosProgramados = 0,
+    this.cantidadLadosEntregados = 0,
+    this.cantidadLadosPendientes = 0,
+    this.fechaOrden,
+    this.fechaTerminacionOrden,
   });
 
   final int id;
@@ -43,6 +49,12 @@ class ProductoTerminadoRecord extends Equatable {
   final int? ordenProductoId;
   final String? productoNombre, productoColor;
   final bool esProductoIndividual;
+  final String? clienteNombre;
+  final double cantidadLadosProgramados;
+  final double cantidadLadosEntregados;
+  final double cantidadLadosPendientes;
+  final DateTime? fechaOrden;
+  final DateTime? fechaTerminacionOrden;
 
   @override
   List<Object?> get props => [
@@ -66,5 +78,11 @@ class ProductoTerminadoRecord extends Equatable {
     productoNombre,
     productoColor,
     esProductoIndividual,
+    clienteNombre,
+    cantidadLadosProgramados,
+    cantidadLadosEntregados,
+    cantidadLadosPendientes,
+    fechaOrden,
+    fechaTerminacionOrden,
   ];
 }

@@ -402,38 +402,12 @@ class _ActiveOrdersDashboard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Órdenes activas', style: theme.textTheme.titleLarge),
-                    Text(
-                      '${orders.length} registro(s) visibles.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                   ],
                 ),
               ),
-              _ActiveCountBadge(count: orders.length),
             ],
           ),
-          const Gap(AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _ActiveKpi(
-                icon: Icons.assignment_outlined,
-                label: 'Órdenes activas',
-                value: '${orders.length}',
-                detail: 'en producción',
-              ),
-              _ActiveKpi(
-                icon: Icons.donut_large_outlined,
-                label: 'Avance promedio',
-                value: '${_activeProgress(orders)}%',
-                detail: 'entre todas las órdenes',
-              ),
-            ],
-          ),
-          const Gap(AppSpacing.md),
+          const Gap(AppSpacing.sm),
           Align(
             alignment: Alignment.centerRight,
             child: AppButton.secondary(
@@ -459,65 +433,6 @@ class _ActiveOrdersDashboard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ActiveKpi extends StatelessWidget {
-  const _ActiveKpi({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.detail,
-  });
-  final IconData icon;
-  final String label;
-  final String value;
-  final String detail;
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 250,
-    padding: const EdgeInsets.all(AppSpacing.md),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 15),
-            const Gap(6),
-            Text(label, style: Theme.of(context).textTheme.labelMedium),
-          ],
-        ),
-        const Gap(4),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        Text(detail, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    ),
-  );
-}
-
-class _ActiveCountBadge extends StatelessWidget {
-  const _ActiveCountBadge({required this.count});
-  final int count;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      borderRadius: BorderRadius.circular(99),
-    ),
-    child: Text(
-      '$count resultados',
-      style: Theme.of(context).textTheme.labelMedium,
-    ),
-  );
 }
 
 class _ActiveOrderCard extends StatefulWidget {
@@ -801,9 +716,6 @@ int _activeOrderProgress(OrdenActivaReporteItem order) =>
     : order.estado == 'EN_PROCESO'
     ? 50
     : 20;
-int _activeProgress(List<OrdenActivaReporteItem> orders) => orders.isEmpty
-    ? 0
-    : orders.map(_activeOrderProgress).reduce((a, b) => a + b) ~/ orders.length;
 int _stageProgress(String status) => status == 'FINALIZADO'
     ? 100
     : status == 'EN_PROCESO'
@@ -1044,13 +956,9 @@ class _ConsumoProcesoTab extends StatelessWidget {
         title: 'Cruce de orden y proceso',
         subtitle:
             'Sirve para comparar lo planificado contra lo real y detectar rapidamente desviaciones de insumos.',
-        child: Wrap(
-          spacing: AppSpacing.lg,
-          runSpacing: AppSpacing.lg,
-          children: [
-            SizedBox(
-              width: 360,
-              child: _SearchableReportFilter<int>(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final orderFilter = _SearchableReportFilter<int>(
                 key: ValueKey(state.consumoOrdenProduccionId),
                 label: 'Buscar orden de produccion',
                 hint: 'Escribe codigo, cliente o estado',
@@ -1062,14 +970,14 @@ class _ConsumoProcesoTab extends StatelessWidget {
                     .toList(growable: false),
                 onSelected: (value) =>
                     onApply(ordenProduccionId: value, ordenProcesoId: null),
-              ),
-            ),
-            SizedBox(
-              width: 320,
-              child: DropdownButtonFormField<int?>(
+              );
+            final processFilter = DropdownButtonFormField<int?>(
                 isExpanded: true,
                 initialValue: state.consumoOrdenProcesoId,
-                decoration: const InputDecoration(labelText: 'Proceso'),
+                decoration: const InputDecoration(
+                  labelText: 'Proceso',
+                  prefixIcon: Icon(Icons.account_tree_outlined),
+                ),
                 items: [
                   const DropdownMenuItem<int?>(
                     value: null,
@@ -1090,14 +998,42 @@ class _ConsumoProcesoTab extends StatelessWidget {
                         ordenProduccionId: state.consumoOrdenProduccionId,
                         ordenProcesoId: value,
                       ),
-              ),
-            ),
-            AppButton.secondary(
-              label: 'Limpiar',
+              );
+            final clearButton = AppButton.secondary(
+              label: 'Limpiar filtros',
               icon: Icons.filter_alt_off_outlined,
               onPressed: onClear,
-            ),
-          ],
+            );
+
+            if (constraints.maxWidth >= 900) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(flex: 5, child: orderFilter),
+                  const Gap(AppSpacing.md),
+                  Expanded(flex: 4, child: processFilter),
+                  const Gap(AppSpacing.md),
+                  clearButton,
+                ],
+              );
+            }
+
+            return Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.md,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SizedBox(width: constraints.maxWidth, child: orderFilter),
+                SizedBox(
+                  width: constraints.maxWidth >= 560
+                      ? constraints.maxWidth - 180
+                      : constraints.maxWidth,
+                  child: processFilter,
+                ),
+                clearButton,
+              ],
+            );
+          },
         ),
       ),
       resultsCard: _ResultsCard(
@@ -1138,33 +1074,13 @@ class _ConsumptionGroupedListState extends State<_ConsumptionGroupedList> {
   bool _byProduct = true;
   bool _orderByConsumption = true;
   bool _expandAll = true;
-  String? _selectedProduct;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final grouped = <int, List<ConsumoProcesoReporteItem>>{};
-    final products =
-        widget.items
-            .where((item) => (item.productoNombre ?? '').trim().isNotEmpty)
-            .map(
-              (item) =>
-                  '${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}',
-            )
-            .toSet()
-            .toList()
-          ..sort();
-    final visibleItems = _selectedProduct == null
-        ? widget.items
-        : widget.items
-              .where((item) {
-                final label =
-                    '${item.productoNombre}${(item.productoColor ?? '').trim().isEmpty ? '' : ' · ${item.productoColor}'}';
-                return label == _selectedProduct;
-              })
-              .toList(growable: false);
-    for (final item in visibleItems) {
+    for (final item in widget.items) {
       grouped.putIfAbsent(item.ordenProduccionId, () => []).add(item);
     }
 
@@ -1225,22 +1141,6 @@ class _ConsumptionGroupedListState extends State<_ConsumptionGroupedList> {
                 icon: Icon(_expandAll ? Icons.unfold_less : Icons.unfold_more),
                 label: Text(_expandAll ? 'Contraer todo' : 'Expandir todo'),
               ),
-              if (products.isNotEmpty) ...[
-                const SizedBox(width: AppSpacing.sm),
-                FilterChip(
-                  label: const Text('Todos'),
-                  selected: _selectedProduct == null,
-                  onSelected: (_) => setState(() => _selectedProduct = null),
-                ),
-                ...products.map(
-                  (product) => FilterChip(
-                    label: Text(product),
-                    selected: _selectedProduct == product,
-                    onSelected: (_) =>
-                        setState(() => _selectedProduct = product),
-                  ),
-                ),
-              ],
             ],
           ),
         ),

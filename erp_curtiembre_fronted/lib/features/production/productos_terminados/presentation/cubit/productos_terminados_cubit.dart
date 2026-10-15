@@ -1,6 +1,7 @@
 import 'package:erp_curtiembre_fronted/core/logging/app_talker.dart';
 import 'package:erp_curtiembre_fronted/core/network/api_exception.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/producto_terminado_record.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/entrega_producto_terminado_record.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/repositories/ordenes_produccion_repository.dart';
 import 'package:erp_curtiembre_fronted/features/production/productos_terminados/presentation/cubit/productos_terminados_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -72,6 +73,7 @@ class ProductosTerminadosCubit extends Cubit<ProductosTerminadosState> {
               item.ordenCodigo.toLowerCase().contains(normalized) ||
               (item.productoNombre ?? '').toLowerCase().contains(normalized) ||
               (item.productoColor ?? '').toLowerCase().contains(normalized) ||
+              (item.clienteNombre ?? '').toLowerCase().contains(normalized) ||
               item.estado.toLowerCase().contains(normalized);
         })
         .toList(growable: false);
@@ -121,6 +123,37 @@ class ProductosTerminadosCubit extends Cubit<ProductosTerminadosState> {
     _talker.cubit('Seleccionando producto terminado $id para ver detalle.');
     emit(state.copyWith(selectedItem: item));
   }
+
+  Future<bool> registrarEntrega({
+    required int ordenProduccionId,
+    required List<RegistrarEntregaProductoTerminadoInput> detalles,
+    DateTime? fechaEntrega,
+    String? observacion,
+    String? recibidoPor,
+  }) async {
+    try {
+      await _repository.registrarEntregaProductosTerminados(
+        ordenProduccionId: ordenProduccionId,
+        detalles: detalles,
+        fechaEntrega: fechaEntrega,
+        observacion: observacion,
+        recibidoPor: recibidoPor,
+      );
+      await initialize();
+      return true;
+    } on ApiException catch (exception) {
+      _talker.cubit('No se pudo registrar la entrega: ${exception.message}.',
+          logLevel: LogLevel.error, exception: exception);
+      return false;
+    } catch (_) {
+      _talker.cubit('Fallo inesperado al registrar la entrega.',
+          logLevel: LogLevel.error);
+      return false;
+    }
+  }
+
+  Future<List<EntregaProductoTerminadoRecord>> cargarEntregas(int ordenId) =>
+      _repository.listEntregasProductoTerminado(ordenId);
 
   String _describeText(String value) {
     final normalized = value.trim();

@@ -13,6 +13,7 @@ import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/o
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/orden_produccion_record_model.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/personal_empresa_option.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/data/models/producto_terminado_record_model.dart';
+import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/entrega_producto_terminado_record.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:erp_curtiembre_fronted/features/production/ordenes/domain/entities/orden_producto_record.dart';
 
@@ -556,6 +557,46 @@ class OrdenesProduccionRemoteDataSource {
               item as Map<String, dynamic>,
             ),
           )
+          .toList(growable: false);
+    } on DioException catch (exception) {
+      throw _mapAndLogDioException(exception, operation: 'GET $path');
+    }
+  }
+
+  Future<void> registrarEntregaProductosTerminados({
+    required int ordenProduccionId,
+    required List<Map<String, dynamic>> detalles,
+    DateTime? fechaEntrega,
+    String? observacion,
+    String? recibidoPor,
+  }) async {
+    const path = '/api/produccion/productos-terminados/entregas';
+    try {
+      await _dio.post<void>(
+        path,
+        data: {
+          'ordenProduccionId': ordenProduccionId,
+          'observacion': observacion,
+          'recibidoPor': recibidoPor,
+          'fechaEntrega': fechaEntrega?.toIso8601String(),
+          'detalles': detalles,
+        },
+      );
+    } on DioException catch (exception) {
+      throw _mapAndLogDioException(exception, operation: 'POST $path');
+    }
+  }
+
+  Future<List<EntregaProductoTerminadoRecord>> listEntregasProductoTerminado(
+    int ordenId,
+  ) async {
+    final path = '/api/produccion/productos-terminados/ordenes/$ordenId/entregas';
+    try {
+      final response = await _dio.get<List<dynamic>>(path);
+      return (response.data ?? const [])
+          .map((row) => EntregaProductoTerminadoRecord.fromJson(
+                row as Map<String, dynamic>,
+              ))
           .toList(growable: false);
     } on DioException catch (exception) {
       throw _mapAndLogDioException(exception, operation: 'GET $path');

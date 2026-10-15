@@ -400,7 +400,13 @@ public sealed class CierreProduccionService(
             item.OrdenProductoId,
             item.ProductoNombre,
             item.ProductoColor,
-            item.EsProductoIndividual);
+            item.EsProductoIndividual,
+            item.ClienteNombre,
+            item.CantidadLadosProgramados,
+            item.CantidadLadosEntregados,
+            item.CantidadLadosPendientes,
+            item.FechaOrden,
+            item.FechaTerminacionOrden);
 
     private static ProductoTerminadoDetailDto MapProduct(ProductoTerminado item) =>
         new(
