@@ -416,22 +416,19 @@ class _ModernProductStageSectionState
       barrierColor: Colors.black45,
       pageBuilder: (_, _, _) => Align(
         alignment: Alignment.centerRight,
-        child: FractionallySizedBox(
-          widthFactor: 0.97,
-          alignment: Alignment.centerRight,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Material(
-              color: _detailSurface,
-              child: SizedBox(
-                height: double.infinity,
-                child: _SupplyDrawer(
-                  process: process!,
-                  consumptions: items,
-                  planned: planned,
-                  initialShowCosts: _showCosts,
-                  subtitle: '${product.nombre}${(product.color ?? '').trim().isEmpty ? '' : ' · ${product.color}'} · Etapa por producto',
-                ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints.tightFor(width: 560),
+          child: Material(
+            color: _detailSurface,
+            child: SizedBox(
+              height: double.infinity,
+              child: _SupplyDrawer(
+                process: process!,
+                consumptions: items,
+                planned: planned,
+                initialShowCosts: _showCosts,
+                subtitle:
+                    '${product.nombre}${(product.color ?? '').trim().isEmpty ? '' : ' · ${product.color}'} · Etapa por producto',
               ),
             ),
           ),
@@ -3520,22 +3517,18 @@ class _GeneralSupplySummaryState extends State<_GeneralSupplySummary> {
       barrierColor: Colors.black45,
       pageBuilder: (_, _, _) => Align(
         alignment: Alignment.centerRight,
-        child: FractionallySizedBox(
-          widthFactor: 0.97,
-          alignment: Alignment.centerRight,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Material(
-              color: _detailSurface,
-              child: SizedBox(
-                height: double.infinity,
-                child: _SupplyDrawer(
-                  process: widget.process,
-                  consumptions: widget.consumptions,
-                  planned: widget.planned,
-                  initialShowCosts: _showCosts,
-                  subtitle: 'Etapa general · registros reales',
-                ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints.tightFor(width: 560),
+          child: Material(
+            color: _detailSurface,
+            child: SizedBox(
+              height: double.infinity,
+              child: _SupplyDrawer(
+                process: widget.process,
+                consumptions: widget.consumptions,
+                planned: widget.planned,
+                initialShowCosts: _showCosts,
+                subtitle: 'Etapa general · registros reales',
               ),
             ),
           ),
@@ -3748,6 +3741,10 @@ class _SupplyDrawerState extends State<_SupplyDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final columnHeaderStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      color: _detailMuted,
+      fontWeight: FontWeight.w700,
+    );
     final query = _search.trim().toLowerCase();
     final items = widget.consumptions.where((item) {
       return query.isEmpty ||
@@ -3776,7 +3773,12 @@ class _SupplyDrawerState extends State<_SupplyDrawer> {
                         'Insumos · ${widget.process.procesoNombre}',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      Text(widget.subtitle),
+                      Text(
+                        widget.subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: _detailMuted,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -3811,6 +3813,48 @@ class _SupplyDrawerState extends State<_SupplyDrawer> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
+            child: Row(
+              children: [
+                Expanded(child: Text('Insumo', style: columnHeaderStyle)),
+                SizedBox(
+                  width: 58,
+                  child: Text(
+                    '%',
+                    textAlign: TextAlign.right,
+                    style: columnHeaderStyle,
+                  ),
+                ),
+                SizedBox(
+                  width: 68,
+                  child: Text(
+                    'Cant.',
+                    textAlign: TextAlign.right,
+                    style: columnHeaderStyle,
+                  ),
+                ),
+                if (_showCosts) ...[
+                  SizedBox(
+                    width: 76,
+                    child: Text(
+                      'P. unit.',
+                      textAlign: TextAlign.right,
+                      style: columnHeaderStyle,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 76,
+                    child: Text(
+                      'Total',
+                      textAlign: TextAlign.right,
+                      style: columnHeaderStyle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
@@ -3823,10 +3867,23 @@ class _SupplyDrawerState extends State<_SupplyDrawer> {
                     child: Row(
                       children: [
                         const Expanded(child: Text('Total')),
-                        Text(_formatDecimal(totalQuantity)),
+                        const SizedBox(width: 58),
+                        SizedBox(
+                          width: 68,
+                          child: Text(
+                            _formatDecimal(totalQuantity),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
                         if (_showCosts) ...[
-                          const SizedBox(width: 22),
-                          Text(_formatCurrency(totalCost)),
+                          const SizedBox(width: 76),
+                          SizedBox(
+                            width: 76,
+                            child: Text(
+                              _formatCurrency(totalCost),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
                         ],
                       ],
                     ),
